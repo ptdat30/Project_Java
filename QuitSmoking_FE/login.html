@@ -1,50 +1,69 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trang Đăng Nhập</title>
-    <link rel="stylesheet" href="assets/css/login.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="assets/css/login.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+  </head>
+  <body>
     <div class="login-container">
-        <h2>Đăng nhập</h2>
-        <p class="signup-link">
-            Bạn chưa có tài khoản? <a href="sign_up.html">Tạo tài khoản ngay</a>
-        </p>
+      <h2>Đăng nhập</h2>
+      <p class="signup-link">
+        bạn chưa có tài khoản? <a href="sign_up.html">tạo tài khoản ngay</a>
+      </p>
 
-        <form action="/login" method="POST"> <div class="input-group">
-                <label for="email">Tài khoản hoặc email</label>
-                <input type="text" id="email" name="usernameOrEmail" required> </div>
-
-            <div class="input-group">
-                <label for="password">Mật khẩu</label>
-                <div class="password-wrapper">
-                    <input type="password" id="password" name="password" required> <i class="fas fa-eye-slash toggle-password"></i>
-                </div>
-            </div>
-
-            <div class="options">
-                <div class="remember-me">
-                    <input type="checkbox" id="remember" name="rememberMe"> <label for="remember">Duy trì đăng nhập</label>
-                </div>
-                <a href="reset_pass_1.html" class="forgot-password">Quên mật khẩu?</a>
-            </div>
-
-            <button type="submit" class="btn btn-login">Đăng nhập</button>
-        </form>
-
-        <div class="divider"></div>
-
-        <p class="social-login-text">Hoặc bạn có thể đăng nhập với Google</p>
-        <div class="social-login-btn-wrapper">
-            <button class="btn btn-google" onclick="location.href='/oauth2/authorization/google'">
-                <img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google logo"> Tiếp tục với Google
-            </button>
+      <form id="loginForm">
+        <div class="input-group">
+          <label for="logUsername">Username</label>
+          <input type="text" id="logUsername" name="username" />
         </div>
-    </div>
 
-    <script src="assets/js/login.js"></script>
-</body>
+        <div class="input-group">
+          <label for="logPassword">Mật khẩu</label>
+          <div class="password-wrapper">
+            <input type="password" id="logPassword" name="password" />
+            <i class="fas fa-eye-slash toggle-password"></i>
+          </div>
+        </div>
+
+        <br />
+        <p id="loginMessage"></p>
+        <p id="jwtToken" style="font-size: 0.8em; color: gray"></p>
+
+        <div class="options">
+          <div class="remember-me">
+            <input type="checkbox" id="remember" name="remember" />
+            <label for="remember">Duy trì đăng nhập</label>
+          </div>
+          <a href="reset_pass_1.html" class="forgot-password">Quên mật khẩu?</a>
+        </div>
+
+        <button type="submit" id="submit" class="btn btn-login">
+          Đăng nhập
+        </button>
+      </form>
+
+      <div class="divider"></div>
+
+      <p class="social-login-text">Hoặc bạn có thể đăng nhập với Google</p>
+      <div class="social-login-btn-wrapper">
+        <button
+          class="btn btn-google"
+          onclick="location.href='/oauth2/authorization/google'"
+        >
+          <img
+            src="https://img.icons8.com/color/16/000000/google-logo.png"
+            alt="Google logo"
+          />
+          Tiếp tục với Google
+        </button>
+      </div>
+    </div>
+    <script src="assets/script/script.js"></script>
+  </body>
 </html>

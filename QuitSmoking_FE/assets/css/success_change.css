@@ -1,79 +1,79 @@
 body {
-    font-family: Arial, sans-serif;
-    background-image: url('../img/hinh1.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    min-height: 100vh;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  font-family: Arial, sans-serif;
+  background-image: url("../images/hinh1.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .success-container {
-    background: #ffffff;
-    max-width: 540px;
-    width: 100%;
-    border-radius: 24px;
-    padding: 40px 40px 32px 40px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    text-align: left;
-    opacity: 0.9;
+  background: #ffffff;
+  max-width: 540px;
+  width: 100%;
+  border-radius: 24px;
+  padding: 40px 40px 32px 40px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  text-align: left;
+  opacity: 0.9;
 }
 
 .success-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .success-title {
-    font-size: 2.6rem;
-    font-weight: bold;
-    color: #111;
+  font-size: 2.6rem;
+  font-weight: bold;
+  color: #111;
 }
 
 .success-icon {
-    color: #2ecc40;
-    font-size: 3rem;
-    margin-top: 6px;
+  color: #2ecc40;
+  font-size: 3rem;
+  margin-top: 6px;
 }
 
 .success-message {
-    font-size: 1.25rem;
-    color: #222;
-    margin-bottom: 32px;
+  font-size: 1.25rem;
+  color: #222;
+  margin-bottom: 32px;
 }
 
 .success-link {
-    color: #2ecc40;
-    text-decoration: underline;
-    font-weight: 500;
-    transition: color 0.2s;
+  color: #2ecc40;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s;
 }
 
 .success-link:hover {
-    color: #228c1d;
+  color: #228c1d;
 }
 
 .btn-go-login {
-    display: block;
-    width: 100%;
-    background: #fff9d6;
-    color: #228c1d;
-    text-align: center;
-    padding: 18px 0 16px 0;
-    border-radius: 12px;
-    font-size: 1.25rem;
-    font-weight: 500;
-    text-decoration: underline;
-    margin-top: 8px;
-    transition: background 0.2s, color 0.2s;
+  display: block;
+  width: 100%;
+  background: #fff9d6;
+  color: #228c1d;
+  text-align: center;
+  padding: 18px 0 16px 0;
+  border-radius: 12px;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-decoration: underline;
+  margin-top: 8px;
+  transition: background 0.2s, color 0.2s;
 }
 
 .btn-go-login:hover {
-    background: #f7f2c0;
-    color: #145c0e;
+  background: #f7f2c0;
+  color: #145c0e;
 }
