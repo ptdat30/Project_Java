@@ -1,4 +1,4 @@
-package com.smokingcessation.dto.request;
+package com.example.quitsmoking.dto.request;
 
 // import com.smokingcessation.model.Role; // Nếu bạn muốn truyền role từ frontend, nhưng không nên cho đăng ký công khai
 

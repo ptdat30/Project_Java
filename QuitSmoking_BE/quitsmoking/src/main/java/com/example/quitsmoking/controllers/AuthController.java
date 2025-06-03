@@ -2,8 +2,8 @@ package com.example.quitsmoking.controllers;
 
 import com.example.quitsmoking.dto.response.AuthResponse;
 import com.example.quitsmoking.dto.request.AuthRequest;
-import com.example.quitsmoking.security.JwtUtil;
-import com.example.quitsmoking.service.AuthService;
+import com.example.quitsmoking.configurations.JwtUtil;
+import com.example.quitsmoking.services.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;

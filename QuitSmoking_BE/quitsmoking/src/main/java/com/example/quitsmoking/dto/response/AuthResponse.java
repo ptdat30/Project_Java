@@ -1,4 +1,4 @@
-package com.smokingcessation.dto.response;
+package com.example.quitsmoking.dto.response;
 
 // Đảm bảo bạn có import cho Role enum của mình
 // import com.smokingcessation.model.Role; // Hoặc đường dẫn đúng đến enum Role của bạn
