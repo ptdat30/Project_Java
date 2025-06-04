@@ -14,7 +14,7 @@ import com.quitsmoking.services.interfaces.iRegistrableService;
 
 // import java.util.ArrayList;
 import java.util.Optional; 
-// import org.springframework.security.crypto.password.PasswordEncoder; // Ví dụ dùng Spring Security cho băm mật khẩu
+import org.springframework.security.crypto.password.PasswordEncoder; // Ví dụ dùng Spring Security cho băm mật khẩu
 
 /**
  * AuthService chịu trách nhiệm xử lý các nghiệp vụ liên quan đến
@@ -24,10 +24,11 @@ import java.util.Optional;
 public class AuthService implements iRegistrableService, UserDetailsService { // Triển khai interface RegistrableService
 
     private final UserDAO userDAO;
+    private final PasswordEncoder passwordEncoder; // Sử dụng PasswordEncoder để mã hóa mật khẩu
     
-    public AuthService(UserDAO userDAO /*, PasswordEncoder passwordEncoder */) {
+    public AuthService(UserDAO userDAO , PasswordEncoder passwordEncoder ) {
         this.userDAO = userDAO;
-        // this.passwordEncoder = passwordEncoder;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User findByUsername(String username) {
@@ -62,38 +63,7 @@ public class AuthService implements iRegistrableService, UserDetailsService { //
      */
     @Override
     public User register(String username, String rawPassword, String email, String firstName, String lastName, Role requestedRole) {
-        // // 1. Kiểm tra tính hợp lệ của dữ liệu đầu vào (có thể dùng validation framework)
-        // if (username == null || username.trim().isEmpty() || rawPassword == null || rawPassword.isEmpty() || email == null || email.trim().isEmpty()) {
-        //     System.err.println("Registration failed: Missing required fields.");
-        //     return null; // Hoặc ném InvalidInputException
-        // }
-
-        // // 2. Kiểm tra xem tên đăng nhập hoặc email đã tồn tại chưa
-        // if (userDAO.findByUsername(username).isPresent()) {
-        //     System.err.println("Registration failed: Username '" + username + "' already exists.");
-        //     return null; 
-        // }
-        // if (userDAO.findByEmail(email).isPresent()) {
-        //     System.err.println("Registration failed: Email '" + email + "' already exists.");
-        //     return null; 
-        // }
-
-        // // 4. Tạo một ID duy nhất cho người dùng mới
-        // String id = UUID.randomUUID().toString();
-
-        // // 5. Luôn gán vai trò ban đầu là GUEST cho đăng ký công khai
-        // // Role initialRole = Role.GUEST;
-
-        // // 6. Tạo đối tượng Guest mới
-        // // Constructor của Guest sẽ gán role là GUEST
-        // Guest newGuest = new Guest(id, username, rawPassword, email, firstName, lastName);// Đang dùng mk chưa dc băm
-
-        // // 7. Lưu người dùng vào cơ sở dữ liệu thông qua DAO
-        // userDAO.save(newGuest);
-
-        // System.out.println("User " + username + " registered successfully as " + newGuest.getRole().getRoleName() + " (ID: " + newGuest.getId() + ").");
-        // return newGuest;
-        return null; // Chuyển sang phương thức registerNewUser
+        return null; 
     }
 
     public User registerNewUser(AuthRequest registerRequest) {
@@ -117,7 +87,7 @@ public class AuthService implements iRegistrableService, UserDetailsService { //
         }
 
         // 3. Mã hóa mật khẩu
-        // String encodedPassword = passwordEncoder.encode(registerRequest.getPassword()); // SỬ DỤNG PASSWORD ENCODER
+        String encodedPassword = passwordEncoder.encode(registerRequest.getPassword()); // SỬ DỤNG PASSWORD ENCODER
 
         // 4. Tạo một ID duy nhất
         String id = UUID.randomUUID().toString();
@@ -127,8 +97,8 @@ public class AuthService implements iRegistrableService, UserDetailsService { //
         // Giả sử AuthRequest có getFirstName() và getLastName()
         Guest newGuest = new Guest(id,
                                     registerRequest.getUsername(),
-                                //    encodedPassword, // Dùng mật khẩu đã mã hóa
-                                    registerRequest.getPassword(), // Minh họa, THAY THẾ BẰNG MÃ HÓA THẬT!
+                                    encodedPassword, // Dùng mật khẩu đã mã hóa
+                                    // registerRequest.getPassword(), // Minh họa, THAY THẾ BẰNG MÃ HÓA THẬT!
                                     registerRequest.getEmail(),
                                     registerRequest.getFirstName(), // Bạn cần thêm các trường này vào AuthRequest nếu cần
                                     registerRequest.getLastName()); // Bạn cần thêm các trường này vào AuthRequest nếu cần
@@ -136,7 +106,8 @@ public class AuthService implements iRegistrableService, UserDetailsService { //
         // 6. Lưu người dùng vào cơ sở dữ liệu
         userDAO.save(newGuest);
 
-        System.out.println("User " + newGuest.getUsername() + " registered successfully as " + newGuest.getRole().getRoleName() + " (ID: " + newGuest.getId() + ").");
+        System.out.println("User " + newGuest.getUsername() + " registered successfully as " + newGuest.getRole().getRoleName() + " (ID: " + newGuest.getId() + ")."
+        + " (Pass: " + newGuest.getPassword() + ").");
         return newGuest;
     }
 
@@ -160,8 +131,8 @@ public class AuthService implements iRegistrableService, UserDetailsService { //
 
         // 2. Xác thực mật khẩu
         // Bạn sẽ so sánh mật khẩu thô sau khi băm với mật khẩu đã băm trong DB
-        // boolean passwordMatches = passwordEncoder.matches(rawPassword, user.getPassword());
-        boolean passwordMatches = user.getPassword().equals(rawPassword + "_hashed"); // Minh họa, THAY THẾ BẰNG BĂM THẬT!
+        boolean passwordMatches = passwordEncoder.matches(rawPassword, user.getPassword());
+        // boolean passwordMatches = user.getPassword().equals(rawPassword + "_hashed"); // Minh họa, THAY THẾ BẰNG BĂM THẬT!
 
         if (!passwordMatches) {
             System.err.println("Login failed: Incorrect password for user '" + username + "'.");

@@ -1,145 +1,145 @@
 body {
-    background: url('../img/hinh1.png') no-repeat center center/cover;
-    min-height: 100vh;
-    margin: 0;
-    font-family: Arial, sans-serif;
+  background: url("../images/hinh1.png") no-repeat center center/cover;
+  min-height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif;
 }
 .sign_up-container {
-    background: #ffffff;
-    max-width: 420px;
-    margin: 40px auto;
-    border-radius: 10px;
-    padding: 32px 32px 24px 32px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    opacity: 0.9;
+  background: #ffffff;
+  max-width: 420px;
+  margin: 40px auto;
+  border-radius: 10px;
+  padding: 32px 32px 24px 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  opacity: 0.9;
 }
 .sign_up-container h2 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #333;
-    font-size: 28px;
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 28px;
 }
 .reset-password {
-    text-align: left;
-    margin-bottom: 24px;
-    color: #333;
+  text-align: left;
+  margin-bottom: 24px;
+  color: #333;
 }
 .input-group {
-    margin-bottom: 18px;
-    display: flex;
-    flex-direction: column;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
 }
 .input-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #555;
-    font-size: 14px;
-    font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 14px;
+  font-weight: bold;
 }
 .input-group input[type="password"],
 .input-group input[type="text"],
 .input-group input[type="email"] {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 16px;
-    background-color: #f9f9f9;
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-size: 16px;
+  background-color: #f9f9f9;
 }
 .input-group input[type="password"]:focus,
 .input-group input[type="text"]:focus,
 .input-group input[type="email"]:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 .input-yellow {
-    background: #fff9d6;
-    border: 1.5px solid #e6d97a;
-    border-radius: 7px;
-    padding: 10px 12px;
-    font-size: 1rem;
-    outline: none;
-    transition: border 0.2s;
+  background: #fff9d6;
+  border: 1.5px solid #e6d97a;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
 }
 .input-yellow:focus {
-    border: 2px solid gold;
+  border: 2px solid gold;
 }
 .password-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 .password-wrapper input[type="password"],
 .password-wrapper input[type="text"] {
-    width: 100%;
-    padding-right: 40px;
+  width: 100%;
+  padding-right: 40px;
 }
 .toggle-password {
-    position: absolute;
-    right: 15px;
-    cursor: pointer;
-    color: #888;
-    font-size: 1.2em;
+  position: absolute;
+  right: 15px;
+  cursor: pointer;
+  color: #888;
+  font-size: 1.2em;
 }
 .options {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
 }
 .remember-me {
-    width: 100%;
-    display: flex;
-    align-items: center;
+  width: 100%;
+  display: flex;
+  align-items: center;
 }
 .remember-me label {
-    margin-left: 8px;
-    font-size: 1rem;
-    color: #555;
+  margin-left: 8px;
+  font-size: 1rem;
+  color: #555;
 }
 .btn-next {
-    background: #e0cda9;
-    color: #3f311c;
-    border: none;
-    border-radius: 7px;
-    padding: 12px 0;
-    width: auto;
-    min-width: 120px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 8px;
-    margin-bottom: 10px;
-    transition: background 0.2s;
+  background: #e0cda9;
+  color: #3f311c;
+  border: none;
+  border-radius: 7px;
+  padding: 12px 0;
+  width: auto;
+  min-width: 120px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  transition: background 0.2s;
 }
 .btn-next:hover {
-    background: #a88b6a;
+  background: #a88b6a;
 }
 .action-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 8px;
-    margin-bottom: 10px;
-    gap: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 10px;
+  gap: 16px;
 }
 .action-row .btn-next {
-    width: auto;
-    min-width: 120px;
-    margin: 0;
+  width: auto;
+  min-width: 120px;
+  margin: 0;
 }
 .action-row .go-to-login {
-    margin-left: 12px;
-    white-space: nowrap;
-    color: #3e8e41;
-    text-decoration: none;
-    font-size: 1rem;
-    transition: color 0.2s;
+  margin-left: 12px;
+  white-space: nowrap;
+  color: #3e8e41;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.2s;
 }
 .action-row .go-to-login:hover {
-    text-decoration: underline;
-    color: #2c6e2e;
+  text-decoration: underline;
+  color: #2c6e2e;
 }
