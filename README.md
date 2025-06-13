@@ -1,4 +1,4 @@
-#Nền tảng Hỗ trợ Cai nghiện Thuốc lá
+Nền tảng Hỗ trợ Cai nghiện Thuốc lá
 Nền tảng Hỗ trợ Cai nghiện Thuốc lá là một hệ thống toàn diện được thiết kế để cung cấp sự hỗ trợ và công cụ cần thiết cho những cá nhân đang tìm cách bỏ thuốc lá. Với sự kết hợp của các tính năng theo dõi tiến độ, kế hoạch cá nhân hóa, và cộng đồng hỗ trợ, nền tảng này cam kết giúp người dùng đạt được mục tiêu cai nghiện và duy trì một lối sống lành mạnh hơn.
 Tính năng Chính
 Nền tảng cung cấp một loạt các tính năng mạnh mẽ để hỗ trợ người dùng trong hành trình cai nghiện thuốc lá:
