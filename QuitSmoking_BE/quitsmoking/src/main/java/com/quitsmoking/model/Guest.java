@@ -1,50 +1,64 @@
+// Guest.java
 package com.quitsmoking.model;
 
-import jakarta.persistence.Entity;
 import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.NoArgsConstructor;
 
-@Entity // <-- Đánh dấu đây là một Entity
-@DiscriminatorValue("GUEST") // <-- Giá trị cho cột 'user_type' trong bảng 'users'
-public class Guest extends User implements  iProfileManageable, iAuthenticatable{
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-    protected Guest() {
-        // Constructor mặc định để JPA sử dụng
-        super();
-        this.setRole(Role.GUEST); // Đặt vai trò là GUEST
+@Entity
+@DiscriminatorValue("GUEST") // DiscriminatorValue khớp với Role.GUEST
+@NoArgsConstructor
+public class Guest extends User {
+
+    // Constructor chung để tái tạo Guest từ dữ liệu hiện có (khi hạ cấp từ Member hoặc tải từ DB)
+    // Constructor này quan trọng khi bạn cần khôi phục trạng thái Guest từ database
+    public Guest(String id, String username, String password, String email, String firstName, String lastName,
+                 String googleId, String pictureUrl, AuthProvider authProvider,
+                 MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+        super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
+              authProvider, Role.GUEST, membershipPlan, membershipEndDate);
+        // Khi là Guest, gói thành viên sẽ là null, chúng ta set lại để đảm bảo
+        this.setMembershipPlan(null);
+        this.setMembershipEndDate(null);
     }
-    
-    public Guest(String id, String username, String password, String email, String firstName, String lastName) {
-        // Gọi constructor của lớp cha User, truyền Role.COACH vào tham số cuối cùng
-        super(id, username, password, email, firstName, lastName, Role.GUEST);
+
+    // Constructor cho người dùng LOCAL Guest (đăng ký mới qua form local)
+    public Guest(String username, String password, String email, String firstName, String lastName) {
+        // ID sẽ được tạo tự động bởi @PrePersist trong lớp User
+        super(username, password, email, firstName, lastName, Role.GUEST); // Gọi constructor của User
+        this.setAuthProvider(AuthProvider.LOCAL);
+        // MembershipPlan và MembershipEndDate sẽ là null theo mặc định
     }
 
+    // Constructor cho Google Login (tạo Guest từ Google OAuth2)
+    public Guest(String email, String firstName, String lastName,
+                 String googleId, String pictureUrl, AuthProvider authProvider) {
+        // ID sẽ được tạo tự động bởi @PrePersist trong lớp User
+        super(email, firstName, lastName, googleId, pictureUrl, authProvider, Role.GUEST); // Gọi constructor của User
+        // MembershipPlan và MembershipEndDate sẽ là null theo mặc định
+    }
 
-    // --- Triển khai từ ProfileManageable ---
     @Override
     public void login() {
-        System.out.println("Guest " + getUsername() + " has successfully logged in.");
+        System.out.println("Guest user login method executed: " + getUsername());
+    }
+
+    @Override
+    public void updateProfile() {
+        super.updateProfile();
+        this.setUpdatedAt(LocalDateTime.now());
     }
 
     @Override
     public void displayDashboard() {
-        // Hiển thị dashboard cho Guest
-        System.out.println("--- Guest Dashboard ---");
-        System.out.println("Welcome, Guest " + getName() + "!");
-        System.out.println("- Explore available courses.");
-        System.out.println("- Register for an account to access more features.");
-        System.out.println("-------------------------");
+        System.out.println("Displaying dashboard for Guest: " + getUsername());
+        System.out.println("Welcome, Guest! You can browse public content or register for full access.");
     }
 
-    // --- Triển khai từ Registrable ---
-    @Override
-    public String toString(){
-        return "Guest{" +
-                "id='" + id + '\'' +
-                ", userName='" + username + '\'' +
-                ", email='" + email + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", role=" + role +
-                '}';
+    public void browsePublicContent() {
+        System.out.println("Guest is Browse public content.");
     }
 }

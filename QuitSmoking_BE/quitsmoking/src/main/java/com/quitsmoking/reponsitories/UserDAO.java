@@ -1,24 +1,30 @@
 package com.quitsmoking.reponsitories;
 
-// import com.smokingcessation.model.Role;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
+// import com.quitsmoking.model.AuthProvider;
 import com.quitsmoking.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Repository // Đánh dấu đây là một Spring Data Repository
-public interface UserDAO extends JpaRepository<User, String> { // Kế thừa JpaRepository cho CRUD cơ bản
+@Repository
+public interface UserDAO extends JpaRepository<User, String> {
 
-    Optional<User> findByUsername(String username); // Spring Data JPA tự tạo phương thức này
-    Optional<User> findByEmail(String email); // Tìm kiếm theo email
-    Optional<User> findById(String id); // Tìm kiếm theo ID
+    Optional<User> findByUsername(String username);
+    Optional<User> findByEmail(String email);
+    Optional<User> findByGoogleId(String googleId);
+    Optional<User> findById(String id);
 
-    // Phương thức để cập nhật vai trò (ví dụ: sau khi Guest thanh toán)
-    // Bạn cần @Modifying và @Transactional nếu không dùng save() cho việc update
-    // @Modifying
-    // @Transactional
-    // @Query("UPDATE User u SET u.role = ?2 WHERE u.id = ?1")
-    // int updateUserRole(String userId, Role newRole);
+    // Sửa phương thức tìm kiếm bằng email hoặc username
+    @Query("SELECT u FROM User u WHERE u.email = :identifier OR u.username = :identifier")
+    Optional<User> findByEmailOrUsername(String identifier);
+
+    // Phương thức cập nhật vai trò
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.role = :newRole WHERE u.id = :userId")
+    void updateUserRole(String userId, String newRole);
 }

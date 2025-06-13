@@ -6,7 +6,8 @@ package com.quitsmoking.dto.response;
 public class AuthResponse {
     private String token;
     private String username; // Có thể thêm username nếu muốn hiển thị ở frontend
-    private String role;       
+    private String role; 
+    // private String userId;      
 
     public AuthResponse(String token) {
         this.token = token;

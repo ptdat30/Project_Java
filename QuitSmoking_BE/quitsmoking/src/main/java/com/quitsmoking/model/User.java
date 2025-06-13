@@ -1,132 +1,165 @@
 package com.quitsmoking.model;
 
+import com.quitsmoking.model.interfaces.iAuthenticatable;
+import com.quitsmoking.model.interfaces.iProfileManageable;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+// import org.hibernate.annotations.GenericGenerator;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn; // Cần thiết cho SINGLE_TABLE
-import jakarta.persistence.DiscriminatorType; // Cần thiết cho SINGLE_TABLE
-import jakarta.persistence.Entity; // <-- QUAN TRỌNG: Đánh dấu là Entity
-import jakarta.persistence.EnumType; // Để ánh xạ Enum
-import jakarta.persistence.Enumerated; // Để ánh xạ Enum
-import jakarta.persistence.Id; // <-- QUAN TRỌNG: Khóa chính
-import jakarta.persistence.Inheritance; // Cấu hình kế thừa
-import jakarta.persistence.InheritanceType; // Cấu hình kế thừa
-import jakarta.persistence.Table; // Để đặt tên bảng (tùy chọn)
-import java.util.Collection; 
-import java.util.Collections; 
-// import jakarta.persistence.GeneratedValue; // Tùy chọn: Để tự động tạo ID
-// import jakarta.persistence.GenerationType; // Tùy chọn: Loại tạo ID
-// import jakarta.persistence.DiscriminatorValue; // Cần thiết cho SINGLE_TABLE trên các lớp con
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 
-// Import Lombok nếu bạn đang sử dụng nó để tự động tạo getter/setter/constructor
-// import lombok.Data; // Bao gồm @Getter, @Setter, @RequiredArgsConstructor, @ToString, @EqualsAndHashCode
-// import lombok.NoArgsConstructor; // Constructor không đối số
-// import lombok.AllArgsConstructor; // Constructor với tất cả các đối số
-
-@Entity // <-- Đánh dấu lớp này là một thực thể JPA
-@Table(name = "users") // <-- Ánh xạ lớp này tới bảng có tên "users" trong cơ sở dữ liệu
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE) // <-- Sử dụng chiến lược một bảng cho tất cả các lớp con
-@DiscriminatorColumn(name = "user_type", discriminatorType = DiscriminatorType.STRING) // <-- Thêm cột "user_type" để phân biệt loại người dùng
-public abstract class User implements UserDetails { // Abstract vì bạn sẽ không tạo trực tiếp đối tượng User
+@Entity
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "user_type", discriminatorType = DiscriminatorType.STRING)
+@Getter
+@Setter
+@NoArgsConstructor
+public abstract class User implements UserDetails, iAuthenticatable, iProfileManageable {
 
     @Id
-    @Column(name = "id", unique = true, nullable = false)
-    protected String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)") // Dùng VARCHAR(36) cho UUID
+    private String id;
 
-    @Column(name = "username", unique = true, nullable = false) 
-    protected String username; 
+    @Column(unique = true)
+    private String username;
 
-    @Column(name = "password", nullable = false)
-    protected String password; 
+    @Column(nullable = true)
+    private String password;
 
-    @Column(name = "email", unique = true, nullable = false)
-    protected String email;
+    @Column(unique = true)
+    private String email;
 
-    @Column(name = "first_name")
-    protected String firstName;
+    private String firstName;
+    private String lastName;
 
-    @Column(name = "last_name")
-    protected String lastName;
+    @Column(nullable = true)
+    private String googleId;
+
+    @Column(nullable = true)
+    private String pictureUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    protected Role role;
+    private AuthProvider authProvider;
 
-    protected User() {
-        // Constructor mặc định cần thiết cho JPA
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    // Thêm các trường cho gói thành viên
+    @Enumerated(EnumType.STRING)
+    private MemberShipPlan membershipPlan;
+    private LocalDate membershipEndDate;
+
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.id == null || this.id.isEmpty()) {
+            this.id = UUID.randomUUID().toString();
+        }
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
-    public User(String id, String username, String password, String email, String firstName, String lastName, Role role) {
-        this.id = id;
-        this.username = username; 
-        this.password = password; 
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public User(String username, String password, String email, String firstName, String lastName, Role role) {
+        this.username = username;
+        // this.password = new BCryptPasswordEncoder().encode(password);
+        this.password = password; // Mật khẩu nên được mã hóa trước khi gọi constructor này hoặc trong service
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.authProvider = AuthProvider.LOCAL;
         this.role = role;
     }
 
-    // Getters and Setters
-    // (Nếu dùng Lombok, bạn có thể xóa tất cả các getter/setter này và dùng @Data hoặc @Getter/@Setter)
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-
-    @Override // BẮT BUỘC từ UserDetails
-    public String getPassword() { return password; } // Trả về trường 'password'
-    public void setPassword(String password) { this.password = password; }
-
-    @Override // BẮT BUỘC từ UserDetails
-    public String getUsername() { return username; } // Trả về trường 'username'
-    public void setUsername(String username) { this.username = username; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
-    public String getName() { return firstName + " " + lastName; }
-    public Role getRole() { return this.role; }
-    public void setRole(Role role) { this.role = role; }
-
-
-    public boolean verifypassWord(String rawPassWord) {
-        // Trong ứng dụng thực tế, bạn sẽ sử dụng PasswordEncoder ở đây!
-        // return passwordEncoder.matches(rawPassWord, this.passWord);
-        return this.password.equals(rawPassWord);
+    public User(String email, String firstName, String lastName,
+                String googleId, String pictureUrl, AuthProvider authProvider, Role role) {
+        this.username = email; // Sử dụng email làm username cho người dùng Google
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.googleId = googleId;
+        this.pictureUrl = pictureUrl;
+        this.authProvider = authProvider;
+        this.role = role;
+        this.password = null;
     }
+
+    // Constructor dùng để tái tạo User khi chuyển đổi loại (Guest -> Member, Member -> Guest)
+    public User(String id, String username, String password, String email,
+                String firstName, String lastName, String googleId, String pictureUrl,
+                AuthProvider authProvider, Role role, MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.googleId = googleId;
+        this.pictureUrl = pictureUrl;
+        this.authProvider = authProvider;
+        this.role = role;
+        this.membershipPlan = membershipPlan;
+        this.membershipEndDate = membershipEndDate;
+    }
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Trả về một Collection các quyền/vai trò của người dùng.
-        // Trong trường hợp đơn giản, bạn có thể chỉ có một vai trò cho mỗi người dùng.
-        // "ROLE_" là tiền tố tiêu chuẩn mà Spring Security mong đợi cho các vai trò.
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        // Trả về true nếu tài khoản không hết hạn (luôn true trừ khi bạn có logic quản lý hết hạn)
         return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        // Trả về true nếu tài khoản không bị khóa (luôn true trừ khi bạn có logic khóa tài khoản)
         return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        // Trả về true nếu thông tin đăng nhập (mật khẩu) không hết hạn (luôn true trừ khi bạn có logic đổi mật khẩu định kỳ)
         return true;
     }
 
     @Override
     public boolean isEnabled() {
-        // Trả về true nếu tài khoản được kích hoạt (luôn true trừ khi bạn có logic kích hoạt tài khoản)
         return true;
+    }
+
+    public abstract void login();
+
+    @Override
+    public void updateProfile() {
     }
 }
