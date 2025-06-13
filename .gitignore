@@ -1,9 +1,11 @@
 # IDE files
 .idea/
+.iml
+.flattened-pom.xml
 
 # Database files
 QuitSmoking_DB/
 
-# Java compiled/generated files (if not already there)
+# Java compiled/generated files
 *.class
 target/
