@@ -1,0 +1,11 @@
+# Java
+*.class
+
+# Maven
+target/
+.idea/
+*.iml
+.flattened-pom.xml
+
+# Database
+QuitSmoking_DB/
