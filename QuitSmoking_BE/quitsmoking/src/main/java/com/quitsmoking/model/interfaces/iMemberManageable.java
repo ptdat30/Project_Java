@@ -1,4 +1,4 @@
-package com.quitsmoking.model;
+package com.quitsmoking.model.interfaces;
 
 public interface iMemberManageable {
     void viewMemberProgress(String memberId); // Xem tiến độ của Member

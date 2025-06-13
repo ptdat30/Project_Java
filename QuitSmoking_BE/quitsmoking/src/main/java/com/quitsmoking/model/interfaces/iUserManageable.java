@@ -1,5 +1,8 @@
 //Phương thức này sẽ được Admin sử dụng để quản lý toàn bộ người dùng trong hệ thống.
-package com.quitsmoking.model;
+package com.quitsmoking.model.interfaces;
+
+import com.quitsmoking.model.Role;
+import com.quitsmoking.model.User;
 
 public interface iUserManageable {
     // Phương thức để xem chi tiết thông tin của bất kỳ người dùng nào

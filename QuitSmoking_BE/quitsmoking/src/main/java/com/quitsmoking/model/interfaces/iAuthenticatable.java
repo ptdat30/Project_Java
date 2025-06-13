@@ -1,4 +1,6 @@
-package com.quitsmoking.model;
+package com.quitsmoking.model.interfaces;
+
+import com.quitsmoking.model.Role;
 
 public interface iAuthenticatable {
     /**
