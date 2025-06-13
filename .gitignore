@@ -1,0 +1,9 @@
+# IDE files
+.idea/
+
+# Database files
+QuitSmoking_DB/
+
+# Java compiled/generated files (if not already there)
+*.class
+target/
