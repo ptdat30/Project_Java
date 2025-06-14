@@ -5,7 +5,10 @@ import config from '../config/config';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -16,7 +19,7 @@ const RegisterPage = () => {
         setError('');
         setAuthMessage('');
 
-        if (!email || !password || !confirmPassword) {
+        if (!username || !email || !firstName || !lastName || !password || !confirmPassword) {
             setError('Vui lòng nhập đầy đủ thông tin.');
             return;
         }
@@ -30,7 +33,10 @@ const RegisterPage = () => {
             const response = await axios.post(
                 `${config.API_BASE_URL}${config.endpoints.register}`,
                 {
+                    username,
                     email,
+                    firstName,
+                    lastName,
                     password
                 }
             );
@@ -67,6 +73,21 @@ const RegisterPage = () => {
                     )}
 
                     <div>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                            Tên đăng nhập
+                        </label>
+                        <input
+                            type="text"
+                            id="username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            placeholder="Nhập tên đăng nhập"
+                            required
+                        />
+                    </div>
+
+                    <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                             Email
                         </label>
@@ -77,6 +98,36 @@ const RegisterPage = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                             placeholder="Nhập email của bạn"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Họ
+                        </label>
+                        <input
+                            type="text"
+                            id="firstName"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            placeholder="Nhập họ"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Tên
+                        </label>
+                        <input
+                            type="text"
+                            id="lastName"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            placeholder="Nhập tên"
                             required
                         />
                     </div>

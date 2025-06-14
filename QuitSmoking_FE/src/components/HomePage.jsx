@@ -1,137 +1,166 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        // Kiểm tra xem người dùng đã đăng nhập chưa
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/');
-            return;
-        }
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/");
+      return;
+    }
 
-        // Hiệu ứng cho các thanh xếp hạng
-        const animateThanhXepHang = () => {
-            const thanhs = document.querySelectorAll('.bar');
-            const khuVucXepHang = document.querySelector('.ranking-bg');
+    const animateRankingBars = () => {
+      const bars = document.querySelectorAll(".bar");
+      const rankingSection = document.querySelector(".ranking-section");
 
-            if (khuVucXepHang) {
-                const rect = khuVucXepHang.getBoundingClientRect();
-                if (rect.top < window.innerHeight - 100 && rect.bottom > 100) {
-                    thanhs.forEach(thanh => thanh.classList.add('active'));
-                } else {
-                    thanhs.forEach(thanh => thanh.classList.remove('active'));
-                }
-            }
-        };
-
-        window.addEventListener('scroll', animateThanhXepHang);
-        animateThanhXepHang();
-
-        return () => window.removeEventListener('scroll', animateThanhXepHang);
-    }, [navigate]);
-
-    const xuLyDangXuat = () => {
-        localStorage.removeItem('token');
-        navigate('/');
+      if (rankingSection) {
+        const rect = rankingSection.getBoundingClientRect();
+        const isVisible =
+          rect.top < window.innerHeight - 100 && rect.bottom > 100;
+        bars.forEach((bar) => bar.classList.toggle("active", isVisible));
+      }
     };
 
-    return (
-        <div className="min-h-screen bg-white">
-            {/* Phần Header */}
-            <header className="fixed top-0 left-0 w-full z-50 bg-white">
-                {/* Thanh thông báo trên cùng */}
-                <div className="bg-[#181818] text-white text-center py-3">
-                    <span className="tracking-wider text-base font-bold">
-                        Đăng kí ngay để nhận lời khuyên hữu ích của chuyên gia tư vấn
-                    </span>
-                    <div className="absolute right-10 top-1/2 transform -translate-y-1/2 flex gap-4">
-                        <button
-                            onClick={xuLyDangXuat}
-                            className="px-6 py-1 rounded-full bg-[#f8f67c] text-black border-3 border-white hover:bg-[#e6e48a] transition-all"
-                        >
-                            ĐĂNG XUẤT
-                        </button>
-                    </div>
-                </div>
+    window.addEventListener("scroll", animateRankingBars);
+    animateRankingBars();
 
-                {/* Thanh điều hướng */}
-                <nav className="flex justify-between items-center p-2">
-                    <div className="flex items-center">
-                        <div className="w-[70px] h-[70px] mr-5 ml-10 scale-[3]">
-                            <img src="/images/icon.png" alt="Logo" className="w-full h-full object-contain" />
-                        </div>
-                        <ul className="flex gap-4 mx-[50px]">
-                            <li><a href="#" className="text-gray-700">Trang chủ</a></li>
-                            <li><a href="#" className="text-gray-700">Tư vấn</a></li>
-                            <li><a href="#" className="text-gray-700">Thống kê</a></li>
-                            <li><a href="#" className="text-gray-700">Cộng đồng</a></li>
-                            <li><a href="#" className="text-gray-700">Hỗ trợ</a></li>
-                        </ul>
-                    </div>
-                    <div className="mr-4">
-                        <span>HOTLINE TƯ VẤN: <b className="text-red-600">12345678</b></span>
-                    </div>
-                </nav>
-            </header>
+    return () => window.removeEventListener("scroll", animateRankingBars);
+  }, [navigate]);
 
-            {/* Phần Nội dung chính */}
-            <main className="mt-[85px]">
-                {/* Phần Hero */}
-                <section className="flex p-10 gap-15 mt-[150px]">
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold mb-6">
-                            Hỗ trợ cai nghiện thuốc lá: Vai trò thiết yếu trong bảo vệ sức khỏe cộng đồng
-                        </h1>
-                        <p className="text-lg mb-6">
-                            Cai nghiện thuốc lá là một quá trình khó khăn đối với nhiều người do tính gây nghiện cao của nicotine.
-                            Tuy nhiên, với sự hỗ trợ phù hợp từ gia đình, cộng đồng và các chuyên gia y tế, việc từ bỏ thuốc lá
-                            hoàn toàn là điều hoàn toàn có thể đạt được.
-                        </p>
-                        <button className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 transition-all">
-                            TRẢI NGHIỆM KHÓA TƯ VẤN MIỄN PHÍ
-                        </button>
-                    </div>
-                    <div className="flex-1 grid grid-cols-2 gap-6">
-                        {[1, 2, 3, 4].map((num) => (
-                            <div key={num} className="overflow-hidden rounded-lg">
-                                <img
-                                    src={`/images/hinh${num}.png`}
-                                    alt={`Hình ${num}`}
-                                    className="w-full h-[200px] object-cover hover:scale-108 transition-transform duration-300"
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </section>
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+  };
 
-                {/* Phần Bảng xếp hạng */}
-                <div className="ranking-bg w-full min-h-[800px] bg-gray-100 flex justify-center items-center">
-                    {/* Nội dung bảng xếp hạng */}
-                </div>
-
-                {/* Phần Footer */}
-                <footer className="bg-[#181818] text-white py-7 mt-10">
-                    <div className="max-w-7xl mx-auto px-4 flex justify-between">
-                        <div>
-                            <h3 className="font-bold mb-4">Thông tin thêm:</h3>
-                            <p>📍 Đường tổ kì, quận 12, thành phố hcm</p>
-                            <p>📞 +84 123 456 78</p>
-                            <p>📮 cainghienthuocla@gmail.com</p>
-                        </div>
-                        <div>
-                            <h3 className="font-bold mb-4">Liên kết mạng xã hội:</h3>
-                            <div className="flex gap-4">
-                                {/* Icons mạng xã hội */}
-                            </div>
-                        </div>
-                    </div>
-                </footer>
-            </main>
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="fixed top-0 left-0 w-full z-50 shadow-sm">
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3">
+          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+            <span className="font-medium">
+              Đăng ký ngay để nhận tư vấn miễn phí từ chuyên gia
+            </span>
+            <button
+              onClick={handleLogout}
+              className="px-6 py-1.5 rounded-full bg-white text-emerald-600 hover:bg-gray-100 transition-all font-medium"
+            >
+              Đăng xuất
+            </button>
+          </div>
         </div>
-    );
+
+        <nav className="bg-white">
+          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center py-4">
+            <div className="flex items-center gap-10">
+              <img
+                src="/images/icon.png"
+                alt="Logo"
+                className="w-16 h-16 object-contain transform scale-200 -ml-16"
+              />
+              <ul className="flex gap-8">
+                {["Trang chủ", "Tư vấn", "Thống kê", "Cộng đồng", "Hỗ trợ"].map(
+                  (item) => (
+                    <li key={item}>
+                      <a
+                        href="#"
+                        className="text-gray-700 hover:text-emerald-600 transition-colors"
+                      >
+                        {item}
+                      </a>
+                    </li>
+                  )
+                )}
+              </ul>
+            </div>
+            <div className="text-gray-700">
+              Hotline:{" "}
+              <span className="font-bold text-emerald-600">1800 1234</span>
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      {/* Main Content */}
+      <main className="pt-32">
+        {/* Hero Section */}
+        <section className="max-w-7xl mx-auto px-4 py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800 mb-6 leading-tight">
+                Hỗ trợ cai nghiện thuốc lá vì một cuộc sống khỏe mạnh hơn
+              </h1>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                Chúng tôi hiểu rằng cai nghiện thuốc lá là một hành trình đầy
+                thách thức. Với đội ngũ chuyên gia giàu kinh nghiệm, chúng tôi
+                cam kết đồng hành cùng bạn trên con đường hướng tới một cuộc
+                sống không khói thuốc.
+              </p>
+              <button className="bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-all font-medium shadow-lg hover:shadow-xl">
+                Nhận tư vấn miễn phí
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map((num) => (
+                <div
+                  key={num}
+                  className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all"
+                >
+                  <img
+                    src={`/images/hinh${num}.png`}
+                    alt={`Hình minh họa ${num}`}
+                    className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Ranking Section */}
+        <section className="ranking-section bg-gray-50 py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            {/* Ranking content here */}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-gray-900 text-white">
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <h3 className="text-xl font-bold mb-4">Về chúng tôi</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Chúng tôi là đơn vị tiên phong trong việc hỗ trợ cai nghiện
+                  thuốc lá tại Việt Nam, với sứ mệnh mang lại cuộc sống khỏe
+                  mạnh cho cộng đồng.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-4">Liên hệ</h3>
+                <ul className="space-y-2 text-gray-400">
+                  <li>📍 Đường Tô Ký, Quận 12, TP.HCM</li>
+                  <li>📞 1800 1234</li>
+                  <li>📧 support@cainghienthuocla.vn</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-4">Kết nối</h3>
+                <div className="flex gap-4">
+                  {/* Add social media icons here */}
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
+              <p>&copy; 2025 Cai Nghiện Thuốc Lá. All rights reserved.</p>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
 };
 
 export default HomePage;

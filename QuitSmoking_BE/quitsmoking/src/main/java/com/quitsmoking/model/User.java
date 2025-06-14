@@ -1,39 +1,165 @@
 package com.quitsmoking.model;
 
+import com.quitsmoking.model.interfaces.iAuthenticatable;
+import com.quitsmoking.model.interfaces.iProfileManageable;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+// import org.hibernate.annotations.GenericGenerator;
+
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 
 @Entity
-@Table(name = "users") // Tên bảng trong MySQL
-@Data // Lombok: Generates getters, setters, toString, equals, and hashCode
-@NoArgsConstructor // Lombok: Generates no-argument constructor
-@AllArgsConstructor // Lombok: Generates constructor with all fields
-public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Table(name = "users")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "user_type", discriminatorType = DiscriminatorType.STRING)
+@Getter
+@Setter
+@NoArgsConstructor
+public abstract class User implements UserDetails, iAuthenticatable, iProfileManageable {
 
-    @Column(unique = true, nullable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)") // Dùng VARCHAR(36) cho UUID
+    private String id;
+
+    @Column(unique = true)
+    private String username;
+
+    @Column(nullable = true)
+    private String password;
+
+    @Column(unique = true)
     private String email;
 
-    // --- Bổ sung trường password ---
-    // Trường này là cần thiết cho đăng nhập truyền thống (email/password)
-    // Nếu bạn chỉ dùng OAuth2, hãy xem Giải pháp 2
-    @Column(nullable = true) // Có thể nullable nếu người dùng chỉ đăng nhập qua OAuth2
-    private String password; // Mật khẩu đã được mã hóa
+    private String firstName;
+    private String lastName;
 
-    private String name;
-    private String picture; // URL ảnh đại diện từ Google
-    private String provider; // Ví dụ: "google"
-    private String providerId; // ID duy nhất từ nhà cung cấp (Google ID)
+    @Column(nullable = true)
+    private String googleId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role; // Quan hệ với bảng Roles
+    @Column(nullable = true)
+    private String pictureUrl;
 
-    // Thêm các trường khác tùy theo lược đồ Users của bạn nếu cần
-    // Ví dụ: private String phone;
-    // Ví dụ: private Date dateOfBirth;
+    @Enumerated(EnumType.STRING)
+    private AuthProvider authProvider;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    // Thêm các trường cho gói thành viên
+    @Enumerated(EnumType.STRING)
+    private MemberShipPlan membershipPlan;
+    private LocalDate membershipEndDate;
+
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.id == null || this.id.isEmpty()) {
+            this.id = UUID.randomUUID().toString();
+        }
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public User(String username, String password, String email, String firstName, String lastName, Role role) {
+        this.username = username;
+        // this.password = new BCryptPasswordEncoder().encode(password);
+        this.password = password; // Mật khẩu nên được mã hóa trước khi gọi constructor này hoặc trong service
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.authProvider = AuthProvider.LOCAL;
+        this.role = role;
+    }
+
+    public User(String email, String firstName, String lastName,
+                String googleId, String pictureUrl, AuthProvider authProvider, Role role) {
+        this.username = email; // Sử dụng email làm username cho người dùng Google
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.googleId = googleId;
+        this.pictureUrl = pictureUrl;
+        this.authProvider = authProvider;
+        this.role = role;
+        this.password = null;
+    }
+
+    // Constructor dùng để tái tạo User khi chuyển đổi loại (Guest -> Member, Member -> Guest)
+    public User(String id, String username, String password, String email,
+                String firstName, String lastName, String googleId, String pictureUrl,
+                AuthProvider authProvider, Role role, MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.googleId = googleId;
+        this.pictureUrl = pictureUrl;
+        this.authProvider = authProvider;
+        this.role = role;
+        this.membershipPlan = membershipPlan;
+        this.membershipEndDate = membershipEndDate;
+    }
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    public abstract void login();
+
+    @Override
+    public void updateProfile() {
+    }
 }
