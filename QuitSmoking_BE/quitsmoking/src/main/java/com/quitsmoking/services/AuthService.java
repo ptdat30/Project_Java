@@ -31,18 +31,30 @@ public class AuthService implements iRegistrableService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        User user = userDAO.findByEmailOrUsername(identifier)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-        );
-    }
+        // Sử dụng phương thức findByEmailOrUsername đã được tạo trong UserDAO
+        Optional<User> userOptional = userDAO.findByEmailOrUsername(identifier);
 
-    public User findByUsername(String identifier) {
-        return userDAO.findByEmailOrUsername(identifier)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
+        User user = userOptional.orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
+
+        // --- ĐIỂM SỬA ĐỔI QUAN TRỌNG NHẤT ---
+        // Đảm bảo mật khẩu và vai trò không bao giờ là null
+        String password = user.getPassword();
+        if (password == null || password.isEmpty()) {
+            // Đối với người dùng OAuth2 (Google), họ không có mật khẩu trong DB của bạn.
+            // Spring Security vẫn yêu cầu một chuỗi mật khẩu không null.
+            // Sử dụng một placeholder hoặc chuỗi rỗng an toàn.
+            // Chuỗi "N/A" hoặc "{noop}N/A" thường được dùng, hoặc đơn giản là một chuỗi trống
+            password = ""; // Hoặc "{noop}password_placeholder" nếu bạn không muốn mã hóa
+        }
+
+        String role = user.getRole() != null ? user.getRole().name() : "USER"; // Đặt vai trò mặc định nếu null
+
+        // Dòng 39 (hoặc tương tự) sẽ nằm ở đây:
+        return new org.springframework.security.core.userdetails.User(
+            user.getUsername(), // Hoặc user.getEmail() tùy vào cách bạn muốn Spring Security định danh
+            password,
+            Collections.singleton(new SimpleGrantedAuthority(role))
+        );
     }
 
     @Override
