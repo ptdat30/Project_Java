@@ -30,6 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 // import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.validation.BindingResult; // Thêm import này
 import org.springframework.validation.FieldError; // Thêm import này
@@ -52,7 +53,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
     private final JwtUtil jwtUtil;
-    // private final UserDAO userDAO;
+    private final UserDAO userDAO;
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
@@ -69,7 +70,7 @@ public class AuthController {
         this.authenticationManager = authenticationManager;
         this.authService = authService;
         this.jwtUtil = jwtUtil;
-        // this.userDAO = userDAO;
+        this.userDAO = userDAO;
     }
 
     @PostMapping("/login")
@@ -89,9 +90,10 @@ public class AuthController {
         final UserDetails userDetails = authService.loadUserByUsername(authenticationRequest.getUsername());
         final String jwt = jwtUtil.generateToken(userDetails);
 
-        User user = authService.findByUsername(authenticationRequest.getUsername());
+        User user = userDAO.findByEmailOrUsername(authenticationRequest.getUsername())
+                           .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
 
-        return ResponseEntity.ok(new AuthResponse(jwt, user.getUsername(), user.getRole().name()));
+        return ResponseEntity.ok(new AuthResponse(jwt, user.getId() ,user.getUsername(), user.getRole().name()));
     }
 
     @PostMapping("/register")
