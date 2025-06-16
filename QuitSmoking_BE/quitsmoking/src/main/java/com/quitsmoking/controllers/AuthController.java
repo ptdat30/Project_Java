@@ -93,7 +93,7 @@ public class AuthController {
         User user = userDAO.findByEmailOrUsername(authenticationRequest.getUsername())
                            .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
 
-        return ResponseEntity.ok(new AuthResponse(jwt, user.getUsername(), user.getRole().name()));
+        return ResponseEntity.ok(new AuthResponse(jwt, user.getId() ,user.getUsername(), user.getRole().name()));
     }
 
     @PostMapping("/register")
