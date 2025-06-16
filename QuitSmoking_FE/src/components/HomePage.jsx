@@ -131,6 +131,10 @@ const HomePage = () => {
     navigate("/");
   };
 
+  useEffect(() => {
+    document.getElementById("title").innerText="HomePage";
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -173,12 +177,12 @@ const HomePage = () => {
                 alt="Logo"
                 className="w-16 h-16 object-contain transform scale-200 -ml-16"
               />
-              <ul className="flex gap-8">
+              <ul className="flex gap-8 ">
                 {["Trang chủ", "Tư vấn", "Thống kê", "Cộng đồng", "Hỗ trợ"].map(
                   (item) => (
                     <li key={item}>
                       <a
-                        href="#"
+                        href="/"
                         className="text-gray-700 hover:text-emerald-600 transition-colors"
                       >
                         {item}
