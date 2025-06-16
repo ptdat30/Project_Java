@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
@@ -77,6 +77,9 @@ const LoginPage = () => {
   const handleGoogleError = () => {
     setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
   };
+  useEffect(() => {
+    document.getElementById("title").innerText="LoginPage";
+  }, []);
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
