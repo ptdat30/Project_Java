@@ -15,9 +15,4 @@ const App = () => {
         </Routes>
     );
 };
-
-<<<<<<< HEAD
 export default App;
-=======
-export default App;
->>>>>>> fc5e27bf21c491c079cbb39b76593bac27e12280
