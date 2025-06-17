@@ -86,9 +86,9 @@ const LoginPage = () => {
       <div
         className="min-h-screen w-full flex items-center justify-center bg-neutral-100 px-4"
         style={{
-          backgroundImage: "url('images/20.png')",
+          backgroundImage: "url('images/1.png')",
           backgroundSize: "cover",
-          backgroundPosition: "center",
+          backgroundPosition: "start",
         }}
       >
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
