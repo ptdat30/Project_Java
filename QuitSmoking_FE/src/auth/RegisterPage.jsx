@@ -97,7 +97,7 @@ const RegisterPage = () => {
     <div
       className="min-h-screen w-full flex items-center justify-center px-4"
       style={{
-        backgroundImage: "url('/images/background_login.png')", // Đảm bảo hình ảnh này nằm trong thư mục public/images
+        backgroundImage: "url('/images/21.png')", // Đảm bảo hình ảnh này nằm trong thư mục public/images
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -237,7 +237,7 @@ const RegisterPage = () => {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-800 bg-[#e6d5b8] hover:bg-[#d9c7a8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d9c7a8]"
+              className="w-full bg-gray-700 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
             >
               Đăng ký
             </button>
