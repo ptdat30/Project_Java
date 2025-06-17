@@ -93,16 +93,16 @@ const LoginPage = () => {
       >
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
           <h1 className="text-2xl font-semibold text-center text-gray-800 mb-2">
-            Đăng nhập
+            ĐĂNG NHẬP
           </h1>
 
           <p className="text-center text-sm text-gray-600 mb-6">
-            bạn chưa có tài khoản?{" "}
+            Bạn chưa có tài khoản? {" "}
             <Link
               to="/register"
               className="text-blue-500 hover:underline cursor-pointer"
             >
-              Tạo tài khoản ngay
+              Tạo tài khoản ngay!
             </Link>
           </p>
 
@@ -180,9 +180,9 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              className="w-full bg-gray-700 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
+              className="w-full bg-gray-700 text-gray-300 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
             >
-              Đăng nhập
+              Đăng Nhập
             </button>
           </form>
 
@@ -193,7 +193,7 @@ const LoginPage = () => {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  Hoặc bạn có thể đăng nhập với Google
+                  Đăng Nhập Theo Phương Thức Khác
                 </span>
               </div>
             </div>
