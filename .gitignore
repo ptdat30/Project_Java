@@ -1,11 +1,31 @@
-# IDE files
-.idea/
-.iml
-.flattened-pom.xml
+# Cấu hình IDE (nếu có ở cấp độ gốc của monorepo)
+# Thông thường, các file .idea/ và .iml sẽ nằm trong các thư mục dự án con
+# Nếu bạn có .idea/ hoặc .iml trực tiếp ở cấp độ Project_Java_2/, hãy uncomment các dòng dưới đây
+# .idea/
+# *.iml
 
-# Database files
-QuitSmoking_DB/
+# Thư mục cơ sở dữ liệu (nếu không muốn theo dõi nó trong Git)
+# Dựa trên output git status, bạn có thư mục QuitSmoking_DB/
+/QuitSmoking_DB/
 
-# Java compiled/generated files
-*.class
-target/
+# File cấu hình môi trường cho Frontend (rất quan trọng, KHÔNG BAO GIỜ ĐẨY LÊN GIT)
+# File này thường chứa các khóa API, thông tin nhạy cảm.
+/QuitSmoking_FE/.env
+
+# Node.js modules (cho frontend)
+# Thư mục này được tạo khi bạn chạy npm install hoặc yarn install
+/QuitSmoking_FE/node_modules/
+
+# Thư mục build/phân phối cho Frontend
+# Ví dụ: cho Vite, thư mục này thường là 'dist'
+/QuitSmoking_FE/dist/
+
+# Logs (nếu có ở cấp độ gốc)
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+
+# Operating System Files
+.DS_Store # macOS
+Thumbs.db # Windows
