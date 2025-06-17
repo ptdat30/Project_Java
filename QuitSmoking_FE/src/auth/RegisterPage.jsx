@@ -14,6 +14,12 @@ const RegisterPage = () => {
   const [error, setError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
 
+  // Hàm kiểm tra định dạng email cơ bản
+  const isValidEmail = (email) => {
+    // Regex này chỉ là một kiểm tra cơ bản, không hoàn hảo cho mọi trường hợp
+    return /\S+@\S+\.\S+/.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -28,6 +34,17 @@ const RegisterPage = () => {
       !confirmPassword
     ) {
       setError("Vui lòng nhập đầy đủ thông tin.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Email không hợp lệ. Vui lòng nhập đúng định dạng.");
+      return;
+    }
+
+    const MIN_PASSWORD_LENGTH = 6; // Đặt một hằng số cho dễ quản lý
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`);
       return;
     }
 
@@ -55,7 +72,20 @@ const RegisterPage = () => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Đã có lỗi xảy ra khi đăng ký.");
+      console.error("Lỗi đăng ký từ Backend:", err.response);
+
+      // Lấy thông báo lỗi từ backend
+      const backendErrorMessage = err.response?.data?.message;
+      const backendErrors = err.response?.data?.errors;
+
+      if (backendErrors) {
+        const errorMessages = Object.values(backendErrors).join(" | ");
+        setError(`Lỗi từ máy chủ: ${errorMessages}`);
+      } else if (backendErrorMessage) {
+        setError(backendErrorMessage);
+      } else {
+        setError("Đã có lỗi xảy ra khi đăng ký.");
+      }
     }
   };
 
@@ -68,7 +98,7 @@ const RegisterPage = () => {
         backgroundPosition: "center",
       }}
     >
-      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
+      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl ">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Đăng ký tài khoản
         </h2>
