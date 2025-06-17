@@ -1,39 +1,50 @@
-# Cấu hình IDE (IntelliJ IDEA)
-# Bỏ qua toàn bộ thư mục .idea/ được tạo bởi IntelliJ IDEA
+# Cấu hình IDE (IntelliJ IDEA) cho dự án Backend
+# Bỏ qua toàn bộ thư mục .idea/ được tạo bởi IntelliJ IDEA trong thư mục backend này.
 .idea/
-# Bỏ qua các file module của IntelliJ IDEA
+# Bỏ qua các file module của IntelliJ IDEA liên quan đến backend.
 *.iml
-# Bỏ qua file POM đã được "flatten" (thường do plugin như flatten-maven-plugin tạo ra)
+# Bỏ qua file POM đã được "flatten" (thường do plugin như flatten-maven-plugin tạo ra).
 .flattened-pom.xml
 
 # Java compiled/generated files
 # Bỏ qua tất cả các file .class (đã biên dịch)
 *.class
-# Bỏ qua toàn bộ thư mục target/ (chứa kết quả build, JARs, WARs, v.v.)
+# Bỏ qua toàn bộ thư mục target/ (chứa kết quả build, JARs, WARs, file tạm thời, v.v.)
 /target/
 
-# Maven wrapper files
-# Bỏ qua thư mục .mvn (chứa các file wrapper)
+# Maven wrapper files (nếu bạn không muốn commit chúng)
+# Maven wrapper scripts và thư mục chứa các file jar của wrapper.
+# Lưu ý: Một số dự án chọn commit các file mvnw/mvnw.cmd và .mvn/
+# để đảm bảo mọi người dùng cùng một phiên bản Maven mà không cần cài đặt cục bộ.
+# Nếu bạn muốn hành vi đó, hãy XÓA các dòng dưới đây. Phổ biến là bỏ qua.
 .mvn/
-# Bỏ qua script mvnw (Linux/macOS)
 mvnw
-# Bỏ qua script mvnw.cmd (Windows)
-# Lưu ý: Một số dự án chọn commit các file mvnw/mvnw.cmd/repo của wrapper
-# để đảm bảo mọi người dùng cùng phiên bản Maven mà không cần cài đặt.
-# Nếu bạn muốn điều đó, hãy bỏ comment các dòng này. Tuy nhiên, phổ biến là ignore chúng.
+mvnw.cmd
 
-# Gradle files (nếu bạn sử dụng Gradle thay vì Maven)
-#.gradle/
-#build/
+# Gradle files (nếu bạn sử dụng Gradle thay vì Maven, uncomment nếu cần)
+# .gradle/
+# build/
 
 # IDE specific files (ngoài IntelliJ IDEA)
-# Bỏ qua thư mục .vscode/ nếu bạn sử dụng VS Code cho riêng phần BE này
+# Bỏ qua thư mục .vscode/ nếu bạn sử dụng VS Code cho riêng phần Backend này.
 .vscode/
 
 # Logs and Temporary Files
 *.log
-*.log.* 
+*.log.* # Ví dụ: myapp.log.1, myapp.log.2
 *.tmp
-# Mở rộng cho các loại file log khác
+# Bạn có thể thêm các tên file log cụ thể khác nếu chúng thường xuyên được tạo
 # debug.log
 # error.log
+
+# Test results / coverage reports
+# Ví dụ: Thư mục JaCoCo hoặc Surefire reports
+/jacoco/
+/surefire-reports/
+
+# File Test của Spring Boot
+# Dựa trên git status trước đó của bạn, file này đã bị 'deleted'.
+# Nếu bạn đã xóa nó và không muốn nó xuất hiện lại, hãy bỏ qua nó.
+# Tuy nhiên, thông thường, các file test code NÊN được commit.
+# Nếu bạn muốn xóa file test và bỏ qua nó, hãy uncomment dòng dưới đây:
+# /src/test/java/com/quitsmoking/QuitsmokingApplicationTests.java
