@@ -86,7 +86,7 @@ const LoginPage = () => {
       <div
         className="min-h-screen w-full flex items-center justify-center bg-neutral-100 px-4"
         style={{
-          backgroundImage: "url('images/background_login.png')",
+          backgroundImage: "url('images/20.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -180,7 +180,7 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              className="w-full bg-[#e6d5b8] text-gray-800 py-2 px-4 rounded-md hover:bg-[#d9c7a8] focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
+              className="w-full bg-gray-700 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
             >
               Đăng nhập
             </button>
