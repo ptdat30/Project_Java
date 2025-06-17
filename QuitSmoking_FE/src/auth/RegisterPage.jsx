@@ -104,7 +104,7 @@ const RegisterPage = () => {
     >
       <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl ">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-          Đăng ký tài khoản
+          ĐĂNG KÝ
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -237,9 +237,9 @@ const RegisterPage = () => {
           <div>
             <button
               type="submit"
-              className="w-full bg-gray-700 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
+              className="w-full bg-gray-700 text-gray-300 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
             >
-              Đăng ký
+              Đăng Ký Tài Khoản
             </button>
           </div>
         </form>
