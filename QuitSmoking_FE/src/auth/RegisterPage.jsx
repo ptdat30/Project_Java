@@ -1,10 +1,11 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import config from "../config/config";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -18,6 +19,10 @@ const RegisterPage = () => {
   const isValidEmail = (email) => {
     // Regex này chỉ là một kiểm tra cơ bản, không hoàn hảo cho mọi trường hợp
     return /\S+@\S+\.\S+/.test(email);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -90,7 +95,7 @@ const RegisterPage = () => {
   };
 
   useEffect(() => {
-    document.getElementById("title").innerText="RegisterPage";
+    document.getElementById("title").innerText = "RegisterPage";
   }, []);
 
   return (
@@ -214,6 +219,17 @@ const RegisterPage = () => {
               placeholder="Nhập mật khẩu"
               required
             />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+              onClick={togglePasswordVisibility}
+            >
+              <i
+                className={`fas ${
+                  showPassword ? "fa-eye-slash" : "fa-eye"
+                } text-gray-400`}
+              ></i>
+            </button>
           </div>
 
           <div>
@@ -232,6 +248,17 @@ const RegisterPage = () => {
               placeholder="Nhập lại mật khẩu"
               required
             />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+              onClick={togglePasswordVisibility}
+            >
+              <i
+                className={`fas ${
+                  showPassword ? "fa-eye-slash" : "fa-eye"
+                } text-gray-400`}
+              ></i>
+            </button>
           </div>
 
           <div>

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Cấu hình IDE (IntelliJ IDEA) ở cấp độ gốc của monorepo
 # Nếu thư mục .idea/ và các file .iml xuất hiện trực tiếp trong D:\Download\Project_Java_2\,
 # thì các dòng này sẽ bỏ qua chúng.
@@ -28,6 +27,3 @@ yarn-debug.log*
 
 # Các file hệ điều hành
 Thumbs.db           
-=======
-
->>>>>>> fc5e27bf21c491c079cbb39b76593bac27e12280
