@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
@@ -11,6 +11,7 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -23,13 +24,31 @@ const LoginPage = () => {
     setRememberMe(!rememberMe);
   };
 
+  const validateUsername = (inputUsername) => {
+    if (!inputUsername.trim()) {
+      return "Tài khoản không được để trống.";
+    }
+    return ""; // Trả về chuỗi rỗng nếu hợp lệ
+  };
+
+  const validatePassword = (inputPassword) => {
+    if (!inputPassword.trim()) {
+      return "Mật khẩu không được để trống.";
+    }
+    return ""; // Trả về chuỗi rỗng nếu hợp lệ
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
+    const usernameError = validateUsername(username);
+    const passwordError = validatePassword(password);
+
     if (!username || !password) {
-      setError("Vui lòng nhập đầy đủ thông tin.");
+      setError("");
+      setSuccessMessage("");
       setLoading(false);
       return;
     }
@@ -45,11 +64,15 @@ const LoginPage = () => {
 
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
-        navigate("/home"); // Đã thay đổi từ '/dashboard' thành '/home'
+        setSuccessMessage("Đăng nhập thành công!"); // <-- Đặt thông báo thành công
+        setTimeout(() => {
+          navigate("/home"); // Chuyển hướng sau 1 giây
+        }, 1000); // 1000ms = 1 giây
       }
     } catch (err) {
       setError(
-        err.response?.data?.message || "Đã có lỗi xảy ra khi đăng nhập."
+        "Tài khoản hoặc mật khẩu không đúng."
+        // err.response?.data?.message || nếu có muốn lấy thông báo từ backend
       );
     } finally {
       setLoading(false);
@@ -67,7 +90,10 @@ const LoginPage = () => {
 
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
-        navigate("/home"); // Đã thay đổi từ '/dashboard' thành '/home'
+        setSuccessMessage("Đăng nhập thành công với Google!");
+        setTimeout(() => {
+          navigate("/home");
+        }, 1000);
       }
     } catch (err) {
       setError(err.response?.data?.message || "Đăng nhập với Google thất bại.");
@@ -78,7 +104,7 @@ const LoginPage = () => {
     setError("Đăng nhập với Google thất bại. Vui lòng thử lại.");
   };
   useEffect(() => {
-    document.getElementById("title").innerText="LoginPage";
+    document.getElementById("title").innerText = "LoginPage";
   }, []);
 
   return (
@@ -93,20 +119,38 @@ const LoginPage = () => {
       >
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
           <h1 className="text-2xl font-semibold text-center text-gray-800 mb-2">
-            Đăng nhập
+            ĐĂNG NHẬP
           </h1>
 
           <p className="text-center text-sm text-gray-600 mb-6">
-            bạn chưa có tài khoản?{" "}
+            Bạn chưa có tài khoản?{" "}
             <Link
               to="/register"
               className="text-blue-500 hover:underline cursor-pointer"
             >
-              Tạo tài khoản ngay
+              Tạo tài khoản ngay!
             </Link>
           </p>
 
           <form onSubmit={handleSubmit}>
+            {/* Hiển thị lỗi chung (từ validation hoặc từ server) */}
+            {error && (
+              <div
+                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+                role="alert"
+              >
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+
+            {successMessage && (
+              <div
+                className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
+                role="alert"
+              >
+                <span className="block sm:inline">{successMessage}</span>
+              </div>
+            )}
             <div className="mb-4">
               <label
                 htmlFor="username"
@@ -180,9 +224,10 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              className="w-full bg-gray-700 text-shadow-black py-2 px-4 rounded-md  hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
+              className="w-full bg-gray-700 text-gray-300 text-shadow-black py-2 px-4 rounded-md hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-[#d9c7a8] transition duration-200 !rounded-button whitespace-nowrap cursor-pointer"
+              disabled={loading} // Vô hiệu hóa nút khi đang tải
             >
-              Đăng nhập
+              {loading ? "Đang xử lý..." : "Đăng Nhập"}
             </button>
           </form>
 
@@ -193,7 +238,7 @@ const LoginPage = () => {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">
-                  Hoặc bạn có thể đăng nhập với Google
+                  Đăng Nhập Theo Phương Thức Khác
                 </span>
               </div>
             </div>
