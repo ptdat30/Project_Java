@@ -108,7 +108,7 @@ public class JwtUtil {
                 .setSubject(subject) // Set the subject (username)
                 .setIssuedAt(new Date(System.currentTimeMillis())) // Set issued at time
                 .setExpiration(new Date(System.currentTimeMillis() + JWT_TOKEN_VALIDITY)) // Set expiration time
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Sign the token with HS256 algorithm and secret key
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Sign the token with and secret key
                 .compact(); // Compact the token to a URL-safe string
     }
 
