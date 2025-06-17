@@ -131,6 +131,10 @@ const HomePage = () => {
     navigate("/");
   };
 
+  useEffect(() => {
+    document.getElementById("title").innerText="HomePage";
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -173,12 +177,12 @@ const HomePage = () => {
                 alt="Logo"
                 className="w-16 h-16 object-contain transform scale-200 -ml-16"
               />
-              <ul className="flex gap-8">
+              <ul className="flex gap-8 ">
                 {["Trang chủ", "Tư vấn", "Thống kê", "Cộng đồng", "Hỗ trợ"].map(
                   (item) => (
                     <li key={item}>
                       <a
-                        href="#"
+                        href="/"
                         className="text-gray-700 hover:text-emerald-600 transition-colors"
                       >
                         {item}
@@ -203,7 +207,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl font-bold text-gray-800 mb-6 leading-tight">
-                Hỗ trợ cai nghiện thuốc lá vì một cuộc sống khỏe mạnh hơn
+                Hỗ trợ cai nghiện thuốc lá vì một cuộc sống khỏe mạnh hơn.
               </h1>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
                 Chúng tôi hiểu rằng cai nghiện thuốc lá là một hành trình đầy

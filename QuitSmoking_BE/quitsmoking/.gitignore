@@ -1,33 +1,39 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+# Cấu hình IDE (IntelliJ IDEA)
+# Bỏ qua toàn bộ thư mục .idea/ được tạo bởi IntelliJ IDEA
+.idea/
+# Bỏ qua các file module của IntelliJ IDEA
 *.iml
-*.ipr
+# Bỏ qua file POM đã được "flatten" (thường do plugin như flatten-maven-plugin tạo ra)
+.flattened-pom.xml
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# Java compiled/generated files
+# Bỏ qua tất cả các file .class (đã biên dịch)
+*.class
+# Bỏ qua toàn bộ thư mục target/ (chứa kết quả build, JARs, WARs, v.v.)
+/target/
 
-### VS Code ###
+# Maven wrapper files
+# Bỏ qua thư mục .mvn (chứa các file wrapper)
+.mvn/
+# Bỏ qua script mvnw (Linux/macOS)
+mvnw
+# Bỏ qua script mvnw.cmd (Windows)
+# Lưu ý: Một số dự án chọn commit các file mvnw/mvnw.cmd/repo của wrapper
+# để đảm bảo mọi người dùng cùng phiên bản Maven mà không cần cài đặt.
+# Nếu bạn muốn điều đó, hãy bỏ comment các dòng này. Tuy nhiên, phổ biến là ignore chúng.
+
+# Gradle files (nếu bạn sử dụng Gradle thay vì Maven)
+#.gradle/
+#build/
+
+# IDE specific files (ngoài IntelliJ IDEA)
+# Bỏ qua thư mục .vscode/ nếu bạn sử dụng VS Code cho riêng phần BE này
 .vscode/
+
+# Logs and Temporary Files
+*.log
+*.log.* 
+*.tmp
+# Mở rộng cho các loại file log khác
+# debug.log
+# error.log
