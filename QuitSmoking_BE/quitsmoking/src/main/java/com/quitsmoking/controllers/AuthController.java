@@ -31,7 +31,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-// import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+
 import org.springframework.validation.BindingResult; // Thêm import này
 import org.springframework.validation.FieldError; // Thêm import này
 import org.springframework.web.bind.annotation.*;
@@ -103,7 +103,7 @@ public class AuthController {
             Map<String, String> errors = bindingResult.getFieldErrors().stream()
                     .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
             logger.warn("Dang ky that bai do validation: {}", errors);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Du lieu dang ky khong hop le", "errors", errors));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Dữ liệu đăng ký không hợp lệ", "errors", errors));
         }
         // --- KẾT THÚC: Xử lý lỗi validation ---
 
