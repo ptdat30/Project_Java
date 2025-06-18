@@ -1,6 +1,6 @@
 // src/components/laylaimatkhau/laylaimatkhau3.jsx
-import React, { useState } from 'react';
-
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 // Thêm onGoToLogin vào props
 const LayLaiMatKhau3 = ({ onGoToLogin }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -39,23 +39,36 @@ const LayLaiMatKhau3 = ({ onGoToLogin }) => {
           </p>
 
           <p className="text-gray-700 mb-6">
-            Vui lòng bấm <span className="text-green-500 cursor-pointer" onClick={onGoToLogin}>vào đây</span> để quay lại trang đăng nhập. {/* <-- THÊM DÒNG NÀY */}
+            Vui lòng bấm{" "}
+            <span
+              className="text-green-500 cursor-pointer"
+              onClick={onGoToLogin}
+            >
+              vào đây
+            </span>{" "}
+            để quay lại trang đăng nhập. {/* <-- THÊM DÒNG NÀY */}
           </p>
 
-          <div
-            className={`bg-[#fffbe5] py-3 px-4 rounded-md transition-all duration-300 cursor-pointer ${isHovered ? 'bg-[#f7f3d7]' : ''} ${isActive ? 'bg-[#f0ecc8] transform scale-[0.98]' : ''}`}
+          <Link // <--- CHANGE FROM <div> TO <Link>
+            to="/login" // <--- Specify the path to your login page route
+            className={`bg-[#fffbe5] py-3 px-4 rounded-md transition-all duration-300 cursor-pointer flex items-center justify-center ${
+              isHovered ? "bg-[#f7f3d7]" : ""
+            } ${isActive ? "bg-[#f0ecc8] transform scale-[0.98]" : ""}`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
-            onClick={onGoToLogin} // <-- THÊM DÒNG NÀY
+            // onClick={onGoToLogin} // <--- Remove this onClick if using Link for navigation
           >
-            <a
-              className={`text-green-500 font-medium whitespace-nowrap ${isHovered ? 'text-green-600' : ''} ${isActive ? 'text-green-700' : ''}`}
+            {/* The content of the link */}
+            <span
+              className={`text-green-500 font-medium whitespace-nowrap ${
+                isHovered ? "text-green-600" : ""
+              } ${isActive ? "text-green-700" : ""}`}
             >
               Đi đến trang đăng nhập.
-            </a>
-          </div>
+            </span>
+          </Link>
         </div>
       </div>
     </div>

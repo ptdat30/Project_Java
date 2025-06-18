@@ -4,13 +4,14 @@ import LoginPage from "./auth/LoginPage"; // Đảm bảo LoginPage được imp
 import RegisterPage from "./auth/RegisterPage";
 import HomePage from "./components/HomePage";
 import RecoverPasswordProcess from "./components/laylaimatkhau/RecoverPasswordProcess";
+// import LayLaiMatKhau1 from "./components/laylaimatkhau/laylaimatkhau1";
 
 const App = () => {
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} /> {/* Bỏ comment dòng này */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/home" element={<HomePage />} />
       <Route path="/recover-password" element={<RecoverPasswordProcess />} />
       {/* <Route path="/dashboard" element={<Dashboard />} /> */}
     </Routes>

@@ -73,7 +73,7 @@ const RegisterPage = () => {
       if (response.data.success) {
         setAuthMessage("Đăng ký thành công! Vui lòng đăng nhập.");
         setTimeout(() => {
-          navigate("/");
+          navigate("/login");
         }, 2000);
       }
     } catch (err) {
@@ -275,7 +275,7 @@ const RegisterPage = () => {
           <p className="text-sm text-gray-600">
             Đã có tài khoản?{" "}
             <Link
-              to="/"
+              to="/login"
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               Đăng nhập
