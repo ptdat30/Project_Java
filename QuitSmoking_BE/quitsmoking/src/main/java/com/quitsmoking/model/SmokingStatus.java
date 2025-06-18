@@ -23,17 +23,35 @@ public class SmokingStatus {
     @JoinColumn(name = "user_id", nullable = false) // Tên cột khóa ngoại trong bảng smoking_status
     private User user; // Đối tượng User mà bản ghi này thuộc về
 
-    @Column(name = "soluongdieuthuoc", nullable = false)
+    @Column(name = "loaithuoc", nullable = false)
+    private String tobaccoType; // cigarettes, rustic, vape
+
+    @Column(name = "hieuthuoc") // Jet, Hero, Marlboro, Khác
+    private String tobaccoBrand;
+
+    @Column(name = "soluongdieuthuoc/ngay", nullable = false)
     private Integer numberOfCigarettes; // Số lượng điếu thuốc hút
 
-    @Column(name = "tansuat", nullable = false)
-    private String frequency; // Tần suất hút (ví dụ: "daily", "weekly", "occasionally")
+    @Column(name = "donvi") // Gói, Gam, ML
+    private String unit;
 
-    @Column(name = "giatien") // Có thể null nếu người dùng không muốn nhập
+    // @Column(name = "tansuat", nullable = false)
+    // private String frequency; // Tần suất hút (ví dụ: "daily", "weekly", "occasionally")
+
+    @Column(name = "giatien/goi") // Có thể null nếu người dùng không muốn nhập
     private Double costPerPack; // Giá tiền mỗi gói thuốc (ví dụ: VND)
 
-    @Column(name = "tinhtrang", nullable = false)
+    @Column(name = "timedudung") // Bao nhiêu năm
+    private Integer smokingDurationYears;
+
+    @Column(name = "tinhtrangSucKhoe") // Khó thở, ho,...
+    private String healthIssue;
+
+    @Column(name = "ghinhantinhtrang", nullable = false)
     private LocalDate recordDate; // Ngày ghi nhận tình trạng
+
+    @Column(name = "capnhattinhtrang", nullable = false)
+    private LocalDate recordUpdate; // Ngày ghi nhận tình trạng
 
     // Có thể thêm các trường khác nếu cần thiết, ví dụ:
     // private String notes;
