@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
 import config from "../config/config.js";
@@ -30,83 +30,93 @@ if (
 const HomePage = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true); // Mặc định là true khi component mount
   const [userFetchError, setUserFetchError] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    document.getElementById("title").innerText = "HomePage";
+
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-      return;
+
+    if (token) {
+      setIsLoggedIn(true); // Đặt trạng thái đã đăng nhập nếu có token
+      // Bắt đầu fetch dữ liệu người dùng
+      const fetchUserProfile = async () => {
+        setUserLoading(true); // Bắt đầu loading
+        setUserFetchError(null);
+        try {
+          if (
+            !config ||
+            !config.API_BASE_URL ||
+            !config.endpoints ||
+            !config.endpoints.userProfile
+          ) {
+            const missingConfigPart = !config
+              ? "config object"
+              : !config.API_BASE_URL
+              ? "config.API_BASE_URL"
+              : !config.endpoints
+              ? "config.endpoints"
+              : "config.endpoints.userProfile";
+            throw new Error(
+              `Cấu hình API bị thiếu: ${missingConfigPart}. Vui lòng kiểm tra file config.js và đường dẫn import.`
+            );
+          }
+
+          const apiUrl = `${config.API_BASE_URL}${config.endpoints.userProfile}`;
+          console.log("HomePage: Đang gọi API User Profile với URL:", apiUrl);
+          console.log("HomePage: Sử dụng Token:", token);
+
+          const response = await axios.get(apiUrl, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          setUserData(response.data);
+          console.log("HomePage: Dữ liệu người dùng nhận được:", response.data);
+        } catch (err) {
+          console.error(
+            "HomePage: Lỗi khi lấy thông tin người dùng (chi tiết):",
+            err
+          );
+          const errorMessage =
+            err.message ||
+            err.response?.data?.message ||
+            "Không thể tải thông tin người dùng.";
+          setUserFetchError(errorMessage);
+
+          if (err.response) {
+            console.error("HomePage: Mã trạng thái HTTP:", err.response.status);
+            console.error("HomePage: Dữ liệu phản hồi lỗi:", err.response.data);
+          }
+
+          if (
+            err.response &&
+            (err.response.status === 401 || err.response.status === 403)
+          ) {
+            console.warn(
+              "HomePage: Token không hợp lệ hoặc đã hết hạn. Đang đăng xuất tự động."
+            );
+            localStorage.removeItem("token");
+            setIsLoggedIn(false); // Đặt lại trạng thái đăng nhập
+            setUserData(null); // Xóa dữ liệu người dùng cũ
+            // Không navigate, chỉ cập nhật UI để hiển thị nút đăng nhập/đăng ký
+          }
+        } finally {
+          setUserLoading(false); // Kết thúc loading dù thành công hay thất bại
+        }
+      };
+
+      fetchUserProfile();
+    } else {
+      // Không có token, người dùng chưa đăng nhập
+      setIsLoggedIn(false); // Đảm bảo trạng thái là false
+      setUserLoading(false); // Không cần load dữ liệu nếu không có token
+      setUserData(null); // Đảm bảo userData là null
     }
 
-    const fetchUserProfile = async () => {
-      setUserLoading(true);
-      setUserFetchError(null);
-      try {
-        // Kiểm tra lại config trước khi sử dụng để xây dựng URL, đảm bảo nó không undefined
-        if (
-          !config ||
-          !config.API_BASE_URL ||
-          !config.endpoints ||
-          !config.endpoints.userProfile
-        ) {
-          const missingConfigPart = !config
-            ? "config object"
-            : !config.API_BASE_URL
-            ? "config.API_BASE_URL"
-            : !config.endpoints
-            ? "config.endpoints"
-            : "config.endpoints.userProfile";
-          throw new Error(
-            `Cấu hình API bị thiếu: ${missingConfigPart}. Vui lòng kiểm tra file config.js và đường dẫn import.`
-          );
-        }
-
-        const apiUrl = `${config.API_BASE_URL}${config.endpoints.userProfile}`;
-        console.log("HomePage: Đang gọi API User Profile với URL:", apiUrl);
-        console.log("HomePage: Sử dụng Token:", token);
-
-        const response = await axios.get(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUserData(response.data);
-        console.log("HomePage: Dữ liệu người dùng nhận được:", response.data);
-      } catch (err) {
-        console.error(
-          "HomePage: Lỗi khi lấy thông tin người dùng (chi tiết):",
-          err
-        );
-        const errorMessage =
-          err.message ||
-          err.response?.data?.message ||
-          "Không thể tải thông tin người dùng.";
-        setUserFetchError(errorMessage);
-
-        if (err.response) {
-          console.error("HomePage: Mã trạng thái HTTP:", err.response.status);
-          console.error("HomePage: Dữ liệu phản hồi lỗi:", err.response.data);
-        }
-
-        if (
-          err.response &&
-          (err.response.status === 401 || err.response.status === 403)
-        ) {
-          console.warn(
-            "HomePage: Token không hợp lệ hoặc đã hết hạn. Đang đăng xuất."
-          );
-          localStorage.removeItem("token");
-          navigate("/");
-        }
-      } finally {
-        setUserLoading(false);
-      }
-    };
-
-    fetchUserProfile();
-
+    // Phần animation ranking bars (giữ nguyên)
     const animateRankingBars = () => {
       const bars = document.querySelectorAll(".bar");
       const rankingSection = document.querySelector(".ranking-section");
@@ -120,20 +130,18 @@ const HomePage = () => {
     };
 
     window.addEventListener("scroll", animateRankingBars);
-    animateRankingBars();
+    animateRankingBars(); // Chạy lần đầu khi component mount
 
     return () => window.removeEventListener("scroll", animateRankingBars);
-  }, [navigate]);
+  }, []); // Dependency array rỗng để chỉ chạy một lần khi mount
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUserData(null);
-    navigate("/");
+    setIsLoggedIn(false); // Cập nhật trạng thái đã đăng xuất
+    setUserFetchError(null); // Xóa lỗi nếu có
+    navigate("/"); // Chuyển hướng sau đăng xuất
   };
-
-  useEffect(() => {
-    document.getElementById("title").innerText="HomePage";
-  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -146,25 +154,50 @@ const HomePage = () => {
               Đăng ký ngay để nhận tư vấn miễn phí từ chuyên gia
             </span>
 
-            {/* Phần bên phải: Nút Đăng xuất và thông tin người dùng */}
+            {/* Phần bên phải: Logic hiển thị dựa trên trạng thái đăng nhập */}
             <div className="flex items-center gap-4">
-              <button
-                onClick={handleLogout}
-                className="px-6 py-1.5 rounded-full bg-white text-emerald-600 hover:bg-gray-100 transition-all font-medium"
-              >
-                Đăng xuất
-              </button>
-              {userLoading ? (
-                <span className="font-medium">Đang tải...</span>
-              ) : userFetchError ? (
-                <span className="font-medium text-red-200">
-                  Lỗi: {userFetchError}
-                </span>
-              ) : userData ? (
-                <span className="font-medium">
-                  Xin chào, {userData.username} ({userData.role})
-                </span>
-              ) : null}
+              {isLoggedIn ? ( // Nếu đã đăng nhập
+                <>
+                  {userLoading ? (
+                    <span className="font-medium">Đang tải thông tin...</span>
+                  ) : userFetchError ? (
+                    <span className="font-medium text-red-200">
+                      Lỗi tải thông tin: {userFetchError}
+                    </span>
+                  ) : userData ? (
+                    <span className="font-medium">
+                      Xin chào, {userData.username} ({userData.role})
+                    </span>
+                  ) : (
+                    // Trường hợp đã đăng nhập (có token) nhưng không lấy được userData (ví dụ: server lỗi)
+                    <span className="font-medium text-red-200">
+                      Không thể hiển thị thông tin người dùng.
+                    </span>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="px-6 py-1.5 rounded-full bg-white text-emerald-600 hover:bg-gray-100 transition-all font-medium"
+                  >
+                    Đăng xuất
+                  </button>
+                </>
+              ) : (
+                // Nếu chưa đăng nhập
+                <>
+                  <Link
+                    to="/login"
+                    className="px-6 py-1.5 rounded-full bg-white text-emerald-600 hover:bg-gray-100 transition-all font-medium"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="px-6 py-1.5 rounded-full bg-emerald-600 border border-white text-white hover:bg-emerald-700 transition-all font-medium"
+                  >
+                    Đăng ký
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -178,18 +211,46 @@ const HomePage = () => {
                 className="w-16 h-16 object-contain transform scale-200 -ml-16"
               />
               <ul className="flex gap-8 ">
-                {["Trang chủ", "Tư vấn", "Thống kê", "Cộng đồng", "Hỗ trợ"].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="/"
-                        className="text-gray-700 hover:text-emerald-600 transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  )
-                )}
+                <li>
+                  <Link
+                    to="/"
+                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Trang chủ
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/tu-van" // Đặt đường dẫn thực tế cho "Tư vấn"
+                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Tư vấn
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/thong-ke" // Đặt đường dẫn thực tế cho "Thống kê"
+                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Thống kê
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/cong-dong" // Đặt đường dẫn thực tế cho "Cộng đồng"
+                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Cộng đồng
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/ho-tro" // Đặt đường dẫn thực tế cho "Hỗ trợ"
+                    className="text-gray-700 hover:text-emerald-600 transition-colors"
+                  >
+                    Hỗ trợ
+                  </Link>
+                </li>
               </ul>
             </div>
             <div className="text-gray-700">

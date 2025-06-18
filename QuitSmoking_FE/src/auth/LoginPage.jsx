@@ -66,7 +66,7 @@ const LoginPage = () => {
         localStorage.setItem("token", response.data.token);
         setSuccessMessage("Đăng nhập thành công!"); // <-- Đặt thông báo thành công
         setTimeout(() => {
-          navigate("/home"); // Chuyển hướng sau 1 giây
+          navigate("/"); // Chuyển hướng sau 1 giây
         }, 1000); // 1000ms = 1 giây
       }
     } catch (err) {
@@ -92,7 +92,7 @@ const LoginPage = () => {
         localStorage.setItem("token", response.data.token);
         setSuccessMessage("Đăng nhập thành công với Google!");
         setTimeout(() => {
-          navigate("/home");
+          navigate("/");
         }, 1000);
       }
     } catch (err) {
@@ -213,12 +213,12 @@ const LoginPage = () => {
                 </label>
               </div>
               <div className="text-sm">
-                <a
-                  href="#"
+                <Link
+                  to="/recover-password"
                   className="text-blue-500 hover:underline cursor-pointer"
                 >
                   Quên mật khẩu?
-                </a>
+                </Link>
               </div>
             </div>
 
