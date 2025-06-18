@@ -5,21 +5,21 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class RegisterRequest {
-    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @NotBlank(message = "Ten dang nhap khong duoc de trong")
     private String username;
 
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "Email khong duoc de trong")
+    @Email(message = "Email khong hop le")
     private String email;
 
-    @NotBlank(message = "Họ không được để trống")
+    @NotBlank(message = "Ho khong duoc de trong")
     private String firstName;
 
-    @NotBlank(message = "Tên không được để trống")
+    @NotBlank(message = "Ten khong duoc de trong")
     private String lastName;
 
-    @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
+    @NotBlank(message = "Mat khau khong duoc de trong")
+    @Size(min = 6, message = "Mat khau phai co it nhat 6 ki tu")
     private String password;
 
     // Getters và setters

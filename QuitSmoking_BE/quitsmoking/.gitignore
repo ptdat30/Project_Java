@@ -1,0 +1,22 @@
+.idea/
+
+*.iml
+
+.flattened-pom.xml
+
+*.class
+
+/target/
+
+.mvn/
+mvnw
+mvnw.cmd
+
+.vscode/
+
+*.log
+*.log.* # Ví dụ: myapp.log.1, myapp.log.2
+*.tmp
+
+/jacoco/
+/surefire-reports/
