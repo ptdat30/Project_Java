@@ -1,1 +1,13 @@
+# Compiled Java classes
+*.class
 
+# Maven output directory
+target/
+
+# IDE specific files (for VS Code, IntelliJ, etc.)
+.vscode/
+.idea/
+*.iml
+
+# Log files
+*.log
