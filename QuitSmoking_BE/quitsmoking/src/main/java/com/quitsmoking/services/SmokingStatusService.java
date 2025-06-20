@@ -7,7 +7,7 @@ import com.quitsmoking.reponsitories.SmokingStatusDAO;
 import com.quitsmoking.reponsitories.UserDAO; // Để tìm User
 import org.springframework.stereotype.Service;
 
-// import java.time.LocalDate;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,10 +39,16 @@ public class SmokingStatusService {
 
         SmokingStatus newStatus = new SmokingStatus();
         newStatus.setUser(user);
+        newStatus.setTobaccoType(request.getTobaccoType()); // Thêm các trường từ request
+        newStatus.setTobaccoBrand(request.getTobaccoBrand());
         newStatus.setNumberOfCigarettes(request.getNumberOfCigarettes());
-        newStatus.setFrequency(request.getFrequency());
+        newStatus.setUnit(request.getUnit());
+        // newStatus.setFrequency(request.getFrequency());
         newStatus.setCostPerPack(request.getCostPerPack());
+        newStatus.setSmokingDurationYears(request.getSmokingDurationYears());
+        newStatus.setHealthIssue(request.getHealthIssue());
         newStatus.setRecordDate(request.getRecordDate());
+        newStatus.setRecordUpdate(LocalDate.now()); // Đặt ngày cập nhật khi tạo mới
 
         return smokingStatusDAO.save(newStatus);
     }
@@ -64,10 +70,16 @@ public class SmokingStatusService {
         SmokingStatus existingStatus = smokingStatusDAO.findById(statusId)
                 .orElseThrow(() -> new RuntimeException("Smoking status not found with ID: " + statusId));
 
+        existingStatus.setTobaccoType(request.getTobaccoType()); // Cập nhật các trường đầy đủ
+        existingStatus.setTobaccoBrand(request.getTobaccoBrand());
         existingStatus.setNumberOfCigarettes(request.getNumberOfCigarettes());
-        existingStatus.setFrequency(request.getFrequency());
+        // existingStatus.setFrequency(request.getFrequency());
+        existingStatus.setUnit(request.getUnit());
         existingStatus.setCostPerPack(request.getCostPerPack());
+        existingStatus.setSmokingDurationYears(request.getSmokingDurationYears());
+        existingStatus.setHealthIssue(request.getHealthIssue());
         existingStatus.setRecordDate(request.getRecordDate()); // Cập nhật ngày ghi nhận nếu cần
+        existingStatus.setRecordUpdate(LocalDate.now()); // Cập nhật ngày sửa đổi
 
         return smokingStatusDAO.save(existingStatus);
     }
