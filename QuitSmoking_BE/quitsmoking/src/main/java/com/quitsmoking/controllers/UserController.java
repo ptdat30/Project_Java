@@ -65,7 +65,7 @@ public class UserController {
             profile.put("pictureUrl", user.getPictureUrl());
 
             // Thêm các trường khác nếu cần, ví dụ:
-            // profile.put("membershipPlan", user.getMembershipPlan() != null ? user.getMembershipPlan().name() : null);
+            // profile.put("MembershipPlan", user.getMembershipPlan() != null ? user.getMembershipPlan().name() : null);
             // profile.put("membershipEndDate", user.getMembershipEndDate());
 
             logger.info("Đã lấy thành công profile người dùng: {}", user.getUsername());

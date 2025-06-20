@@ -57,8 +57,10 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
     private Role role;
 
     // Thêm các trường cho gói thành viên
-    @Enumerated(EnumType.STRING)
-    private MemberShipPlan membershipPlan;
+    @ManyToOne(fetch = FetchType.LAZY) // Mối quan hệ nhiều người dùng có một gói thành viên
+    @JoinColumn(name = "current_membership_plan_id") // Cột khóa ngoại trỏ đến MembershipPlan entity
+    private MembershipPlan currentMembershipPlan; // <-- THAY ĐỔI TỪ MembershipPlanType SANG MembershipPlan
+                                                // Xem xét đổi tên để rõ ràng hơn, ví dụ: 'currentMembershipPlan'
     private LocalDate membershipEndDate;
 
 
@@ -106,7 +108,7 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
     // Constructor dùng để tái tạo User khi chuyển đổi loại (Guest -> Member, Member -> Guest)
     public User(String id, String username, String password, String email,
                 String firstName, String lastName, String googleId, String pictureUrl,
-                AuthProvider authProvider, Role role, MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+                AuthProvider authProvider, Role role, MembershipPlan currentMembershipPlan, LocalDate membershipEndDate) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -117,7 +119,7 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
         this.pictureUrl = pictureUrl;
         this.authProvider = authProvider;
         this.role = role;
-        this.membershipPlan = membershipPlan;
+        this.currentMembershipPlan = currentMembershipPlan;
         this.membershipEndDate = membershipEndDate;
     }
 

@@ -17,11 +17,11 @@ public class Coach extends User {
     // Constructor chung để tái tạo Coach từ dữ liệu hiện có (bao gồm khi chuyển đổi)
     public Coach(String id, String username, String password, String email, String firstName, String lastName,
                  String googleId, String pictureUrl, AuthProvider authProvider,
-                 MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+                 MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.COACH, membershipPlan, membershipEndDate);
+              authProvider, Role.COACH, MemberShipPlan, membershipEndDate);
         // Coach cũng thường không có gói thành viên riêng
-        this.setMembershipPlan(null);
+        this.setCurrentMembershipPlan(null);
         this.setMembershipEndDate(null);
     }
 
