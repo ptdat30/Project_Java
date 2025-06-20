@@ -16,10 +16,10 @@ public class Member extends User {
     // Đây là constructor chính nên dùng khi chuyển đổi loại user hoặc tải từ DB
     public Member(String id, String username, String password, String email, String firstName, String lastName,
                   String googleId, String pictureUrl, AuthProvider authProvider,
-                  MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+                  MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.MEMBER, membershipPlan, membershipEndDate);
-        // Các trường membershipPlan và membershipEndDate sẽ được truyền vào từ lớp cha
+              authProvider, Role.MEMBER, MemberShipPlan, membershipEndDate);
+        // Các trường MembershipPlan và membershipEndDate sẽ được truyền vào từ lớp cha
     }
 
     // Constructor khi nâng cấp từ Guest/GoogleUser lên Member (tạo mới Member từ User cũ)

@@ -1,13 +1,28 @@
-# Compiled Java classes
-*.class
-
-# Maven output directory
-target/
-
-# IDE specific files (for VS Code, IntelliJ, etc.)
-.vscode/
+# Cấu hình IDE (IntelliJ IDEA) ở cấp độ gốc của monorepo
+# Nếu thư mục .idea/ và các file .iml xuất hiện trực tiếp trong D:\Download\Project_Java_2\,
+# thì các dòng này sẽ bỏ qua chúng.
 .idea/
 *.iml
 
-# Log files
+# Thư mục cơ sở dữ liệu (đã thấy trong git status của bạn)
+# Nếu bạn không muốn thư mục QuitSmoking_DB/ được theo dõi bởi Git, hãy giữ dòng này.
+
+# File cấu hình môi trường cho Frontend (RẤT QUAN TRỌNG: KHÔNG BAO GIỜ ĐẨY LÊN GIT)
+# File .env thường chứa các khóa API, thông tin nhạy cảm.
+/QuitSmoking_FE/.env
+
+# Thư mục dependencies của Node.js cho Frontend
+# Được tạo khi chạy 'npm install' hoặc 'yarn install'
+/QuitSmoking_FE/node_modules/
+
+# Thư mục đầu ra của quá trình build Frontend (ví dụ: 'dist' cho Vite/Webpack)
+/QuitSmoking_FE/dist/
+
+# Các file log chung hoặc file debug của Node/NPM/Yarn
 *.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+
+# Các file hệ điều hành
+Thumbs.db           

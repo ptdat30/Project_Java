@@ -17,11 +17,11 @@ public class Guest extends User {
     // Constructor này quan trọng khi bạn cần khôi phục trạng thái Guest từ database
     public Guest(String id, String username, String password, String email, String firstName, String lastName,
                  String googleId, String pictureUrl, AuthProvider authProvider,
-                 MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+                 MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.GUEST, membershipPlan, membershipEndDate);
+              authProvider, Role.GUEST, MemberShipPlan, membershipEndDate);
         // Khi là Guest, gói thành viên sẽ là null, chúng ta set lại để đảm bảo
-        this.setMembershipPlan(null);
+        this.setCurrentMembershipPlan(null);
         this.setMembershipEndDate(null);
     }
 
