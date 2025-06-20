@@ -14,9 +14,9 @@ public class LocalUser extends User {
 
     public LocalUser(String id, String username, String password, String email, String firstName, String lastName,
                      String googleId, String pictureUrl, AuthProvider authProvider,
-                     MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+                     MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.GUEST, membershipPlan, membershipEndDate); // Đảm bảo role là Guest
+              authProvider, Role.GUEST, MemberShipPlan, membershipEndDate); // Đảm bảo role là Guest
         
     }
 

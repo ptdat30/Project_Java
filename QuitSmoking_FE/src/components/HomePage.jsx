@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import Navigation from "./layout/Navigation";
 import axios from "axios";
 
 import config from "../config/config.js";
@@ -145,6 +146,7 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <Navigation />
       {/* Header */}
       <header className="fixed top-0 left-0 w-full z-50 shadow-sm">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3">
@@ -287,7 +289,7 @@ const HomePage = () => {
                   className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all"
                 >
                   <img
-                    src={`/images/hinh${num}.png`}
+                    src={`../../public/images/hinh${num}.png`}
                     alt={`Hình minh họa ${num}`}
                     className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
                   />
