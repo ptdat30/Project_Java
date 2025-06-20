@@ -19,12 +19,12 @@ public class Admin extends User implements iUserManageable {
     // Đây là constructor chính nên dùng khi chuyển đổi loại user hoặc tải từ DB
     public Admin(String id, String username, String password, String email, String firstName, String lastName,
                  String googleId, String pictureUrl, AuthProvider authProvider,
-                 MemberShipPlan membershipPlan, LocalDate membershipEndDate) {
+                 MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.ADMIN, membershipPlan, membershipEndDate);
+              authProvider, Role.ADMIN, MemberShipPlan, membershipEndDate);
         // Admin thường không có gói thành viên, nên các trường này sẽ là null.
         // Tuy nhiên, việc truyền chúng vào là cần thiết để phù hợp với constructor của lớp cha User.
-        this.setMembershipPlan(null); // Đảm bảo Admin không có gói thành viên
+        this.setCurrentMembershipPlan(null); // Đảm bảo Admin không có gói thành viên
         this.setMembershipEndDate(null);
     }
 
