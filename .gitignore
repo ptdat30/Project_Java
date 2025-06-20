@@ -6,7 +6,6 @@
 
 # Thư mục cơ sở dữ liệu (đã thấy trong git status của bạn)
 # Nếu bạn không muốn thư mục QuitSmoking_DB/ được theo dõi bởi Git, hãy giữ dòng này.
-/QuitSmoking_DB/
 
 # File cấu hình môi trường cho Frontend (RẤT QUAN TRỌNG: KHÔNG BAO GIỜ ĐẨY LÊN GIT)
 # File .env thường chứa các khóa API, thông tin nhạy cảm.
