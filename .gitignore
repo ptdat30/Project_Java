@@ -25,4 +25,6 @@ npm-debug.log*
 yarn-debug.log*
 
 # Các file hệ điều hành
-Thumbs.db           
+Thumbs.db  
+
+target/

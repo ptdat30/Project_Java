@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
@@ -26,6 +26,23 @@ const AppContent = () => {
     location.pathname
   );
 
+
+  // Trạng thái để kiểm tra xem người dùng đã ghi nhận tình trạng chưa
+  // Sử dụng localStorage để giữ trạng thái này ngay cả khi refresh trình duyệt
+  const [hasRecordedStatus, setHasRecordedStatus] = useState(() => {
+    const savedStatus = localStorage.getItem('hasRecordedStatus');
+    // Chuyển đổi chuỗi "true" thành boolean true, nếu không có thì mặc định là false
+    return savedStatus === 'true';
+  });
+
+  // Hàm này sẽ được gọi từ GhiNhanTinhTrang khi người dùng hoàn thành form
+  const handleStatusRecorded = () => {
+    setHasRecordedStatus(true); // Cập nhật trạng thái trong component
+    localStorage.setItem('hasRecordedStatus', 'true'); // Lưu trạng thái vào localStorage
+    navigate('/plan'); // Điều hướng trở lại trang /plan (lúc này sẽ hiển thị PlanPage)
+  };
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {!hideNavigation && <Navigation />}
@@ -39,12 +56,22 @@ const AppContent = () => {
         <Route path="/coach-consultation" element={<CoachConsultation />} />
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/plan" element={<PlanPage />} />
+        {/* Dựa vào hasRecordedStatus để quyết định hiển thị trang nào */}
+        <Route
+          path="/plan"
+          element={
+            hasRecordedStatus ? (
+              <PlanPage />
+            ) : (
+              <GhiNhanTinhTrang onComplete={handleStatusRecorded} /> // Truyền hàm xử lý hoàn thành
+            )
+          }
+        />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/membership" element={<MembershipPage />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/daily-progress" element={<DailyProgressPage />} />
-        <Route path="/quit-status" element={<GhiNhanTinhTrang />} />
+        {/* <Route path="/quit-status" element={<GhiNhanTinhTrang />} /> */}
       </Routes>
     </div>
   );
