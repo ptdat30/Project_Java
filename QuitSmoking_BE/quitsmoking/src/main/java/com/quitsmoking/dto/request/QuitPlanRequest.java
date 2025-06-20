@@ -7,18 +7,29 @@ public class QuitPlanRequest {
     private LocalDate startDate;
     private LocalDate targetQuitDate;
     private String initialSmokingHabit;
+    private Double pricePerPack; // Trường mới
+    private String selectedReasonsJson; // Trường mới
+    private String selectedTriggersJson; // Trường mới
     private String quittingPhases;
+
     // Có thể thêm một trường để xác định đây có phải là kế hoạch kích hoạt ngay không,
     // hoặc logic đó sẽ được xử lý trong service.
 
-    // Constructor
+    // Constructor mặc định
     public QuitPlanRequest() {}
 
-    public QuitPlanRequest(String reason, LocalDate startDate, LocalDate targetQuitDate, String initialSmokingHabit, String quittingPhases) {
+    // Constructor với tất cả các trường
+    public QuitPlanRequest(String reason, LocalDate startDate, LocalDate targetQuitDate,
+                           String initialSmokingHabit, Double pricePerPack,
+                           String selectedReasonsJson, String selectedTriggersJson,
+                           String quittingPhases) {
         this.reason = reason;
         this.startDate = startDate;
         this.targetQuitDate = targetQuitDate;
         this.initialSmokingHabit = initialSmokingHabit;
+        this.pricePerPack = pricePerPack;
+        this.selectedReasonsJson = selectedReasonsJson;
+        this.selectedTriggersJson = selectedTriggersJson;
         this.quittingPhases = quittingPhases;
     }
 
@@ -53,6 +64,33 @@ public class QuitPlanRequest {
 
     public void setInitialSmokingHabit(String initialSmokingHabit) {
         this.initialSmokingHabit = initialSmokingHabit;
+    }
+
+    // Getter và Setter cho pricePerPack
+    public Double getPricePerPack() {
+        return pricePerPack;
+    }
+
+    public void setPricePerPack(Double pricePerPack) {
+        this.pricePerPack = pricePerPack;
+    }
+
+    // Getter và Setter cho selectedReasonsJson
+    public String getSelectedReasonsJson() {
+        return selectedReasonsJson;
+    }
+
+    public void setSelectedReasonsJson(String selectedReasonsJson) {
+        this.selectedReasonsJson = selectedReasonsJson;
+    }
+
+    // Getter và Setter cho selectedTriggersJson
+    public String getSelectedTriggersJson() {
+        return selectedTriggersJson;
+    }
+
+    public void setSelectedTriggersJson(String selectedTriggersJson) {
+        this.selectedTriggersJson = selectedTriggersJson;
     }
 
     public String getQuittingPhases() {
