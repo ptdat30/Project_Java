@@ -13,20 +13,48 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.quitsmoking.model.interfaces.iAuthenticatable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.Optional;
-// import java.util.UUID;
 
 @Service
 public class AuthService implements iRegistrableService, UserDetailsService {
 
     private final UserDAO userDAO;
     private final PasswordEncoder passwordEncoder;
+    
+    // Thêm các dependency mới
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private OtpManagementService otpService;
 
     public AuthService(UserDAO userDAO, PasswordEncoder passwordEncoder) {
         this.userDAO = userDAO;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    // Thêm methods cho reset password
+    public void sendPasswordResetOtp(String email) {
+        User user = userDAO.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+        
+        String otp = otpService.generateOtp(email);
+        emailService.sendOtpEmail(email, otp);
+    }
+
+    public void resetPassword(String email, String otp, String newPassword) {
+        if (!otpService.validateOtp(email, otp)) {
+            throw new IllegalArgumentException("Mã OTP không hợp lệ hoặc đã hết hạn");
+        }
+        
+        User user = userDAO.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userDAO.save(user);
     }
 
     @Override
@@ -150,7 +178,7 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         user.setRole(Role.MEMBER);
         userDAO.save(user);
 
-        System.out.println("User " + user.getUsername() + " (ID: " + user.getId() + ") successfully upgraded to MEMBER.");
+        System.out.println("User " + user.getUsername() + " (ID: " + userId + ") successfully upgraded to MEMBER.");
         return (Member) user;
     }
 
