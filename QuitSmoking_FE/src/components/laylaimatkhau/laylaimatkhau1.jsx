@@ -1,107 +1,102 @@
 // src/components/laylaimatkhau/laylaimatkhau1.jsx
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from 'react';
+import { passwordResetAPI } from '../../services/passwordResetAPI';
 
-// Thêm onNext và onGoToLogin vào props
-const LayLaiMatKhau1 = ({ onNext, onGoToLogin }) => {
-  const [email, setEmail] = useState("");
-  const [recoveryCode, setRecoveryCode] = useState("");
-  const [isHovered, setIsHovered] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-  const handleMouseEnter = () => {
-    setIsHovered(true);
+const LayLaiMatKhau1 = ({ onEmailSubmitted, onGoToLogin }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setIsActive(false);
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setFieldErrors({});
 
-  const handleMouseDown = () => {
-    setIsActive(true);
-  };
+    if (!email.trim()) {
+      setError('Vui lòng nhập email');
+      return;
+    }
 
-  const handleMouseUp = () => {
-    setIsActive(false);
+    if (!validateEmail(email)) {
+      setError('Email không hợp lệ');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await passwordResetAPI.sendResetOTP(email);
+
+      if (response.success) {
+        // Chuyển sang bước 2 với email đã nhập
+        onEmailSubmitted(email);
+      } else {
+        if (response.errors) {
+          setFieldErrors(response.errors);
+        } else {
+          setError(response.message || 'Có lỗi xảy ra, vui lòng thử lại');
+        }
+      }
+    } catch (error) {
+      setError(error.message || 'Không thể kết nối đến server');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#ffe8d9] flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-4">
-          Lấy lại mật khẩu
-        </h1>
+      <div className="password-reset-step">
+        <div className="reset-form-container">
+          <h2>Quên mật khẩu</h2>
+          <p className="instruction">
+            Nhập email của bạn để nhận mã OTP đặt lại mật khẩu
+          </p>
 
-        <p className="text-gray-700 mb-6">
-          Đừng lo lắng, giờ bạn chỉ cần điền email và nhận chữ lấy mã, sau đó
-          chúng tôi sẽ gửi một đoạn mã đến email của bạn để khôi phục mật khẩu.
-        </p>
+          <form onSubmit={handleSubmit} className="reset-form">
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Nhập email của bạn"
+                  disabled={loading}
+                  className={error || fieldErrors.email ? 'error' : ''}
+              />
+              {fieldErrors.email && (
+                  <span className="field-error">{fieldErrors.email}</span>
+              )}
+            </div>
 
-        <div className="mb-6">
-          <label className="block text-gray-800 font-semibold mb-2">
-            Nhập email của bạn
-          </label>
-          <input
-            type="email"
-            className="w-full px-4 py-3 bg-[#fffbe5] border-none rounded focus:outline-none focus:ring-2 focus:ring-[#d9b38c]"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="example@email.com"
-          />
-        </div>
+            {error && <div className="error-message">{error}</div>}
 
-        <div className="mb-8">
-          <label className="block text-gray-800 font-semibold mb-2">
-            Mã khôi phục mật khẩu
-          </label>
-          <div className="flex items-center">
-            <input
-              type="text"
-              className="flex-grow px-4 py-3 bg-[#fffbe5] border-none rounded-l focus:outline-none focus:ring-2 focus:ring-[#d9b38c]"
-              value={recoveryCode}
-              onChange={(e) => setRecoveryCode(e.target.value)}
-              placeholder="Nhập mã khôi phục"
-            />
             <button
-              className="whitespace-nowrap cursor-pointer !rounded-button bg-[#d9b38c] hover:bg-[#c9a37c] active:bg-[#b99368] active:scale-95 transition-all duration-150 text-gray-800 font-medium px-4 py-3 rounded-r flex items-center"
-              // Bạn có thể thêm logic lấy mã ở đây
+                type="submit"
+                className="submit-btn"
+                disabled={loading}
             >
-              <i className="fas fa-code mr-2"></i>
-              Lấy mã
+              {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
+            </button>
+          </form>
+
+          <div className="form-footer">
+            <button
+                type="button"
+                className="link-btn"
+                onClick={onGoToLogin}
+            >
+              Quay lại đăng nhập
             </button>
           </div>
         </div>
-
-        <div className="flex flex-col items-center gap-4">
-          <button
-            className="w-full whitespace-nowrap cursor-pointer !rounded-button bg-[#d9b38c] hover:bg-[#c9a37c] active:bg-[#b99368] active:scale-95 transition-all duration-150 text-gray-800 font-medium px-6 py-3 rounded"
-            onClick={onNext} // <-- THÊM DÒNG NÀY
-          >
-            Tiếp theo
-          </button>
-          <Link // <--- CHANGE FROM <div> TO <Link>
-            to="/login" // <--- Specify the path to your login page route
-            className={`bg-[#fffbe5] py-3 px-4 rounded-md transition-all duration-300 cursor-pointer flex items-center justify-center ${
-              isHovered ? "bg-[#f7f3d7]" : ""
-            } ${isActive ? "bg-[#f0ecc8] transform scale-[0.98]" : ""}`}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            // onClick={onGoToLogin} // <--- Remove this onClick if using Link for navigation
-          >
-            {/* The content of the link */}
-            <span
-              className={`text-green-500 font-medium whitespace-nowrap ${
-                isHovered ? "text-green-600" : ""
-              } ${isActive ? "text-green-700" : ""}`}
-            >
-              Đi đến trang đăng nhập.
-            </span>
-          </Link>
-        </div>
       </div>
-    </div>
   );
 };
 
