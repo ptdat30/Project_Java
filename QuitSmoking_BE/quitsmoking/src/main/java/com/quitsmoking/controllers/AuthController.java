@@ -6,6 +6,8 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.quitsmoking.config.JwtUtil;
 import com.quitsmoking.dto.request.AuthRequest;
+import com.quitsmoking.dto.request.OtpVerificationRequest;
+import com.quitsmoking.dto.request.PasswordResetRequest;
 import com.quitsmoking.dto.request.RegisterRequest;
 import com.quitsmoking.dto.response.AuthResponse;
 import com.quitsmoking.exceptions.EmailAlreadyExistsException; 
@@ -213,5 +215,50 @@ public class AuthController {
         response.put("role", user.getRole().name());
         logger.info("Nguoi dung {} da dang nhap thanh cong, JWT da duoc tao.", user.getEmail());
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody PasswordResetRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Dữ liệu không hợp lệ", "errors", errors));
+        }
+        
+        try {
+            authService.sendPasswordResetOtp(request.getEmail());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Mã OTP đã được gửi đến email của bạn"));
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "message", "Không tìm thấy tài khoản với email này"));
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi OTP: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Có lỗi xảy ra khi gửi mã OTP"));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody OtpVerificationRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Dữ liệu không hợp lệ", "errors", errors));
+        }
+        
+        try {
+            authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Mật khẩu đã được đặt lại thành công"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("success", false, "message", e.getMessage()));
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("success", false, "message", "Không tìm thấy tài khoản với email này"));
+        } catch (Exception e) {
+            logger.error("Lỗi khi đặt lại mật khẩu: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("success", false, "message", "Có lỗi xảy ra khi đặt lại mật khẩu"));
+        }
     }
 }
