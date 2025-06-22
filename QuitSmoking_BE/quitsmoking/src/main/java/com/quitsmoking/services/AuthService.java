@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.quitsmoking.exceptions.EmailAlreadyExistsException; 
 import com.quitsmoking.exceptions.UserAlreadyExistsException;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.quitsmoking.model.interfaces.iAuthenticatable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,10 +32,38 @@ public class AuthService implements iRegistrableService, UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+        // Thêm các dependency mới
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private OtpManagementService otpService;
+
     public AuthService(UserDAO userDAO, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userDAO = userDAO;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+    }
+
+    // Thêm methods cho reset password
+    public void sendPasswordResetOtp(String email) {
+        User user = userDAO.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+        
+        String otp = otpService.generateOtp(email);
+        emailService.sendOtpEmail(email, otp);
+    }
+
+    public void resetPassword(String email, String otp, String newPassword) {
+        if (!otpService.validateOtp(email, otp)) {
+            throw new IllegalArgumentException("Mã OTP không hợp lệ hoặc đã hết hạn");
+        }
+        
+        User user = userDAO.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userDAO.save(user);
     }
 
     @Override
@@ -62,7 +92,7 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         }
     }
 
-    @Override
+        @Override
     public User register(String username, String rawPassword, String email, String firstName, String lastName, Role requestedRole) {
         // Kiểm tra dữ liệu đầu vào
         if (username == null || username.trim().isEmpty() ||
@@ -113,7 +143,7 @@ public class AuthService implements iRegistrableService, UserDetailsService {
     }
 
     public User login(String username, String rawPassword) {
-        Optional<User> userOptional = userDAO.findByEmailOrUsernameWithMembership(username);
+        Optional<User> userOptional = userDAO.findByEmailOrUsername(username);
 
         if (userOptional.isEmpty()) {
             System.err.println("Login failed: User '" + username + "' not found.");

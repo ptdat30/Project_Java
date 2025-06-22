@@ -30,31 +30,31 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated()") // Yêu cầu người dùng phải được xác thực để truy cập
     @Transactional
     public ResponseEntity<?> getUserProfile() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-            String identifier;
+            String identifier; // Đây sẽ là username hoặc email mà người dùng đã dùng để đăng nhập
             if (principal instanceof UserDetails) {
                 identifier = ((UserDetails) principal).getUsername();
             } else if (principal instanceof User) {
-                identifier = ((User) principal).getEmail();
+                // Nếu bạn đã tùy chỉnh Spring Security để Principal là User entity của bạn
+                // và ID là định danh chính, thì sử dụng getId().
+                // Nếu UserDetails vẫn trả về username/email, thì hãy giữ nguyên logic UserDetails.
+                identifier = ((User) principal).getId(); // Chỉ dùng nếu User.getId() khớp với Principal.getName()
             } else {
                 logger.warn("Unexpected principal type: {}", principal.getClass().getName());
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                     .body(Map.of("message", "Không thể xác định người dùng đã xác thực."));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Không thể xác định người dùng đã xác thực."));
             }
 
-            // User user = userDAO.findByEmailOrUsername(identifier)
-            //     .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + identifier));
-
-
-            // Tạo đối tượng profile để trả về
-            User user = userDAO.findByEmailOrUsernameWithMembership(identifier) // <--- DÙNG PHƯƠNG THỨC NÀY
+            // --- ĐIỂM CHỈNH SỬA QUAN TRỌNG NHẤT ---
+            // SỬ DỤNG findByEmailOrUsername CỦA BẠN!
+            User user = userDAO.findByEmailOrUsername(identifier)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + identifier));
 
+            // Tạo Map chứa thông tin profile
             Map<String, Object> profile = new HashMap<>();
             profile.put("id", user.getId());
             profile.put("username", user.getUsername());
@@ -64,51 +64,21 @@ public class UserController {
             profile.put("role", user.getRole().name());
             profile.put("pictureUrl", user.getPictureUrl());
 
-            
-            if (user.getCurrentMembershipPlan() != null) {
-                Map<String, Object> membershipDetails = new HashMap<>();
-                membershipDetails.put("planName", user.getCurrentMembershipPlan().getPlanName());
-                membershipDetails.put("startDate", user.getMembershipStartDate());
-                membershipDetails.put("endDate", user.getMembershipEndDate());
-                profile.put("membership", membershipDetails);
-            } else {
-                profile.put("membership", null);
-            }
-            profile.put("freePlanClaimed", user.isFreePlanClaimed());
+            // Thêm các trường khác nếu cần, ví dụ:
+            // profile.put("MembershipPlan", user.getMembershipPlan() != null ? user.getMembershipPlan().name() : null);
+            // profile.put("membershipEndDate", user.getMembershipEndDate());
 
             logger.info("Đã lấy thành công profile người dùng: {}", user.getUsername());
             return ResponseEntity.ok(profile);
-
-            // profile.put("id", userWithMembership.getId());
-            // profile.put("username", userWithMembership.getUsername());
-            // profile.put("email", userWithMembership.getEmail());
-            // profile.put("firstName", userWithMembership.getFirstName());
-            // profile.put("lastName", userWithMembership.getLastName());
-            // profile.put("role", userWithMembership.getRole().name());
-            // profile.put("pictureUrl", userWithMembership.getPictureUrl());
-
-            // if (userWithMembership.getCurrentMembershipPlan() != null) {
-            //     Map<String, Object> membershipDetails = new HashMap<>();
-            //     membershipDetails.put("planName", userWithMembership.getCurrentMembershipPlan().getPlanName());
-            //     membershipDetails.put("startDate", userWithMembership.getMembershipStartDate());
-            //     membershipDetails.put("endDate", userWithMembership.getMembershipEndDate());
-            //     profile.put("membership", membershipDetails);
-            // } else {
-            //     profile.put("membership", null);
-            // }
-            // profile.put("freePlanClaimed", userWithMembership.isFreePlanClaimed());
-
-            // logger.info("Đã lấy thành công profile người dùng: {}", userWithMembership.getUsername());
-            // return ResponseEntity.ok(profile);
 
         } catch (UsernameNotFoundException e) {
             logger.warn("Yêu cầu profile người dùng nhưng không tìm thấy: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Lỗi khi lấy profile người dùng đã xác thực: {}", e.getMessage(), e);
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body(Map.of("message", "Đã xảy ra lỗi nội bộ khi lấy profile người dùng. Vui lòng thử lại sau."));
+            // Log chi tiết lỗi (stack trace) để dễ debug hơn
+            e.printStackTrace(); // In stack trace ra console/log
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Đã xảy ra lỗi nội bộ khi lấy profile người dùng. Vui lòng thử lại sau."));
         }
     }
 }

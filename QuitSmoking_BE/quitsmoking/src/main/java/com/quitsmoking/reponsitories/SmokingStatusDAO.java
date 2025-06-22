@@ -9,13 +9,17 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository thao tác với bảng smoking_status.
+ */
 @Repository
 public interface SmokingStatusDAO extends JpaRepository<SmokingStatus, Long> {
 
-    // Phương thức tùy chỉnh để tìm tất cả bản ghi tình trạng hút thuốc của một User
+    // Tìm tất cả tình trạng hút thuốc của một user
     List<SmokingStatus> findByUser(User user);
 
     // Phương thức tùy chỉnh để tìm bản ghi tình trạng hút thuốc của một User theo ngày
+    
     Optional<SmokingStatus> findByUserAndRecordDate(User user, LocalDate recordDate);
 
     // Bạn có thể thêm các phương thức tìm kiếm khác theo nhu cầu

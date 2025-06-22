@@ -9,22 +9,31 @@ public class QuitPlanResponse {
     private LocalDate startDate;
     private LocalDate targetQuitDate;
     private String initialSmokingHabit;
+    private Double pricePerPack; // Trường mới được thêm
+    private String selectedReasonsJson; // Trường mới được thêm
+    private String selectedTriggersJson; // Trường mới được thêm
     private String quittingPhases;
     private boolean active;
 
-    // Constructor
-    public QuitPlanResponse(String id, String userId, String reason, LocalDate startDate, LocalDate targetQuitDate, String initialSmokingHabit, String quittingPhases, boolean active) {
+    // Constructor đã được cập nhật để bao gồm các trường mới
+    public QuitPlanResponse(String id, String userId, String reason, LocalDate startDate,
+                            LocalDate targetQuitDate, String initialSmokingHabit,
+                            Double pricePerPack, String selectedReasonsJson, // Thêm các tham số mới
+                            String selectedTriggersJson, String quittingPhases, boolean active) {
         this.id = id;
         this.userId = userId;
         this.reason = reason;
         this.startDate = startDate;
         this.targetQuitDate = targetQuitDate;
         this.initialSmokingHabit = initialSmokingHabit;
+        this.pricePerPack = pricePerPack; // Gán giá trị
+        this.selectedReasonsJson = selectedReasonsJson; // Gán giá trị
+        this.selectedTriggersJson = selectedTriggersJson; // Gán giá trị
         this.quittingPhases = quittingPhases;
         this.active = active;
     }
 
-    // Getters and Setters
+    // Getters and Setters (đã thêm cho các trường mới)
     public String getId() {
         return id;
     }
@@ -71,6 +80,33 @@ public class QuitPlanResponse {
 
     public void setInitialSmokingHabit(String initialSmokingHabit) {
         this.initialSmokingHabit = initialSmokingHabit;
+    }
+
+    // Getters and Setters cho pricePerPack
+    public Double getPricePerPack() {
+        return pricePerPack;
+    }
+
+    public void setPricePerPack(Double pricePerPack) {
+        this.pricePerPack = pricePerPack;
+    }
+
+    // Getters and Setters cho selectedReasonsJson
+    public String getSelectedReasonsJson() {
+        return selectedReasonsJson;
+    }
+
+    public void setSelectedReasonsJson(String selectedReasonsJson) {
+        this.selectedReasonsJson = selectedReasonsJson;
+    }
+
+    // Getters and Setters cho selectedTriggersJson
+    public String getSelectedTriggersJson() {
+        return selectedTriggersJson;
+    }
+
+    public void setSelectedTriggersJson(String selectedTriggersJson) {
+        this.selectedTriggersJson = selectedTriggersJson;
     }
 
     public String getQuittingPhases() {
