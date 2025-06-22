@@ -30,3 +30,4 @@ yarn-debug.log*
 
 # Các file hệ điều hành
 Thumbs.db           
+.vscode/
