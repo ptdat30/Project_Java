@@ -56,12 +56,19 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    // Thêm các trường cho gói thành viên
-    @ManyToOne(fetch = FetchType.LAZY) // Mối quan hệ nhiều người dùng có một gói thành viên
-    @JoinColumn(name = "current_membership_plan_id") // Cột khóa ngoại trỏ đến MembershipPlan entity
-    private MembershipPlan currentMembershipPlan; // <-- THAY ĐỔI TỪ MembershipPlanType SANG MembershipPlan
-                                                // Xem xét đổi tên để rõ ràng hơn, ví dụ: 'currentMembershipPlan'
+    // User sẽ tham chiếu đến một đối tượng MembershipPlan từ bảng membership_plans
+    @ManyToOne(fetch = FetchType.LAZY) // Tải lười biếng để tránh n+1 queries không cần thiết
+    @JoinColumn(name = "current_membership_plan_id") // Tên cột foreign key trong bảng users
+    private MembershipPlan currentMembershipPlan; // Đối tượng MembershipPlan
+
+    @Column(name = "membership_start_date")
+    private LocalDate membershipStartDate;
+
+    @Column(name = "membership_end_date")
     private LocalDate membershipEndDate;
+
+    @Column(name = "free_plan_claimed", nullable = false)
+    private boolean freePlanClaimed; // Cờ đã đăng ký gói FREE
 
 
     private LocalDateTime createdAt;
@@ -108,7 +115,7 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
     // Constructor dùng để tái tạo User khi chuyển đổi loại (Guest -> Member, Member -> Guest)
     public User(String id, String username, String password, String email,
                 String firstName, String lastName, String googleId, String pictureUrl,
-                AuthProvider authProvider, Role role, MembershipPlan currentMembershipPlan, LocalDate membershipEndDate) {
+                AuthProvider authProvider, Role role, MembershipPlan currentMembershipPlan, LocalDate membershipEndDate, boolean freePlanClaimed) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -121,6 +128,7 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
         this.role = role;
         this.currentMembershipPlan = currentMembershipPlan;
         this.membershipEndDate = membershipEndDate;
+        this.freePlanClaimed = freePlanClaimed;
     }
 
 
@@ -163,5 +171,30 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
 
     @Override
     public void updateProfile() {
+    }
+
+    // Getters và Setters cho các trường liên quan đến Membership
+    public MembershipPlan getCurrentMembershipPlan() {
+        return currentMembershipPlan;
+    }
+
+    public void setCurrentMembershipPlan(MembershipPlan currentMembershipPlan) {
+        this.currentMembershipPlan = currentMembershipPlan;
+    }
+
+    public LocalDate getMembershipEndDate() {
+        return membershipEndDate;
+    }
+
+    public void setMembershipEndDate(LocalDate membershipEndDate) {
+        this.membershipEndDate = membershipEndDate;
+    }
+
+    public boolean isFreePlanClaimed() {
+        return freePlanClaimed;
+    }
+
+    public void setFreePlanClaimed(boolean freePlanClaimed) {
+        this.freePlanClaimed = freePlanClaimed;
     }
 }

@@ -20,9 +20,13 @@ D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmok
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\request\SmokingStatusRequest.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\AdminStatsResponse.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\AuthResponse.java
+D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\MembershipPlanResponse.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\PaymentResponse.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\QuitPlanResponse.java
+D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\UpgradeMembershipResponse.java
+D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\BadRequestException.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\EmailAlreadyExistsException.java
+D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\ResourceNotFoundException.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\UserAlreadyExistsException.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\model\Achievement.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\model\Admin.java
@@ -77,6 +81,7 @@ D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmok
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\CustomUserDetailsService.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\DailyProgressService.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\interfaces\iRegistrableService.java
+D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\MembershipExpirationScheduler.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\MembershipPlanService.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\MembershipService.java
 D:\Download\Project_Java_2\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\services\NotificationService.java

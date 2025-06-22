@@ -66,7 +66,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Cho phép các endpoint xác thực cục bộ (đăng nhập, đăng ký)
                 .requestMatchers("/api/auth/**").permitAll()
-                
+                // Endpoint free-trial yêu cầu vai trò GUEST
+                .requestMatchers(HttpMethod.POST, "/api/membership/free-trial").hasAnyRole("GUEST")
+                // Endpoint upgrade yêu cầu các vai trò này
+                .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+
+                // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực
+                .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

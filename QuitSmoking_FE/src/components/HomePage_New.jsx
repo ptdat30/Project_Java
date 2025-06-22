@@ -109,9 +109,12 @@ const HomePage = () => {
               kết đồng hành cùng bạn trên con đường hướng tới một cuộc sống
               không khói thuốc.
             </p>
-            <button className="bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-all font-medium shadow-lg hover:shadow-xl">
-              Nhận tư vấn miễn phí
-            </button>
+            <Link
+              to="/membership"
+              className="bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-all font-medium shadow-lg hover:shadow-xl"
+            >
+              Trải nghiệm tư vấn miễn phí 30 ngày
+            </Link>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((num) => (

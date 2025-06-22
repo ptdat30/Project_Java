@@ -2,6 +2,8 @@ package com.quitsmoking.reponsitories;
 
 // Trong file com.quitsmoking.reponsitories.MembershipPlanRepository.java
 import com.quitsmoking.model.MembershipPlan; // <-- Thay đổi chỗ này
+import com.quitsmoking.model.MembershipPlanType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +16,8 @@ public interface MembershipPlanRepository extends JpaRepository<MembershipPlan, 
     List<MembershipPlan> findByIsActiveTrue();
 
     Optional<MembershipPlan> findByPlanName(String planName);
+
+    Optional<MembershipPlan> findByPlanType(MembershipPlanType planType);
 
     List<MembershipPlan> findByPriceBetweenAndIsActiveTrue(Double minPrice, Double maxPrice);
 

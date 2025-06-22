@@ -19,21 +19,23 @@ const authReducer = (state, action) => {
         error: null,
       };
     case "LOGIN_SUCCESS":
-      const userPayload = action.payload;
+      const userPayload = action.payload; // userPayload sẽ là đối tượng chứa token và các trường của user
       const newState = {
         ...state,
         loading: false,
         isAuthenticated: true,
         user: {
-          id: userPayload.userId,
+          // Ánh xạ trực tiếp từ userPayload (phản hồi từ backend hoặc storedUser)
+          id: userPayload.id,
           username: userPayload.username,
           email: userPayload.email,
           role: userPayload.role,
           firstName: userPayload.firstName,
           lastName: userPayload.lastName,
           pictureUrl: userPayload.pictureUrl,
+          membership: userPayload.membership || null,
         },
-        token: userPayload.token,
+        token: userPayload.token, // Lấy token từ payload
         error: null,
       };
       console.log(
@@ -71,7 +73,7 @@ const authReducer = (state, action) => {
     case "UPDATE_USER":
       const updatedUserState = {
         ...state,
-        user: { ...state.user, ...action.payload },
+        user: { ...state.user, ...action.payload }, // Cập nhật các trường user hiện có
       };
       console.log(
         "AuthContext (Reducer): UPDATE_USER - Trạng thái mới:",
@@ -108,18 +110,59 @@ const initialState = {
   isAuthenticated: false,
   user: null,
   token: null,
-  loading: true,
+  loading: true, // Bắt đầu với loading: true để chờ kiểm tra xác thực
   error: null,
 };
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  // Helper function để kiểm tra đồng bộ state vs localStorage
+  const checkAuthSync = () => {
+    const token = authService.getToken();
+    const user = authService.getCurrentUser();
 
+    console.log(
+      "AuthContext: Kiểm tra đồng bộ - State isAuthenticated:",
+      state.isAuthenticated
+    );
+    console.log(
+      "AuthContext: Kiểm tra đồng bộ - Token trong localStorage:",
+      token ? "Có" : "Không"
+    );
+    console.log(
+      "AuthContext: Kiểm tra đồng bộ - User trong localStorage:",
+      user ? "Có" : "Không"
+    );
+
+    // Nếu state nghĩ đã login nhưng không có token/user → logout
+    if (state.isAuthenticated && (!token || !user)) {
+      console.warn("AuthContext: Phát hiện mất đồng bộ - logout tự động");
+      dispatch({ type: "LOGOUT" });
+    }
+    // Nếu có token/user nhưng state chưa login → login
+    else if (!state.isAuthenticated && token && user) {
+      console.log(
+        "AuthContext: Phát hiện có token/user mà chưa login - đồng bộ state"
+      );
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { ...user, token },
+      });
+    }
+  };
+
+  // useEffect để kiểm tra đồng bộ định kỳ
+  useEffect(() => {
+    if (!state.loading) {
+      // Chỉ check khi không loading
+      checkAuthSync();
+    }
+  }, [state.isAuthenticated, state.loading]);
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = authService.getToken(); // Lấy token từ localStorage
-        let storedUser = authService.getCurrentUser(); // Lấy user từ localStorage
+        const token = authService.getToken(); // Lấy token từ localStorage (qua hàm tiện ích)
+        let storedUser = authService.getCurrentUser(); // Lấy user từ localStorage (qua hàm tiện ích)
 
         console.log("AuthContext (useEffect): Token khi khởi tạo:", token);
         console.log(
@@ -149,8 +192,10 @@ export const AuthProvider = ({ children }) => {
               firstName: userProfile.firstName || "",
               lastName: userProfile.lastName || "",
               pictureUrl: userProfile.pictureUrl || "",
+              membership: userProfile.membership || null,
             };
-            localStorage.setItem("user", JSON.stringify(storedUser)); // Lưu lại user mới vào localStorage
+            // SỬA: Lưu lại user mới vào localStorage bằng hàm tiện ích của authService
+            authService.setCurrentUser(storedUser);
             console.log(
               "AuthContext (useEffect): Đã fetch và lưu User Profile thành công:",
               storedUser
@@ -160,8 +205,7 @@ export const AuthProvider = ({ children }) => {
               "AuthContext (useEffect): Lỗi khi fetch User Profile:",
               profileError
             );
-            // Nếu không fetch được profile, có thể token đã hết hạn hoặc không hợp lệ
-            authService.logout(); // Đăng xuất để xóa token cũ
+            authService.logout(); // Đăng xuất để xóa token cũ (sẽ dispatch LOGOUT)
             dispatch({ type: "SET_LOADING", payload: false });
             return; // Dừng lại ở đây
           }
@@ -181,13 +225,14 @@ export const AuthProvider = ({ children }) => {
             type: "LOGIN_SUCCESS",
             payload: {
               token: token,
-              userId: storedUser.id,
+              id: storedUser.id, // SỬA: Đảm bảo khớp với cấu trúc reducer
               username: storedUser.username,
               email: storedUser.email,
               role: storedUser.role,
               firstName: storedUser.firstName,
               lastName: storedUser.lastName,
               pictureUrl: storedUser.pictureUrl,
+              membership: storedUser.membership,
             },
           });
         } else {
@@ -211,10 +256,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       dispatch({ type: "LOGIN_START" });
-      const response = await authService.login(credentials);
+      const response = await authService.login(credentials); // response.data chứa token và các trường user
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: response,
+        payload: {
+          token: response.token, // SỬA: Đảm bảo lấy token từ response
+          id: response.userId, // SỬA: Đảm bảo lấy userId từ response
+          username: response.username,
+          email: response.email,
+          role: response.role,
+          firstName: response.firstName,
+          lastName: response.lastName,
+          pictureUrl: response.pictureUrl,
+          membership: response.membership,
+        },
       });
       return response;
     } catch (error) {
@@ -231,6 +286,24 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await authService.register(userData);
       dispatch({ type: "SET_LOADING", payload: false });
+      // Nếu đăng ký tự động đăng nhập, có thể dispatch LOGIN_SUCCESS ở đây
+      if (response.token && response.userId) {
+        // Kiểm tra token và userId có trong response
+        dispatch({
+          type: "LOGIN_SUCCESS",
+          payload: {
+            token: response.token,
+            id: response.userId,
+            username: response.username,
+            email: response.email,
+            role: response.role,
+            firstName: response.firstName,
+            lastName: response.lastName,
+            pictureUrl: response.pictureUrl,
+            membership: response.membership,
+          },
+        });
+      }
       return response;
     } catch (error) {
       dispatch({
@@ -244,10 +317,20 @@ export const AuthProvider = ({ children }) => {
   const googleLogin = async (token) => {
     try {
       dispatch({ type: "LOGIN_START" });
-      const response = await authService.googleLogin(token);
+      const response = await authService.googleLogin(token); // response.data chứa token và các trường user
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: response,
+        payload: {
+          token: response.token,
+          id: response.userId,
+          username: response.username,
+          email: response.email,
+          role: response.role,
+          firstName: response.firstName,
+          lastName: response.lastName,
+          pictureUrl: response.pictureUrl,
+          membership: response.membership,
+        },
       });
       return response;
     } catch (error) {
@@ -260,8 +343,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    authService.logout();
-    dispatch({ type: "LOGOUT" });
+    authService.logout(); // authService.logout đã dispatch LOGOUT và xóa localStorage
+    dispatch({ type: "LOGOUT" }); // Đảm bảo trạng thái AuthContext được cập nhật
   };
 
   const updateUser = (userData) => {
@@ -271,10 +354,8 @@ export const AuthProvider = ({ children }) => {
     });
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ ...currentUser, ...userData })
-      );
+      // SỬA: Cập nhật localStorage bằng hàm tiện ích của authService
+      authService.setCurrentUser({ ...currentUser, ...userData });
     }
   };
 
@@ -322,6 +403,7 @@ export const AuthProvider = ({ children }) => {
     clearError,
     forgotPassword,
     resetPassword,
+    checkAuthSync,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

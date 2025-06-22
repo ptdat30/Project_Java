@@ -87,13 +87,17 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Incorrect username or password"));
         }
 
-        final UserDetails userDetails = authService.loadUserByUsername(authenticationRequest.getUsername());
-        final String jwt = jwtUtil.generateToken(userDetails);
-
+        // Tìm User object sau khi xác thực thành công
+        // Dùng userDAO để lấy User đầy đủ, bao gồm ID
         User user = userDAO.findByEmailOrUsername(authenticationRequest.getUsername())
-                           .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
+                            .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
 
-        return ResponseEntity.ok(new AuthResponse(jwt, user.getId() ,user.getUsername(), user.getRole().name()));
+        // **QUAN TRỌNG**: Tạo JWT bằng ID của người dùng (dạng String)
+        final String jwt = jwtUtil.generateToken(user); // <-- Truyền UUID dạng String
+
+        logger.info("Nguoi dung {} da dang nhap thanh cong, JWT da duoc tao.", user.getEmail());
+        // Trả về AuthResponse với user.getId()
+        return ResponseEntity.ok(new AuthResponse(jwt, user));
     }
 
     @PostMapping("/register")
@@ -178,13 +182,13 @@ public class AuthController {
         // Tìm hoặc tạo người dùng
         // Optional<User> existingUser = userDAO.findByGoogleId(googleId);
         User user;
-
         try {
-            // **CHUYỂN GIAO LOGIC TẠO/CẬP NHẬT GOOGLE USER CHO AUTHSERVICE**
             user = authService.processGoogleLogin(email, firstName, lastName, googleId, pictureUrl);
-        } catch (EmailAlreadyExistsException e) { // Bắt ngoại lệ nếu email đã được sử dụng với nhà cung cấp khác
+            user = userDAO.findByIdWithMembership(user.getId())
+                          .orElseThrow(() -> new UsernameNotFoundException("User not found after Google login processing."));
+        } catch (EmailAlreadyExistsException e) {
             logger.warn("Dang nhap voi Google that bai: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT) // 409 Conflict
+            return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("success", false, "message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Loi khi xu li nguoi dung google: {}", e.getMessage(), e);
@@ -192,26 +196,18 @@ public class AuthController {
                     .body(Map.of("success", false, "message", "Da xay ra loi khi xu li tai khoan Google cua ban."));
         }
 
-        // Tạo Authentication
+        // Tạo Authentication (có thể giữ nguyên nếu bạn cần nó cho các logic khác sau này trong request scope)
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user,
+                user, // Ở đây User object được đặt vào principal
                 null,
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name().toUpperCase()))
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Tạo JWT
-        final String jwt = jwtUtil.generateToken(user);
+        // **QUAN TRỌNG**: Tạo JWT với ID của người dùng (dạng String)
+        final String jwt = jwtUtil.generateToken(user); 
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Dang nhap thanh cong!");
-        response.put("token", jwt);
-        response.put("email", user.getEmail());
-        response.put("userId", user.getId());
-        response.put("username", user.getUsername());
-        response.put("role", user.getRole().name());
         logger.info("Nguoi dung {} da dang nhap thanh cong, JWT da duoc tao.", user.getEmail());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new AuthResponse(jwt, user));
     }
 }

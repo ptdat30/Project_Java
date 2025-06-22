@@ -21,7 +21,7 @@ public class Admin extends User implements iUserManageable {
                  String googleId, String pictureUrl, AuthProvider authProvider,
                  MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.ADMIN, MemberShipPlan, membershipEndDate);
+              authProvider, Role.ADMIN, MemberShipPlan, membershipEndDate, false);
         // Admin thường không có gói thành viên, nên các trường này sẽ là null.
         // Tuy nhiên, việc truyền chúng vào là cần thiết để phù hợp với constructor của lớp cha User.
         this.setCurrentMembershipPlan(null); // Đảm bảo Admin không có gói thành viên
