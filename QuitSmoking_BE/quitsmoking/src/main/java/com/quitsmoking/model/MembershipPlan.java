@@ -74,6 +74,6 @@ public class MembershipPlan {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public boolean getIsActive() { return isActive; }
     public void setIsActive(boolean isActive) { this.isActive = isActive; }
-    public MembershipPlanType getPlanType() { return planType; } 
-    public void setPlanType(MembershipPlanType planType) { this.planType = planType; } 
+    public MembershipPlanType getPlanType() { return planType; }
+    public void setPlanType(MembershipPlanType planType) { this.planType = planType; }
 }

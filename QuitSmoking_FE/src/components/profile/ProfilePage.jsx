@@ -190,12 +190,12 @@ const ProfilePage = () => {
                 <span
                   className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     user?.membership?.planName === "Gói 90 Ngày"
-                      ? "bg-purple-100 text-purple-800"
+                      ? "bg-violet-500 text-white"
                       : user?.membership?.planName === "Gói 60 Ngày"
-                      ? "bg-gold-100 text-gold-800"
+                      ? "bg-yellow-500 text-white"
                       : user?.membership?.planName === "Gói 30 Ngày"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-gray-500 text-white"
+                      : "bg-green-500 text-white"
                   }`}
                 >
                   {(() => {
@@ -410,13 +410,22 @@ const ProfilePage = () => {
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-900">Ngày hết hạn</h3>
-              <p className="text-lg text-gray-600 mt-2">
-                {user?.membershipEndDate || "Không giới hạn"}
+              <p className="text-lg text-red-600 mt-2">
+                {user?.membership?.membershipEndDate
+                  ? (() => {
+                      const date = new Date(user.membership.membershipEndDate);
+                      return !isNaN(date)
+                        ? `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
+                            .toString()
+                            .padStart(2, "0")}/${date.getFullYear()}`
+                        : user.membership.membershipEndDate;
+                    })()
+                  : "Không giới hạn"}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-900">Vai trò</h3>
-              <p className="text-lg text-gray-600 mt-2">
+              <p className="text-lg text-green-600 mt-2">
                 {user?.role || "MEMBER"}
               </p>
             </div>

@@ -59,7 +59,7 @@ public class UserController {
 
             // --- ĐIỂM CHỈNH SỬA QUAN TRỌNG NHẤT ---
             // SỬ DỤNG findByEmailOrUsername CỦA BẠN!
-            User user = userDAO.findByEmailOrUsername(identifier)
+            User user = userDAO.findByEmailOrUsernameWithMembership(identifier)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + identifier));
 
             // Tạo Map chứa thông tin profile
@@ -87,6 +87,8 @@ public class UserController {
                 membership.put("isActive", user.getCurrentMembershipPlan().getIsActive());
                 membership.put("createdAt", user.getCurrentMembershipPlan().getCreatedAt());
                 membership.put("updatedAt", user.getCurrentMembershipPlan().getUpdatedAt());
+                membership.put("membershipStartDate", user.getMembershipStartDate());
+                membership.put("membershipEndDate", user.getMembershipEndDate());
                 // Thêm các trường khác nếu cần
                 profile.put("membership", membership);
             } else {
@@ -193,7 +195,7 @@ public class UserController {
             profile.put("phoneNumber", user.getPhoneNumber());
             profile.put("gender", user.getGender());
             profile.put("dateOfBirth", user.getDateOfBirth());
-            // ... membership ...
+            profile.put("membershipStartDate", user.getMembershipStartDate());
             profile.put("membershipEndDate", user.getMembershipEndDate());
 
             return ResponseEntity.ok(profile);

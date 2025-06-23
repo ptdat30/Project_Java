@@ -191,19 +191,34 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
         this.currentMembershipPlan = currentMembershipPlan;
     }
 
-    public LocalDate getMembershipEndDate() {
-        return membershipEndDate;
-    }
-
-    public void setMembershipEndDate(LocalDate membershipEndDate) {
-        this.membershipEndDate = membershipEndDate;
-    }
-
     public boolean isFreePlanClaimed() {
         return freePlanClaimed;
     }
 
     public void setFreePlanClaimed(boolean freePlanClaimed) {
         this.freePlanClaimed = freePlanClaimed;
+    }
+
+    public LocalDate getMembershipEndDate() {
+        return this.membershipEndDate;
+    }
+
+    public void setMembershipEndDate(LocalDate membershipEndDate) {
+        this.membershipEndDate = membershipEndDate;
+    }
+
+    public LocalDate getMembershipStartDate() {
+        return this.membershipStartDate;
+    }
+
+    public void setMembershipStartDate(LocalDate membershipStartDate) {
+        this.membershipStartDate = membershipStartDate;
+    }
+
+    public LocalDate calculateMembershipEndDate() {
+        if (this.currentMembershipPlan != null && this.membershipStartDate != null) {
+            return this.membershipStartDate.plusDays(this.currentMembershipPlan.getDurationDays());
+        }
+        return null;
     }
 }

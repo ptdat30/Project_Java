@@ -98,6 +98,7 @@ public class MembershipService {
 
         // 4. Cập nhật thông tin gói thành viên cho người dùng
         user.setCurrentMembershipPlan(freePlan);
+        user.setMembershipStartDate(LocalDate.now());
         user.setMembershipEndDate(LocalDate.now().plusDays(freePlan.getDurationDays()));
         user.setFreePlanClaimed(true); // Đánh dấu đã claim gói FREE
 
@@ -165,9 +166,11 @@ public class MembershipService {
         user.setCurrentMembershipPlan(newPlan);
         if (user.getMembershipEndDate() != null && user.getMembershipEndDate().isAfter(LocalDate.now())) {
             // Nếu gói hiện tại vẫn còn hạn, cộng thêm ngày vào ngày kết thúc hiện tại
+            user.setMembershipStartDate(user.getMembershipEndDate());
             user.setMembershipEndDate(user.getMembershipEndDate().plusDays(newPlan.getDurationDays()));
         } else {
             // Nếu gói hiện tại đã hết hạn hoặc không có, bắt đầu từ hôm nay
+            user.setMembershipStartDate(LocalDate.now());
             user.setMembershipEndDate(LocalDate.now().plusDays(newPlan.getDurationDays()));
         }
         user.setRole(Role.MEMBER); // Đảm bảo vai trò là MEMBER
