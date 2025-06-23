@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 public class MembershipPlan {
 
     @Id
-    @Column(name = "id", length = 36) // ID của gói, ví dụ UUID
+    @Column(name = "id", length = 50) // Đặt độ dài phù hợp với chuỗi ID của bạn
     private String id;
 
     @Column(name = "plan_name", nullable = false, unique = true)
@@ -48,9 +48,9 @@ public class MembershipPlan {
     private boolean isActive;
 
     // Tham chiếu đến enum MembershipPlanType (nếu bạn muốn phân loại gói)
-    // @Enumerated(EnumType.STRING) // Lưu tên enum dưới dạng String trong DB
-    // @Column(name = "plan_type")
-    // private MembershipPlanType planType; // Sử dụng enum mới ở đây nếu cần
+    @Enumerated(EnumType.STRING) // Lưu tên enum dưới dạng String trong DB
+    @Column(name = "plan_type")
+    private MembershipPlanType planType; // Sử dụng enum mới ở đây nếu cần
 
     // --- Constructors (Nếu không dùng Lombok) ---
     public MembershipPlan() {}
@@ -74,6 +74,6 @@ public class MembershipPlan {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public boolean getIsActive() { return isActive; }
     public void setIsActive(boolean isActive) { this.isActive = isActive; }
-    // public MembershipPlanType getPlanType() { return planType; } // Nếu có planType
-    // public void setPlanType(MembershipPlanType planType) { this.planType = planType; } // Nếu có planType
+    public MembershipPlanType getPlanType() { return planType; } 
+    public void setPlanType(MembershipPlanType planType) { this.planType = planType; } 
 }

@@ -19,7 +19,7 @@ public class Coach extends User {
                  String googleId, String pictureUrl, AuthProvider authProvider,
                  MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.COACH, MemberShipPlan, membershipEndDate);
+              authProvider, Role.COACH, MemberShipPlan, membershipEndDate, false);
         // Coach cũng thường không có gói thành viên riêng
         this.setCurrentMembershipPlan(null);
         this.setMembershipEndDate(null);

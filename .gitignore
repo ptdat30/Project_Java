@@ -3,6 +3,10 @@
 # thì các dòng này sẽ bỏ qua chúng.
 .idea/
 *.iml
+*.jar
+*.war
+*.zip
+*.tar.gz
 
 # Thư mục cơ sở dữ liệu (đã thấy trong git status của bạn)
 # Nếu bạn không muốn thư mục QuitSmoking_DB/ được theo dõi bởi Git, hãy giữ dòng này.
@@ -26,3 +30,4 @@ yarn-debug.log*
 
 # Các file hệ điều hành
 Thumbs.db           
+.vscode/

@@ -23,11 +23,9 @@ public class MembershipTransaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // --- Cần thay đổi ĐOẠN NÀY ---
     @ManyToOne(fetch = FetchType.LAZY) // Mối quan hệ nhiều giao dịch với một gói thành viên
     @JoinColumn(name = "membership_plan_id", nullable = false) // Đây là cột khóa ngoại trỏ đến MembershipPlan entity
-    private MembershipPlan MembershipPlan; // <-- KIỂU DỮ LIỆU PHẢI LÀ MembershipPlan (entity)
-    // --- HẾT ĐOẠN THAY ĐỔI ---
+    private MembershipPlan membershipPlan; 
 
     @Column(name = "transaction_id", unique = true)
     private String transactionId;
@@ -80,11 +78,8 @@ public class MembershipTransaction {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    @Column(name = "expires_at")
-    private LocalDateTime expiresAt;
-
     public enum TransactionType {
-        UPGRADE, RENEWAL, DOWNGRADE, REFUND
+        UPGRADE, RENEWAL, DOWNGRADE, REFUND, FREE_TRIAL
     }
 
     public enum PaymentStatus {
@@ -92,11 +87,33 @@ public class MembershipTransaction {
     }
 
     public enum PaymentMethod {
-        CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, E_WALLET, CASH
+        CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, E_WALLET, CASH, FREE
+    }
+
+    @PrePersist // Set createdAt when entity is first persisted
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) { // Also initialize updatedAt on creation
+            updatedAt = LocalDateTime.now();
+        }
+        // Ensure final_amount is calculated before persisting if not already set
+        if (finalAmount == null && amount != null && discountAmount != null) {
+            finalAmount = amount.subtract(discountAmount);
+        }
     }
 
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+        // Recalculate final_amount if amount or discount_amount changes (optional)
+        if (amount != null && discountAmount != null) {
+            finalAmount = amount.subtract(discountAmount);
+        }
+    }
+
+    public void setPaymentGatewayReference(String paymentGatewayReference) {
+        this.gatewayTransactionId = paymentGatewayReference; // Hoặc dùng trường bạn đã đổi tên
     }
 }
