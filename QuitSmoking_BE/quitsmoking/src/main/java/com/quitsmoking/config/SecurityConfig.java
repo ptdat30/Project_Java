@@ -66,6 +66,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Cho phép các endpoint xác thực cục bộ (đăng nhập, đăng ký)
                 .requestMatchers("/api/auth/**").permitAll()
+                // Cho phép truy cập các file trong thư mục uploads (PUBLIC)
+                .requestMatchers("/uploads/**").permitAll()
+                // Cho phép truy cập endpoint profile
+                .requestMatchers("/api/user/profile").authenticated()
                 // Endpoint free-trial yêu cầu vai trò GUEST
                 .requestMatchers(HttpMethod.POST, "/api/membership/free-trial").hasAnyRole("GUEST")
                 // Endpoint upgrade yêu cầu các vai trò này

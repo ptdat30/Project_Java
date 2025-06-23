@@ -1,58 +1,41 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import config from "../../config/config.js";
+import authService from "../../services/authService";
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, loading, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
     dateOfBirth: "",
     gender: "",
     avatar: null,
   });
   const [errors, setErrors] = useState({});
+
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
-  const fetchUserProfile = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      const response = await axios.get(
-        `${config.API_BASE_URL}${config.endpoints.userProfile}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setUser(response.data);
-      setFormData({
-        firstName: response.data.firstName || "",
-        lastName: response.data.lastName || "",
-        email: response.data.email || "",
-        phone: response.data.phone || "",
-        dateOfBirth: response.data.dateOfBirth || "",
-        gender: response.data.gender || "",
-        avatar: null,
-      });
-    } catch (error) {
-      console.error("Lỗi khi tải thông tin profile:", error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/login");
-      }
-    } finally {
-      setLoading(false);
+    if (!loading && (!isAuthenticated || !user)) {
+      navigate("/login");
     }
-  };
+    if (user) {
+      setFormData({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || "",
+        dateOfBirth: user.dateOfBirth || "",
+        gender: user.gender || "",
+        avatar: null, // Không set avatar file, chỉ dùng khi upload mới
+      });
+    }
+  }, [isAuthenticated, user, loading]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -108,7 +91,7 @@ const ProfilePage = () => {
     }
     if (!formData.email.trim()) {
       newErrors.email = "Email không được để trống";
-    } else if (!/\\S+@\\S+\\.\\S+/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Email không hợp lệ";
     }
     setErrors(newErrors);
@@ -116,17 +99,19 @@ const ProfilePage = () => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
     try {
-      const token = localStorage.getItem("token");
+      const token = authService.getToken();
       const submitData = new FormData();
-
       Object.keys(formData).forEach((key) => {
         if (formData[key] !== null && formData[key] !== "") {
-          submitData.append(key, formData[key]);
+          if (key === "dateOfBirth") {
+            const date = new Date(formData.dateOfBirth);
+            const yyyyMMdd = date.toISOString().slice(0, 10);
+            submitData.append("dateOfBirth", yyyyMMdd);
+          } else {
+            submitData.append(key, formData[key]);
+          }
         }
       });
       const response = await axios.put(
@@ -139,7 +124,7 @@ const ProfilePage = () => {
           },
         }
       );
-      setUser(response.data);
+      updateUser(response.data); // Cập nhật lại context và localStorage
       setEditing(false);
       alert("Cập nhật thông tin thành công!");
     } catch (error) {
@@ -153,7 +138,7 @@ const ProfilePage = () => {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       email: user?.email || "",
-      phone: user?.phone || "",
+      phoneNumber: user?.phoneNumber || "",
       dateOfBirth: user?.dateOfBirth || "",
       gender: user?.gender || "",
       avatar: null,
@@ -180,10 +165,16 @@ const ProfilePage = () => {
               <div className="h-16 w-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 {user?.pictureUrl ? (
                   <img
-                    src={user.pictureUrl}
-                    alt="Avatar"
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
+                  src={
+                    user.pictureUrl
+                      ? user.pictureUrl.startsWith("http")
+                        ? user.pictureUrl
+                        : `http://localhost:8080${user.pictureUrl}`
+                      : "/images/default-avatar.png"
+                  }
+                  alt="Avatar"
+                  className="h-16 w-16 rounded-full object-cover"
+                />
                 ) : (
                   <span className="text-white text-xl font-semibold">
                     {user?.firstName?.charAt(0)}
@@ -198,16 +189,22 @@ const ProfilePage = () => {
                 <p className="text-gray-600">{user?.email}</p>
                 <span
                   className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user?.membershipPlan === "VIP"
+                    user?.membership?.planName === "Gói 90 Ngày"
                       ? "bg-purple-100 text-purple-800"
-                      : user?.membershipPlan === "PREMIUM"
+                      : user?.membership?.planName === "Gói 60 Ngày"
                       ? "bg-gold-100 text-gold-800"
-                      : user?.membershipPlan === "BASIC"
+                      : user?.membership?.planName === "Gói 30 Ngày"
                       ? "bg-blue-100 text-blue-800"
                       : "bg-gray-100 text-gray-800"
                   }`}
                 >
-                  {user?.membershipPlan || "FREE"}
+                  {(() => {
+                    const planName = user?.membership?.planName;
+                    if (planName === "Gói 30 Ngày") return "Gói thành viên 1";
+                    if (planName === "Gói 60 Ngày") return "Gói thành viên 2";
+                    if (planName === "Gói 90 Ngày") return "Gói thành viên 3";
+                    return planName || "FREE";
+                  })()}
                 </span>
               </div>
             </div>
@@ -301,8 +298,8 @@ const ProfilePage = () => {
                 </label>
                 <input
                   type="tel"
-                  name="phone"
-                  value={formData.phone}
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
                   onChange={handleInputChange}
                   disabled={!editing}
                   className={`w-full px-3 py-2 border rounded-lg ${
@@ -402,7 +399,13 @@ const ProfilePage = () => {
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-900">Gói hiện tại</h3>
               <p className="text-2xl font-bold text-blue-600 mt-2">
-                {user?.membershipPlan || "FREE"}
+                {(() => {
+                  const planName = user?.membership?.planName;
+                  if (planName === "Gói 30 Ngày") return "Gói thành viên 1";
+                  if (planName === "Gói 60 Ngày") return "Gói thành viên 2";
+                  if (planName === "Gói 90 Ngày") return "Gói thành viên 3";
+                  return planName || "FREE";
+                })()}
               </p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">

@@ -1,6 +1,7 @@
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\config\JwtRequestFilter.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\config\JwtUtil.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\config\SecurityConfig.java
+D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\config\WebConfig.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\controllers\AchievementController.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\controllers\AdminController.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\controllers\AuthController.java
@@ -20,6 +21,7 @@ D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quit
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\request\QuitPlanRequest.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\request\RegisterRequest.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\request\SmokingStatusRequest.java
+D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\request\UpdateProfileRequest.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\AdminStatsResponse.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\AuthResponse.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\MembershipPlanResponse.java
