@@ -94,6 +94,69 @@ const HomePage = () => {
     return new Intl.NumberFormat("vi-VN").format(num);
   };
 
+  // --- BEGIN Footer Component (đã gộp vào đây) ---
+  const Footer = () => {
+    return (
+      <footer className="bg-gray-900 text-gray-300 py-10">
+        <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          {/* Contact Information */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-xl font-bold text-white mb-2">Thông tin thêm:</h3>
+            <div className="flex items-center">
+              {/* Địa chỉ - Đảm bảo icon này có sẵn tại /images/location-icon.png và là icon màu đỏ bạn muốn */}
+              <img src="/images/map_icon.png" alt="Location" className="w-6 h-6 mr-3" />
+              <span>
+                Đường tô kí, quận 12, thành phố hcm (
+                <a
+                  href="https://www.google.com/maps/place/Tr%C6%B0%E1%BB%9Dng+%C4%90%E1%BA%A1i+H%E1%BB%8Dc+Giao+Th%C3%B4ng+V%E1%BA%ADn+T%E1%BA%A3i+Th%C3%A0nh+Ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh+(UTH)+-+C%C6%A1+s%E1%BB%9F+3/@10.8657455,106.615543,17z/data=!3m1!4b1!4m6!3m5!1s0x31752b2a11844fb9:0xbed3d5f0a6d6e0fe!8m2!3d10.8657455!4d106.6181179!16s%2Fg%2F11h5mfgrph?entry=ttu&g_ep=EgoyMDI1MDYxNy4wIKXMDSoASAFQAw%3D%3D"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  bản đồ hướng dẫn tại đây
+                </a>
+                )
+              </span>
+            </div>
+            <div className="flex items-center">
+              {/* Điện thoại - Đảm bảo icon này có sẵn tại /images/phone-icon.png và là icon màu đỏ bạn muốn */}
+              <img src="/images/phone_icon.png" alt="Phone" className="w-6 h-6 mr-3" />
+              <span>09-123-45678</span>
+            </div>
+            <div className="flex items-center">
+              {/* Email - Đảm bảo icon này có sẵn tại /images/email-icon.png và là icon màu đỏ bạn muốn */}
+              <img src="/images/email_icon.png" alt="Email" className="w-6 h-6 mr-3" />
+              <span>cainghiethuocla@gmail.com</span>
+            </div>
+          </div>
+
+          {/* Social Links */}
+          <div className="flex flex-col items-start lg:items-end">
+            <h3 className="text-xl font-bold text-white mb-4">Liên kết mạng xã hội:</h3>
+            <div className="flex space-x-6">
+              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">
+                <img src="/images/fb_icon.jpg" alt="Facebook" className="w-10 h-10 transform hover:scale-110 transition-transform duration-300" />
+              </a>
+              <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">
+                <img src="/images/ytb_icon.jpg" alt="YouTube" className="w-10 h-10 transform hover:scale-110 transition-transform duration-300" />
+              </a>
+              <a href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer">
+                <img src="/images/tiktok_icon.jpg" alt="TikTok" className="w-10 h-10 transform hover:scale-110 transition-transform duration-300" />
+              </a>
+              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">
+                <img src="/images/linkedin_icon.jpg" alt="LinkedIn" className="w-10 h-10 transform hover:scale-110 transition-transform duration-300" />
+              </a>
+            </div>
+          </div>
+        </div>
+        <div className="text-center text-gray-500 text-sm mt-8">
+          © {new Date().getFullYear()} CaiNghienThuocLa. All rights reserved.
+        </div>
+      </footer>
+    );
+  };
+  // --- END Footer Component ---
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Hero Section */}
@@ -398,6 +461,9 @@ const HomePage = () => {
           )}
         </div>
       </section>
+
+      {/* Footer Section */}
+      <Footer />
     </div>
   );
 };
