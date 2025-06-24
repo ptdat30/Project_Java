@@ -190,53 +190,32 @@ public class AuthService implements iRegistrableService, UserDetailsService {
     }
 
     public User processGoogleLogin(String email, String firstName, String lastName, String googleId, String pictureUrl) {
-        Optional<User> existingUser = userDAO.findByGoogleIdWithMembership(googleId);
+        Optional<User> userOpt = userDAO.findByGoogleId(googleId);
         User user;
-
-        if (existingUser.isPresent()) {
-            user = existingUser.get();
-            // Cập nhật thông tin người dùng Google hiện có
-            user.setEmail(email);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setPictureUrl(pictureUrl);
-            user.setAuthProvider(AuthProvider.GOOGLE);
-            // GoogleId không cần cập nhật vì nó là key chính để tìm
-            System.out.println("Đã tìm thấy và cập nhật người dùng Google hiện có: " + user.getEmail());
-        } else {
-            // Kiểm tra email đã tồn tại với tài khoản LOCAL
-            Optional<User> existingUserByEmail = userDAO.findByEmailWithMembership(email);
-            if (existingUserByEmail.isPresent()) {
-                user = existingUserByEmail.get();
-                if (user.getAuthProvider().equals(AuthProvider.LOCAL)) {
-                    // Liên kết tài khoản Local hiện có với Google
-                    user.setFirstName(firstName);
-                    user.setLastName(lastName);
-                    user.setPictureUrl(pictureUrl);
-                    user.setGoogleId(googleId); // Cập nhật GoogleId
-                    user.setAuthProvider(AuthProvider.GOOGLE); // Cập nhật AuthProvider
-                    System.out.println("Da lien ket nguoi dung hien co voi Google: " + user.getEmail());
-                } else {
-                    // Nếu email đã đăng ký với nhà cung cấp khác (không phải LOCAL và không phải GoogleId hiện tại)
-                    throw new EmailAlreadyExistsException("Email '" + email + "' da dang ky voi tai khoan " +
-                            user.getAuthProvider() + ". Vui long su dung tai khoan " + user.getAuthProvider() +
-                            " cua ban de dang nhap.");
-                }
-            } else {
-                // Tạo GoogleUser mới
-                user = new GoogleUser(
-                        email,
-                        firstName,
-                        lastName,
-                        googleId,
-                        pictureUrl,
-                        AuthProvider.GOOGLE,
-                        Role.GUEST // Mặc định là GUEST cho người dùng mới qua Google
-                );
-                System.out.println("Da tao nguoi dung Google moi: " + user.getEmail());
+        if (userOpt.isPresent()) {
+            user = userOpt.get();
+            
+    
+            // Chỉ cập nhật nếu trường đó đang null/rỗng
+            if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
+                user.setFirstName(firstName);
             }
+            if (user.getLastName() == null || user.getLastName().isEmpty()) {
+                user.setLastName(lastName);
+            }
+            if (user.getPictureUrl() == null || user.getPictureUrl().isEmpty()) {
+                user.setPictureUrl(pictureUrl);
+            }
+            // Có thể cập nhật googleId/email nếu muốn
+            user.setGoogleId(googleId);
+            user.setEmail(email);
+            userDAO.save(user);
+        } else {
+            // Tạo user mới từ Google info
+            user = new GoogleUser(email, firstName, lastName, googleId, pictureUrl, AuthProvider.GOOGLE, Role.MEMBER);
+            userDAO.save(user);
         }
-        return userDAO.save(user); // Lưu hoặc cập nhật người dùng
+        return user;
     }
 
     public User changeUserRole(String userId, Role newRole) {

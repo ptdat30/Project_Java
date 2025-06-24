@@ -14,10 +14,12 @@
 # File cấu hình môi trường cho Frontend (RẤT QUAN TRỌNG: KHÔNG BAO GIỜ ĐẨY LÊN GIT)
 # File .env thường chứa các khóa API, thông tin nhạy cảm.
 /QuitSmoking_FE/.env
-
+# Thư mục đầu ra của quá trình build Backend
+/QuitSmoking_BE/quitsmoking/target/
 # Thư mục dependencies của Node.js cho Frontend
 # Được tạo khi chạy 'npm install' hoặc 'yarn install'
 /QuitSmoking_FE/node_modules/
+
 
 # Thư mục đầu ra của quá trình build Frontend (ví dụ: 'dist' cho Vite/Webpack)
 /QuitSmoking_FE/dist/

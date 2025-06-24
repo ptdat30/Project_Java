@@ -216,10 +216,16 @@ const Navigation = () => {
                 >
                   {user?.pictureUrl ? (
                     <img
-                      src={user.pictureUrl}
-                      alt="User Avatar"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
+                    src={
+                      user.pictureUrl
+                        ? user.pictureUrl.startsWith("http")
+                          ? user.pictureUrl
+                          : `http://localhost:8080${user.pictureUrl}`
+                        : "/images/default-avatar.png"
+                    }
+                    alt="User Avatar"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-md">
                       <span className="text-white font-bold text-sm">
@@ -355,10 +361,16 @@ const Navigation = () => {
                   <div className="flex items-center px-3 py-2">
                     {user?.pictureUrl ? (
                       <img
-                        src={user.pictureUrl}
-                        alt="User Avatar"
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
+                      src={
+                        user.pictureUrl
+                          ? user.pictureUrl.startsWith("http")
+                            ? user.pictureUrl
+                            : `http://localhost:8080${user.pictureUrl}`
+                          : "/images/default-avatar.png"
+                      }
+                      alt="User Avatar"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-md">
                         <span className="text-white font-bold text-sm">

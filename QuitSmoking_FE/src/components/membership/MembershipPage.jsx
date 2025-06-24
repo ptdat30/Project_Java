@@ -21,6 +21,7 @@ const MembershipPage = () => {
     {
       id: "FREE_TRIAL_PLAN",
       name: "Trãi Nghiệm",
+      priority: 0,
       price: 0,
       originalPrice: 0,
       duration: "30 Ngày", // Backend sẽ xác định thời hạn thực tế
@@ -41,9 +42,10 @@ const MembershipPage = () => {
     {
       id: "PLAN_30_DAYS",
       name: "Cơ Bản",
+      priority: 1,
       price: 99000,
       originalPrice: 149000,
-      duration: "1 tháng",
+      duration: "30 Ngày",
       features: [
         "✅ Tất cả tính năng gói miễn phí",
         "✅ Kế hoạch cai thuốc nâng cao",
@@ -62,9 +64,10 @@ const MembershipPage = () => {
     {
       id: "PLAN_60_DAYS",
       name: "Cao Cấp",
+      priority: 2,
       price: 249000,
       originalPrice: 399000,
-      duration: "3 tháng",
+      duration: "60 Ngày",
       features: [
         "✅ Tất cả tính năng gói cơ bản",
         "✅ Tư vấn 1:1 với chuyên gia",
@@ -84,9 +87,10 @@ const MembershipPage = () => {
     {
       id: "PLAN_90_DAYS",
       name: "VIP",
+      priority: 3,
       price: 599000,
       originalPrice: 999000,
-      duration: "1 năm",
+      duration: "90 Ngày",
       features: [
         "✅ Tất cả tính năng gói cao cấp",
         "✅ Mentor cá nhân chuyên nghiệp",
@@ -115,6 +119,9 @@ const MembershipPage = () => {
   const [isFreePlanClaimed, setIsFreePlanClaimed] = useState(
     user?.freePlanClaimed || false
   );
+
+  const currentPlan = membershipPlans.find(plan => plan.id === currentPlanId);
+const currentPriority = currentPlan ? currentPlan.priority : -1;
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("credit_card"); // Phương thức thanh toán
@@ -232,17 +239,18 @@ const MembershipPage = () => {
 
       // Backend cần trả về user object đã được cập nhật (bao gồm role và membership mới)
       // Cập nhật AuthContext với thông tin user mới nhất từ response
+      const userData = response.authResponse ? response.authResponse : response;
       const updatedUserPayload = {
-        id: response.id,
-        username: response.username,
-        email: response.email,
-        role: response.role,
-        firstName: response.firstName,
-        lastName: response.lastName,
-        pictureUrl: response.pictureUrl,
-        membership: response.membership, // Đây chính là đối tượng membership từ backend
-        freePlanClaimed: response.freePlanClaimed, // Lấy từ backend
-        membershipEndDate: response.membershipEndDate, // Lấy từ backend
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        pictureUrl: userData.pictureUrl,
+        membership: userData.membership, // Đây chính là đối tượng membership từ backend
+        freePlanClaimed: userData.freePlanClaimed, // Lấy từ backend
+        membershipEndDate: userData.membershipEndDate, // Lấy từ backend
       };
 
       updateUser(updatedUserPayload); // Cập nhật trạng thái người dùng trong AuthContext
@@ -409,15 +417,20 @@ const MembershipPage = () => {
 
                   {/* Action Button */}
                   <button
-                    onClick={() => handleSelectPlan(plan)}
-                    // Vô hiệu hóa khi đang xử lý HOẶC gói này đang được sử dụng
-                    disabled={plan.id === currentPlanId || processing}
-                    className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg ${
-                      plan.id === currentPlanId || processing // Disable khi đang xử lý hoặc là gói hiện tại
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : plan.buttonColor
-                    }`}
-                  >
+                      onClick={() => handleSelectPlan(plan)}
+                      disabled={
+                        plan.id === currentPlanId ||
+                        processing ||
+                        (currentPriority !== -1 && plan.priority < currentPriority)
+                      }
+                      className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg ${
+                        plan.id === currentPlanId ||
+                        processing ||
+                        (currentPriority !== -1 && plan.priority < currentPriority)
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : plan.buttonColor
+                      }`}
+                    >
                     {processing && selectedPlan?.id === plan.id // Chỉ hiện "Đang xử lý" cho gói đang được xử lý
                       ? "Đang xử lý..."
                       : plan.id === currentPlanId // Nếu là gói hiện tại

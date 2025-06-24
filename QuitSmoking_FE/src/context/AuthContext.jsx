@@ -34,6 +34,9 @@ const authReducer = (state, action) => {
           lastName: userPayload.lastName,
           pictureUrl: userPayload.pictureUrl,
           membership: userPayload.membership || null,
+          phoneNumber: userPayload.phoneNumber || "",
+          gender: userPayload.gender || "",
+          dateOfBirth: userPayload.dateOfBirth || "",
         },
         token: userPayload.token, // Lấy token từ payload
         error: null,
@@ -161,30 +164,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = authService.getToken(); // Lấy token từ localStorage (qua hàm tiện ích)
-        let storedUser = authService.getCurrentUser(); // Lấy user từ localStorage (qua hàm tiện ích)
-
-        console.log("AuthContext (useEffect): Token khi khởi tạo:", token);
-        console.log(
-          "AuthContext (useEffect): User từ localStorage khi khởi tạo:",
-          storedUser
-        );
-
-        // Nếu có token nhưng user là null hoặc thiếu thông tin, thử fetch user profile từ API
-        if (
-          token &&
-          (!storedUser ||
-            !storedUser.id ||
-            !storedUser.username ||
-            !storedUser.role)
-        ) {
-          console.log(
-            "AuthContext (useEffect): Có token nhưng user không hợp lệ/thiếu. Đang cố gắng fetch User Profile..."
-          );
+        const token = authService.getToken();
+        if (token) {
+          // Luôn fetch user profile mới nhất từ backend
           try {
-            const userProfile = await apiService.getUserProfile(); // Gọi API để lấy user profile
-            // Cập nhật storedUser với dữ liệu từ API
-            storedUser = {
+            const userProfile = await apiService.getUserProfile();
+            const userData = {
               id: userProfile.id,
               username: userProfile.username,
               email: userProfile.email,
@@ -193,59 +178,30 @@ export const AuthProvider = ({ children }) => {
               lastName: userProfile.lastName || "",
               pictureUrl: userProfile.pictureUrl || "",
               membership: userProfile.membership || null,
+              phoneNumber: userProfile.phoneNumber || "",
+              gender: userProfile.gender || "",
+              dateOfBirth: userProfile.dateOfBirth || "",
+              // Thêm các trường khác nếu backend trả về
             };
-            // SỬA: Lưu lại user mới vào localStorage bằng hàm tiện ích của authService
-            authService.setCurrentUser(storedUser);
-            console.log(
-              "AuthContext (useEffect): Đã fetch và lưu User Profile thành công:",
-              storedUser
-            );
+            // Lưu vào localStorage
+            authService.setCurrentUser(userData);
+            // Cập nhật context
+            dispatch({
+              type: "LOGIN_SUCCESS",
+              payload: {
+                token: token,
+                ...userData,
+              },
+            });
           } catch (profileError) {
-            console.error(
-              "AuthContext (useEffect): Lỗi khi fetch User Profile:",
-              profileError
-            );
-            authService.logout(); // Đăng xuất để xóa token cũ (sẽ dispatch LOGOUT)
+            // Nếu lỗi, logout
+            authService.logout();
             dispatch({ type: "SET_LOADING", payload: false });
-            return; // Dừng lại ở đây
           }
-        }
-
-        if (
-          token &&
-          storedUser &&
-          storedUser.id &&
-          storedUser.username &&
-          storedUser.role
-        ) {
-          console.log(
-            "AuthContext (useEffect): Đã tìm thấy token và user hợp lệ. Đang dispatch LOGIN_SUCCESS."
-          );
-          dispatch({
-            type: "LOGIN_SUCCESS",
-            payload: {
-              token: token,
-              id: storedUser.id, // SỬA: Đảm bảo khớp với cấu trúc reducer
-              username: storedUser.username,
-              email: storedUser.email,
-              role: storedUser.role,
-              firstName: storedUser.firstName,
-              lastName: storedUser.lastName,
-              pictureUrl: storedUser.pictureUrl,
-              membership: storedUser.membership,
-            },
-          });
         } else {
-          console.log(
-            "AuthContext (useEffect): Không tìm thấy token hoặc user hợp lệ trong localStorage. Đặt loading = false."
-          );
           dispatch({ type: "SET_LOADING", payload: false });
         }
       } catch (error) {
-        console.error(
-          "AuthContext (useEffect): Lỗi khi khởi tạo authentication:",
-          error
-        );
         dispatch({ type: "SET_LOADING", payload: false });
       }
     };
@@ -256,19 +212,29 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       dispatch({ type: "LOGIN_START" });
-      const response = await authService.login(credentials); // response.data chứa token và các trường user
+      const response = await authService.login(credentials);
+      // Sau khi login thành công, fetch lại profile mới nhất
+      const userProfile = await apiService.getUserProfile();
+      const userData = {
+        id: userProfile.id,
+        username: userProfile.username,
+        email: userProfile.email,
+        role: userProfile.role,
+        firstName: userProfile.firstName || "",
+        lastName: userProfile.lastName || "",
+        pictureUrl: userProfile.pictureUrl || "",
+        membership: userProfile.membership || null,
+        phoneNumber: userProfile.phoneNumber || "",
+        gender: userProfile.gender || "",
+        dateOfBirth: userProfile.dateOfBirth || "",
+        // Thêm các trường khác nếu backend trả về
+      };
+      authService.setCurrentUser(userData);
       dispatch({
         type: "LOGIN_SUCCESS",
         payload: {
-          token: response.token, // SỬA: Đảm bảo lấy token từ response
-          id: response.userId, // SỬA: Đảm bảo lấy userId từ response
-          username: response.username,
-          email: response.email,
-          role: response.role,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          pictureUrl: response.pictureUrl,
-          membership: response.membership,
+          token: response.token,
+          ...userData,
         },
       });
       return response;
@@ -317,19 +283,29 @@ export const AuthProvider = ({ children }) => {
   const googleLogin = async (token) => {
     try {
       dispatch({ type: "LOGIN_START" });
-      const response = await authService.googleLogin(token); // response.data chứa token và các trường user
+      const response = await authService.googleLogin(token);
+      // Sau khi Google login thành công, fetch lại profile mới nhất
+      const userProfile = await apiService.getUserProfile();
+      const userData = {
+        id: userProfile.id,
+        username: userProfile.username,
+        email: userProfile.email,
+        role: userProfile.role,
+        firstName: userProfile.firstName || "",
+        lastName: userProfile.lastName || "",
+        pictureUrl: userProfile.pictureUrl || "",
+        membership: userProfile.membership || null,
+        phoneNumber: userProfile.phoneNumber || "",
+        gender: userProfile.gender || "",
+        dateOfBirth: userProfile.dateOfBirth || "",
+        // Thêm các trường khác nếu backend trả về
+      };
+      authService.setCurrentUser(userData);
       dispatch({
         type: "LOGIN_SUCCESS",
         payload: {
           token: response.token,
-          id: response.userId,
-          username: response.username,
-          email: response.email,
-          role: response.role,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          pictureUrl: response.pictureUrl,
-          membership: response.membership,
+          ...userData,
         },
       });
       return response;
