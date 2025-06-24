@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
@@ -17,15 +17,15 @@ import SettingsPage from "./components/settings/SettingsPage";
 import AdminPanel from "./components/admin/AdminPanel";
 import DailyProgressPage from "./components/progress/DailyProgressPage";
 import GhiNhanTinhTrang from "./components/ghinhantinhtrang";
+import Feedback from "./components/feedback/feedback";
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // --- Components để bảo vệ Routes ---
 
-// ProtectedRoute: Chỉ cho phép người dùng đã đăng nhập truy cập
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
-    // Hiển thị một cái gì đó trong khi đang kiểm tra trạng thái xác thực
     return (
       <div className="flex justify-center items-center h-screen">
         Đang tải...
@@ -34,31 +34,20 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!isAuthenticated) {
-    // Nếu chưa xác thực, chuyển hướng về trang đăng nhập
-    console.log(
-      "ProtectedRoute: Người dùng chưa xác thực. Chuyển hướng đến /login."
-    );
     return <Navigate to="/login" replace />;
   }
 
-  // Kiểm tra vai trò nếu được cung cấp
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    console.warn(
-      `ProtectedRoute: Người dùng ${user.username} không có quyền truy cập.`
-    );
-    // Chuyển hướng đến trang không có quyền truy cập hoặc trang dashboard
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children; // Nếu đã xác thực và có quyền, cho phép truy cập
+  return children;
 };
 
-// GuestOnlyRoute: Chỉ cho phép người dùng CHƯA đăng nhập truy cập
 const GuestOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    // Hiển thị một cái gì đó trong khi đang kiểm tra trạng thái xác thực
     return (
       <div className="flex justify-center items-center h-screen">
         Đang tải...
@@ -67,36 +56,38 @@ const GuestOnlyRoute = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    // Nếu đã xác thực, chuyển hướng về trang dashboard (hoặc trang chính)
-    console.log(
-      "GuestOnlyRoute: Người dùng đã xác thực. Chuyển hướng đến HomePage."
-    );
     return <Navigate to="/" replace />;
   }
-  return children; // Nếu chưa xác thực, cho phép truy cập
+  return children;
 };
 
 const AppContent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Không hiển thị Navigation trên các trang auth
   const hideNavigation = ["/login", "/register", "/recover-password"].includes(
     location.pathname
   );
 
-    // Trạng thái để kiểm tra xem người dùng đã ghi nhận tình trạng chưa
-  // Sử dụng localStorage để giữ trạng thái này ngay cả khi refresh trình duyệt
-  const [hasRecordedStatus, setHasRecordedStatus] = useState(() => {
-    const savedStatus = localStorage.getItem('hasRecordedStatus');
-    // Chuyển đổi chuỗi "true" thành boolean true, nếu không có thì mặc định là false
-    return savedStatus === 'true';
-  });
+  // --- SỬA ĐOẠN NÀY: Lưu trạng thái theo từng user ---
+  const [hasRecordedStatus, setHasRecordedStatus] = useState(false);
 
-  // Hàm này sẽ được gọi từ GhiNhanTinhTrang khi người dùng hoàn thành form
+  useEffect(() => {
+    if (user && user.id) {
+      const savedStatus = localStorage.getItem(`hasRecordedStatus_${user.id}`);
+      setHasRecordedStatus(savedStatus === 'true');
+    }
+  }, [user]);
+
+  // Khi hoàn thành ghi nhận tình trạng, lưu trạng thái theo user
   const handleStatusRecorded = () => {
-    setHasRecordedStatus(true); // Cập nhật trạng thái trong component
-    localStorage.setItem('hasRecordedStatus', 'true'); // Lưu trạng thái vào localStorage
-    Navigate('/plan'); // Điều hướng trở lại trang /plan (lúc này sẽ hiển thị PlanPage)
+    if (user && user.id) {
+      localStorage.setItem(`hasRecordedStatus_${user.id}`, 'true');
+      setHasRecordedStatus(true);
+      navigate('/plan');
+    }
   };
 
   return (
@@ -129,7 +120,6 @@ const AppContent = () => {
           }
         />
 
-        {/* Các ProtectedRoute, ví dụ: */}
         <Route
           path="/dashboard"
           element={
@@ -176,7 +166,7 @@ const AppContent = () => {
             hasRecordedStatus ? (
               <PlanPage />
             ) : (
-              <GhiNhanTinhTrang onComplete={handleStatusRecorded} /> // Truyền hàm xử lý hoàn thành
+              <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
             )
           }
         />
@@ -212,13 +202,19 @@ const AppContent = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Admin route - chỉ admin mới có quyền truy cập */}
         <Route
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feedback"
+          element={
+            <ProtectedRoute allowedRoles={["MEMBER"]}>
+              <Feedback />
             </ProtectedRoute>
           }
         />

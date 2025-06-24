@@ -57,10 +57,14 @@ const Navigation = () => {
     ? [...authNavigationItems]
     : [...publicNavigationItems];
 
-  // Thêm menu Admin nếu user là admin
-  if (isAuthenticated && user?.role === "ADMIN") {
+  // Thêm menu Admin nếu user là admin, hoặc Feedback nếu là member
+if (isAuthenticated) {
+  if (user?.role === "ADMIN") {
     navigationItems.push({ name: "Quản trị", href: "/admin", icon: "⚙️" });
+  } else if (user?.role === "MEMBER") {
+    navigationItems.push({ name: "Phản hồi", href: "/feedback", icon: "📝" });
   }
+}
 
   const handleLogout = () => {
     logout();
