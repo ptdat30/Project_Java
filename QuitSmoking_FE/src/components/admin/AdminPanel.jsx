@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAdminAuth } from "../../hooks/useAdminAuth";
 import axios from "axios";
 import config from "../../config/config.js";
+
 const AdminPanel = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user, loading: authLoading } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState({
@@ -19,6 +19,7 @@ const AdminPanel = () => {
   const [coaches, setCoaches] = useState([]);
   const [reports, setReports] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
+  
   const tabs = [
     { id: "dashboard", name: "Tổng quan", icon: "📊" },
     { id: "users", name: "Quản lý người dùng", icon: "👥" },
@@ -27,40 +28,14 @@ const AdminPanel = () => {
     { id: "feedback", name: "Phản hồi", icon: "💬" },
     { id: "system", name: "Hệ thống", icon: "⚙️" },
   ];
+
+  // Fetch data khi component mount và khi tab thay đổi
   useEffect(() => {
-    checkAdminAccess();
-  }, []);
-  useEffect(() => {
-    if (user?.role === "ADMIN") {
+    if (!authLoading) {
       fetchData();
     }
-  }, [user, activeTab]);
-  const checkAdminAccess = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      const response = await axios.get(
-        `${config.API_BASE_URL}${config.endpoints.userProfile}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (response.data.role !== "ADMIN") {
-        alert("Bạn không có quyền truy cập trang quản trị!");
-        navigate("/");
-        return;
-      }
-      setUser(response.data);
-    } catch (error) {
-      console.error("Lỗi kiểm tra quyền admin:", error);
-      navigate("/login");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [activeTab, authLoading]);
+
   const fetchData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -82,10 +57,13 @@ const AdminPanel = () => {
           await fetchFeedbacks(token);
           break;
       }
+      setLoading(false);
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu:", error);
+      setLoading(false);
     }
   };
+
   const fetchDashboardStats = async (token) => {
     const response = await axios.get(`${config.API_BASE_URL}/api/admin/stats`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -147,16 +125,7 @@ const AdminPanel = () => {
       currency: "VND",
     }).format(amount);
   };
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang kiểm tra quyền truy cập...</p>
-        </div>
-      </div>
-    );
-  }
+
   const DashboardTab = () => (
     <div className="space-y-6">
       {/* Stats Grid */}
@@ -534,72 +503,93 @@ const AdminPanel = () => {
   );
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Bảng điều khiển quản trị
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Quản lý toàn bộ hệ thống nền tảng cai thuốc
-          </p>
+      {authLoading ? (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Đang kiểm tra quyền truy cập...</p>
+          </div>
         </div>
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
-              </button>
-            ))}
-          </nav>
+      ) : loading ? (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+          </div>
         </div>
-        {/* Tab Content */}
-        <div>
-          {activeTab === "dashboard" && <DashboardTab />}
-          {activeTab === "users" && <UsersTab />}
-          {activeTab === "coaches" && <CoachesTab />}
-          {activeTab === "reports" && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Báo cáo hệ thống
-              </h3>
-              <p className="text-gray-600">
-                Tính năng báo cáo đang được phát triển...
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Bảng điều khiển quản trị
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Quản lý toàn bộ hệ thống nền tảng cai thuốc
+            </p>
+            {user && (
+              <p className="text-sm text-gray-500 mt-1">
+                Xin chào, {user.firstName} {user.lastName} ({user.email})
               </p>
-            </div>
-          )}
-          {activeTab === "feedback" && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Phản hồi từ người dùng
-              </h3>
-              <p className="text-gray-600">
-                Tính năng quản lý phản hồi đang được phát triển...
-              </p>
-            </div>
-          )}
-          {activeTab === "system" && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Cài đặt hệ thống
-              </h3>
-              <p className="text-gray-600">
-                Tính năng cài đặt hệ thống đang được phát triển...
-              </p>
-            </div>
-          )}
+            )}
+          </div>
+          {/* Tabs */}
+          <div className="border-b border-gray-200 mb-8">
+            <nav className="-mb-px flex space-x-8">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
+          </div>
+          {/* Tab Content */}
+          <div>
+            {activeTab === "dashboard" && <DashboardTab />}
+            {activeTab === "users" && <UsersTab />}
+            {activeTab === "coaches" && <CoachesTab />}
+            {activeTab === "reports" && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Báo cáo hệ thống
+                </h3>
+                <p className="text-gray-600">
+                  Tính năng báo cáo đang được phát triển...
+                </p>
+              </div>
+            )}
+            {activeTab === "feedback" && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Phản hồi từ người dùng
+                </h3>
+                <p className="text-gray-600">
+                  Tính năng quản lý phản hồi đang được phát triển...
+                </p>
+              </div>
+            )}
+            {activeTab === "system" && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Cài đặt hệ thống
+                </h3>
+                <p className="text-gray-600">
+                  Tính năng cài đặt hệ thống đang được phát triển...
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

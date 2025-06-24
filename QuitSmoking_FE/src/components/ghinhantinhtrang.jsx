@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const GhiNhanTinhTrang = () => {
+// Component GhiNhanTinhTrang nhận một prop 'onComplete'
+const GhiNhanTinhTrang = ({ onComplete }) => {
   const [selectedTobaccoType, setSelectedTobaccoType] = useState("cigarettes");
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("Gói");
@@ -10,6 +12,7 @@ const GhiNhanTinhTrang = () => {
   const [selectedTobaccoBrand, setSelectedTobaccoBrand] = useState("");
   const [selectedHealthIssue, setSelectedHealthIssue] = useState("");
   const [otherTobaccoBrand, setOtherTobaccoBrand] = useState("");
+  const navigate = useNavigate(); // Khởi tạo hook navigate
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -41,65 +44,31 @@ const GhiNhanTinhTrang = () => {
     setIsHealthIssueDropdownOpen(!isHealthIssueDropdownOpen);
   };
 
+  const handleSubmit = () => {
+    // Logic để lưu dữ liệu của form ghi nhận tình trạng ở đây (nếu có)
+    // Ví dụ: gửi lên API, lưu vào localStorage, v.v.
+    console.log("Dữ liệu ghi nhận tình trạng:", {
+      selectedTobaccoType,
+      selectedUnit,
+      selectedTobaccoBrand: selectedTobaccoBrand === "Khác" ? otherTobaccoBrand : selectedTobaccoBrand,
+      selectedHealthIssue
+      // ... thêm các trường dữ liệu khác từ form của bạn
+    });
+
+    // Gọi hàm onComplete được truyền từ App.jsx
+    // Điều này sẽ thông báo cho App.jsx rằng form đã được hoàn thành
+    if (onComplete) {
+      onComplete();
+    }
+    // Không cần navigate ở đây nữa, vì App.jsx sẽ xử lý việc điều hướng
+    // sau khi onComplete được gọi và trạng thái được cập nhật.
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm">
-        <div className="bg-black text-white py-3 flex justify-between items-center px-8">
-          <div className="flex-1"></div>
-          <p className="text-sm flex-1 text-center">ĐĂNG KÍ NGAY ĐỂ NHẬN LỜI KHUYÊN HỮU ÍCH TỪ CHUYÊN GIA</p>
-          <div className="flex items-center space-x-4 flex-1 justify-end">
-            <button className="bg-yellow-100 text-gray-800 px-6 py-1.5 rounded-md border border-yellow-300 cursor-pointer hover:bg-yellow-200 transition-colors duration-200 whitespace-nowrap !rounded-button">ĐĂNG NHẬP</button>
-            <button className="bg-blue-400 text-white px-6 py-1.5 rounded-md cursor-pointer hover:bg-blue-500 transition-colors duration-200 whitespace-nowrap !rounded-button">ĐĂNG KÍ</button>
-          </div>
-        </div>
-        <div className="container mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="flex items-center mr-8">
-              <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mr-2">
-                <i className="fas fa-smoking-ban text-white text-xl"></i>
-              </div>
-              <div className="text-gray-700">
-                <h1 className="text-lg font-medium">Hỗ trợ cai nghiện</h1>
-                <h2 className="text-lg font-medium">Thuốc lá</h2>
-              </div>
-            </div>
-            <nav className="hidden md:flex space-x-4">
-              <div className="relative menu-container group">
-                <button
-                  className="px-3 py-2 text-gray-600 hover:text-gray-900 cursor-pointer whitespace-nowrap !rounded-button"
-                >
-                  CHỨC NĂNG <i className="fas fa-chevron-down ml-1 text-xs"></i>
-                </button>
-                <div className="absolute left-0 mt-1 w-48 bg-white shadow-lg rounded-md py-1 z-10 transition-all duration-300 opacity-0 invisible group-hover:opacity-100 group-hover:visible">
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Khai báo tình trạng</a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Lập kế hoạch</a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Đăng kí thành viên</a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Thông báo định kì</a>
-                </div>
-              </div>
-              <button className="px-3 py-2 text-gray-600 hover:text-gray-900 cursor-pointer whitespace-nowrap !rounded-button">
-                CHỨC NĂNG <i className="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <button className="px-3 py-2 text-gray-600 hover:text-gray-900 cursor-pointer whitespace-nowrap !rounded-button">
-                CHỨC NĂNG <i className="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <button className="px-3 py-2 text-gray-600 hover:text-gray-900 cursor-pointer whitespace-nowrap !rounded-button">
-                CHỨC NĂNG <i className="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <button className="px-3 py-2 text-gray-600 hover:text-gray-900 cursor-pointer whitespace-nowrap !rounded-button">
-                CHỨC NĂNG <i className="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-            </nav>
-          </div>
-          <div className="flex items-center">
-            <p className="text-sm text-gray-600">HOTLINE TƯ VẤN: <span className="font-bold text-red-500">123456789</span></p>
-          </div>
-        </div>
-      </header>
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 max-w-3xl">
-        <h2 className="text-2xl font-bold text-center mb-8">VỀ VIỆC HÚT THUỐC CỦA BẠN</h2>
+        <h2 className="text-2xl font-bold text-center mb-8">VỀ VIỆC HÚT THUỐC CỦa BẠN</h2>
         <div className="space-y-8">
           {/* Tobacco Type Selection */}
           <div>
@@ -178,12 +147,30 @@ const GhiNhanTinhTrang = () => {
               </button>
               {isTobaccoTypeDropdownOpen && (
                 <div className="absolute left-0 right-0 mt-1 bg-white shadow-lg rounded-md py-1 z-10">
-                  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Jet</div>
-                  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Hero</div>
-                  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Marlboro</div>
-                  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">555</div>
-                  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Thăng Long</div>
-                  <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Vinataba</div>
+                  <div onClick={() => {
+                    setSelectedTobaccoBrand("Jet");
+                    setIsTobaccoTypeDropdownOpen(false);
+                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Jet</div>
+                  <div onClick={() => {
+                    setSelectedTobaccoBrand("Hero");
+                    setIsTobaccoTypeDropdownOpen(false);
+                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Hero</div>
+                  <div onClick={() => {
+                    setSelectedTobaccoBrand("Marlboro");
+                    setIsTobaccoTypeDropdownOpen(false);
+                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Marlboro</div>
+                  <div onClick={() => {
+                    setSelectedTobaccoBrand("555");
+                    setIsTobaccoTypeDropdownOpen(false);
+                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">555</div>
+                  <div onClick={() => {
+                    setSelectedTobaccoBrand("Thăng Long");
+                    setIsTobaccoTypeDropdownOpen(false);
+                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Thăng Long</div>
+                  <div onClick={() => {
+                    setSelectedTobaccoBrand("Vinataba");
+                    setIsTobaccoTypeDropdownOpen(false);
+                  }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">Vinataba</div>
                   <div className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm">
                     <div className="flex items-center">
                       <span>Khác:</span>
@@ -259,7 +246,10 @@ const GhiNhanTinhTrang = () => {
             </div>
           </div>
           {/* Submit Button */}
-          <button className="w-full bg-green-500 text-white py-3 rounded-md font-medium text-lg cursor-pointer whitespace-nowrap !rounded-button">
+          <button
+            onClick={handleSubmit} // Gọi handleSubmit khi click
+            className="w-full bg-green-500 text-white py-3 rounded-md font-medium text-lg cursor-pointer whitespace-nowrap !rounded-button"
+          >
             Hoàn thành
           </button>
           {/* Footer Text */}
