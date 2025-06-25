@@ -28,6 +28,7 @@ D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quit
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\PaymentResponse.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\QuitPlanResponse.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\UpgradeMembershipResponse.java
+D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\dto\response\UserAdminResponse.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\BadRequestException.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\EmailAlreadyExistsException.java
 D:\Download\Project_Java_2_old\QuitSmoking_BE\quitsmoking\src\main\java\com\quitsmoking\exceptions\ResourceNotFoundException.java

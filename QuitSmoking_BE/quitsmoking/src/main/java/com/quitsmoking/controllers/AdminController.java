@@ -2,6 +2,7 @@ package com.quitsmoking.controllers;
 import com.quitsmoking.model.User;
 import com.quitsmoking.services.AdminService;
 import com.quitsmoking.dto.response.AdminStatsResponse;
+import com.quitsmoking.dto.response.UserAdminResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -9,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 /**
  * Controller cho các chức năng quản trị hệ thống
  * Chỉ cho phép ADMIN truy cập
@@ -29,17 +31,42 @@ public class AdminController {
         return ResponseEntity.ok(stats);
     }
     /**
+     * Test endpoint để kiểm tra việc đếm người dùng
+     */
+    @GetMapping("/stats/test-user-count")
+    public ResponseEntity<Map<String, Object>> testUserCount() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // Lấy thống kê từ service
+            AdminStatsResponse stats = adminService.getSystemStats();
+            
+            result.put("success", true);
+            result.put("totalUsers", stats.getTotalUsers());
+            result.put("activeUsers", stats.getActiveUsers());
+            result.put("newUsersThisMonth", stats.getNewUsersThisMonth());
+            result.put("bannedUsers", stats.getBannedUsers());
+            result.put("message", "User count test completed successfully");
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("error", e.getMessage());
+            result.put("message", "Error during user count test");
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+    /**
      * Quản lý người dùng - Lấy danh sách tất cả người dùng
      */
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers(
+    public ResponseEntity<List<UserAdminResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search) {
-        
-        List<User> users = adminService.getAllUsers(page, size, sortBy, sortDir, search);
+        List<UserAdminResponse> users = adminService.getAllUsers(page, size, sortBy, sortDir, search);
         return ResponseEntity.ok(users);
     }
     /**
