@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navigation from "./layout/Navigation";
 import axios from "axios";
-
 import config from "../config/config.js";
+import { useAuth } from "../context/AuthContext";
 
 console.log("HomePage: Đối tượng 'config' sau khi import:", config);
 // Thêm console log chi tiết hơn để kiểm tra cấu trúc của 'endpoints'
@@ -30,15 +30,14 @@ if (
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { token, logout } = useAuth();
   const [userData, setUserData] = useState(null);
-  const [userLoading, setUserLoading] = useState(true); // Mặc định là true khi component mount
+  const [userLoading, setUserLoading] = useState(false);
   const [userFetchError, setUserFetchError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     document.getElementById("title").innerText = "HomePage";
-
-    const token = localStorage.getItem("token");
 
     if (token) {
       setIsLoggedIn(true); // Đặt trạng thái đã đăng nhập nếu có token
@@ -99,7 +98,7 @@ const HomePage = () => {
             console.warn(
               "HomePage: Token không hợp lệ hoặc đã hết hạn. Đang đăng xuất tự động."
             );
-            localStorage.removeItem("token");
+            logout();
             setIsLoggedIn(false); // Đặt lại trạng thái đăng nhập
             setUserData(null); // Xóa dữ liệu người dùng cũ
             // Không navigate, chỉ cập nhật UI để hiển thị nút đăng nhập/đăng ký
@@ -134,10 +133,10 @@ const HomePage = () => {
     animateRankingBars(); // Chạy lần đầu khi component mount
 
     return () => window.removeEventListener("scroll", animateRankingBars);
-  }, []); // Dependency array rỗng để chỉ chạy một lần khi mount
+  }, [token, logout]); // Add token and logout to dependencies
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     setUserData(null);
     setIsLoggedIn(false); // Cập nhật trạng thái đã đăng xuất
     setUserFetchError(null); // Xóa lỗi nếu có

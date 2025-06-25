@@ -47,4 +47,8 @@ public interface UserDAO extends JpaRepository<User, String> {
     // Phương thức tìm kiếm người dùng theo email và tải MembershipPlan hiện tại
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.currentMembershipPlan WHERE u.email = :email")
     Optional<User> findByEmailWithMembership(@Param("email") String email);
+
+    // Lấy toàn bộ user kèm MembershipPlan (fetch join)
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.currentMembershipPlan")
+    List<User> findAllWithMembership();
 }

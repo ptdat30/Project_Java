@@ -1,19 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { useAdminAuth } from "../../hooks/useAdminAuth";
 import axios from "axios";
 import config from "../../config/config.js";
+import { useAuth } from "../../context/AuthContext";
 
 const AdminPanel = () => {
-  const { user, loading: authLoading } = useAdminAuth();
+  const { token, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeUsers: 0,
+    newUsersThisMonth: 0,
     totalPlans: 0,
     successfulQuits: 0,
     totalRevenue: 0,
-    newUsersThisMonth: 0,
+    totalCoaches: 0,
+    activeCoaches: 0,
+    totalPosts: 0,
+    totalComments: 0,
+    bannedUsers: 0,
+    totalTransactions: 0,
+    monthlyRevenue: 0,
+    yearlyRevenue: 0,
+    dailyActiveUsers: 0,
+    weeklyActiveUsers: 0,
+    monthlyActiveUsers: 0,
+    totalAchievements: 0,
+    achievementsEarned: 0,
+    totalConsultations: 0,
+    activeDiscussions: 0,
+    freeMembers: 0,
+    basicMembers: 0,
+    premiumMembers: 0,
+    vipMembers: 0,
+    activePlans: 0,
+    completedPlans: 0,
+    systemHealth: "UNKNOWN",
+    systemUptime: 0,
+    lastBackup: null,
   });
   const [users, setUsers] = useState([]);
   const [coaches, setCoaches] = useState([]);
@@ -33,54 +57,69 @@ const AdminPanel = () => {
     { id: "system", name: "Hệ thống", icon: "⚙️" },
   ];
 
+  // Debug token
+  useEffect(() => {
+    console.log("AdminPanel: Token received:", token ? "Present" : "Missing");
+    console.log("AdminPanel: Auth loading:", authLoading);
+  }, [token, authLoading]);
+
   // Fetch data khi component mount và khi tab thay đổi
   useEffect(() => {
-    if (!authLoading) {
+    if (token && !authLoading) {
+      console.log("AdminPanel: Fetching data with token");
       fetchData();
     }
-  }, [activeTab, authLoading]);
+  }, [activeTab, token, authLoading]);
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("AdminPanel: No token available");
+        setLoading(false);
+        return;
+      }
+
+      console.log("AdminPanel: Starting fetchData for tab:", activeTab);
 
       switch (activeTab) {
         case "dashboard":
-          await fetchDashboardStats(token);
+          await fetchDashboardStats();
           break;
         case "users":
-          await fetchUsers(token);
+          await fetchUsers();
           break;
         case "coaches":
-          await fetchCoaches(token);
+          await fetchCoaches();
           break;
         case "reports":
-          await fetchReports(token);
+          await fetchReports();
           break;
         case "feedback":
-          await fetchFeedbacks(token);
+          await fetchFeedbacks();
           break;
       }
       setLoading(false);
     } catch (error) {
-      console.error("Lỗi khi tải dữ liệu:", error);
+      console.error("AdminPanel: Lỗi khi tải dữ liệu:", error);
       setLoading(false);
     }
   };
 
-  const fetchDashboardStats = async (token) => {
+  const fetchDashboardStats = async () => {
     const response = await axios.get(`${config.API_BASE_URL}/api/admin/stats`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setStats(response.data);
   };
-  const fetchUsers = async (token) => {
+  
+  const fetchUsers = async () => {
     const response = await axios.get(`${config.API_BASE_URL}/api/admin/users`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setUsers(response.data);
   };
-  const fetchCoaches = async (token) => {
+  
+  const fetchCoaches = async () => {
     const response = await axios.get(
       `${config.API_BASE_URL}/api/admin/coaches`,
       {
@@ -89,7 +128,8 @@ const AdminPanel = () => {
     );
     setCoaches(response.data);
   };
-  const fetchReports = async (token) => {
+  
+  const fetchReports = async () => {
     const response = await axios.get(
       `${config.API_BASE_URL}/api/admin/reports`,
       {
@@ -98,7 +138,8 @@ const AdminPanel = () => {
     );
     setReports(response.data);
   };
-  const fetchFeedbacks = async (token) => {
+  
+  const fetchFeedbacks = async () => {
     const response = await axios.get(
       `${config.API_BASE_URL}/api/admin/feedbacks`,
       {
@@ -107,9 +148,9 @@ const AdminPanel = () => {
     );
     setFeedbacks(response.data);
   };
+  
   const handleUserAction = async (userId, action) => {
     try {
-      const token = localStorage.getItem("token");
       await axios.post(
         `${config.API_BASE_URL}/api/admin/users/${userId}/${action}`,
         {},
@@ -117,12 +158,76 @@ const AdminPanel = () => {
       );
 
       alert(`${action === "ban" ? "Khóa" : "Mở khóa"} người dùng thành công!`);
-      fetchUsers(token); // Refetch users after action
+      fetchUsers(); // Refetch users after action
     } catch (error) {
       console.error("Lỗi khi thực hiện hành động:", error);
       alert("Có lỗi xảy ra. Vui lòng thử lại!");
     }
   };
+
+  // Quick action handlers
+  const handleQuickAction = (action) => {
+    switch (action) {
+      case "manageUsers":
+        setActiveTab("users");
+        break;
+      case "viewReports":
+        setActiveTab("reports");
+        break;
+      case "viewFeedback":
+        setActiveTab("feedback");
+        break;
+      case "systemSettings":
+        setActiveTab("system");
+        break;
+      case "createBackup":
+        handleCreateBackup();
+        break;
+      case "viewCoaches":
+        setActiveTab("coaches");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/api/admin/system/backup`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        alert("Backup đã được tạo thành công!");
+      } else {
+        alert("Có lỗi khi tạo backup!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi tạo backup:", error);
+      alert("Có lỗi xảy ra khi tạo backup!");
+    }
+  };
+
+  const testUserCount = async () => {
+    try {
+      const response = await axios.get(
+        `${config.API_BASE_URL}/api/admin/stats/test-user-count`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        alert(`Test đếm người dùng thành công!\n\nTổng người dùng: ${response.data.totalUsers}\nNgười dùng hoạt động: ${response.data.activeUsers}\nNgười dùng mới tháng này: ${response.data.newUsersThisMonth}\nNgười dùng bị ban: ${response.data.bannedUsers}`);
+      } else {
+        alert("Có lỗi khi test đếm người dùng!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi test đếm người dùng:", error);
+      alert("Có lỗi xảy ra khi test đếm người dùng!");
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -164,7 +269,7 @@ const AdminPanel = () => {
                 Tổng người dùng
               </h3>
               <p className="text-3xl font-bold text-blue-600">
-                {stats.totalUsers.toLocaleString()}
+                {(stats.totalUsers || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -191,7 +296,7 @@ const AdminPanel = () => {
                 Người dùng hoạt động
               </h3>
               <p className="text-3xl font-bold text-green-600">
-                {stats.activeUsers.toLocaleString()}
+                {(stats.activeUsers || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -218,7 +323,7 @@ const AdminPanel = () => {
                 Kế hoạch cai thuốc
               </h3>
               <p className="text-3xl font-bold text-purple-600">
-                {stats.totalPlans.toLocaleString()}
+                {(stats.totalPlans || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -245,7 +350,7 @@ const AdminPanel = () => {
                 Cai thuốc thành công
               </h3>
               <p className="text-3xl font-bold text-yellow-600">
-                {stats.successfulQuits.toLocaleString()}
+                {(stats.successfulQuits || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -272,7 +377,7 @@ const AdminPanel = () => {
                 Tổng doanh thu
               </h3>
               <p className="text-3xl font-bold text-red-600">
-                {formatCurrency(stats.totalRevenue)}
+                {formatCurrency(stats.totalRevenue || 0)}
               </p>
             </div>
           </div>
@@ -299,38 +404,133 @@ const AdminPanel = () => {
                 Người dùng mới (tháng này)
               </h3>
               <p className="text-3xl font-bold text-indigo-600">
-                {stats.newUsersThisMonth.toLocaleString()}
+                {(stats.newUsersThisMonth || 0).toLocaleString()}
               </p>
             </div>
           </div>
         </div>
       </div>
+      
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Hành động nhanh
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => handleQuickAction("manageUsers")}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
             <div className="text-2xl mb-2">👥</div>
             <div className="text-sm font-medium">Quản lý người dùng</div>
           </button>
-          <button className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => handleQuickAction("viewReports")}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
             <div className="text-2xl mb-2">📊</div>
             <div className="text-sm font-medium">Xem báo cáo</div>
           </button>
-          <button className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => handleQuickAction("viewFeedback")}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
             <div className="text-2xl mb-2">💬</div>
             <div className="text-sm font-medium">Phản hồi mới</div>
           </button>
-          <button className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => handleQuickAction("systemSettings")}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
             <div className="text-2xl mb-2">⚙️</div>
             <div className="text-sm font-medium">Cài đặt hệ thống</div>
           </button>
+          <button 
+            onClick={() => handleQuickAction("viewCoaches")}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <div className="text-2xl mb-2">🎓</div>
+            <div className="text-sm font-medium">Quản lý huấn luyện viên</div>
+          </button>
+          <button 
+            onClick={() => handleQuickAction("createBackup")}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <div className="text-2xl mb-2">💾</div>
+            <div className="text-sm font-medium">Tạo backup</div>
+          </button>
+          <button 
+            onClick={testUserCount}
+            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <div className="text-2xl mb-2">🔍</div>
+            <div className="text-sm font-medium">Test đếm người dùng</div>
+          </button>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Hoạt động gần đây
+        </h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-3 ${
+                stats.systemHealth === "HEALTHY" ? "bg-green-500" : 
+                stats.systemHealth === "WARNING" ? "bg-yellow-500" : "bg-red-500"
+              }`}></div>
+              <span className="text-sm text-gray-700">
+                Hệ thống: {stats.systemHealth === "HEALTHY" ? "Hoạt động bình thường" : 
+                             stats.systemHealth === "WARNING" ? "Cảnh báo" : "Có vấn đề"}
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">Vừa xong</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+              <span className="text-sm text-gray-700">
+                {(stats.newUsersThisMonth || 0)} người dùng mới đăng ký tháng này
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">Tháng này</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+              <span className="text-sm text-gray-700">
+                {(stats.totalPlans || 0)} kế hoạch cai thuốc tổng cộng
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">Tổng cộng</span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+              <span className="text-sm text-gray-700">
+                {(stats.successfulQuits || 0)} người cai thuốc thành công
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">Tổng cộng</span>
+          </div>
+          {stats.lastBackup && (
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-700">
+                  Backup cuối cùng: {new Date(stats.lastBackup).toLocaleString('vi-VN')}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500">Backup</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+
   const UsersTab = () => (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
@@ -389,16 +589,16 @@ const AdminPanel = () => {
                 <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                   <span
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.membershipPlan === "VIP"
+                      user.membershipPlanName === "VIP"
                         ? "bg-purple-100 text-purple-800"
-                        : user.membershipPlan === "PREMIUM"
+                        : user.membershipPlanName === "PREMIUM"
                         ? "bg-yellow-100 text-yellow-800"
-                        : user.membershipPlan === "BASIC"
+                        : user.membershipPlanName === "BASIC"
                         ? "bg-blue-100 text-blue-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {user.membershipPlan || "FREE"}
+                    {user.membershipPlanName || "Chưa đăng ký"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
@@ -465,6 +665,7 @@ const AdminPanel = () => {
       </div>
     </div>
   );
+
   const CoachesTab = () => (
     <div className="bg-white rounded-lg shadow-sm">
       <div className="p-6 border-b border-gray-200">
@@ -534,6 +735,7 @@ const AdminPanel = () => {
       </div>
     </div>
   );
+
   return (
     <div className="min-h-screen bg-gray-50">
       {authLoading ? (
@@ -560,11 +762,6 @@ const AdminPanel = () => {
             <p className="text-gray-600 mt-2">
               Quản lý toàn bộ hệ thống nền tảng cai thuốc
             </p>
-            {user && (
-              <p className="text-sm text-gray-500 mt-1">
-                Xin chào, {user.firstName} {user.lastName} ({user.email})
-              </p>
-            )}
           </div>
           {/* Tabs */}
           <div className="border-b border-gray-200 mb-8">
@@ -626,4 +823,5 @@ const AdminPanel = () => {
     </div>
   );
 };
+
 export default AdminPanel;

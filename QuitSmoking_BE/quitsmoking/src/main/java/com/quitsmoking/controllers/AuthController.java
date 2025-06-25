@@ -89,12 +89,22 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Incorrect username or password"));
         }
 
-        // Tìm User object sau khi xác thực thành công
-        // Dùng userDAO để lấy User đầy đủ, bao gồm ID
-        User user = userDAO.findByEmailOrUsername(authenticationRequest.getUsername())
-                            .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
+        // SỬA: Dùng findByEmailOrUsernameWithMembership để fetch membership đầy đủ
+        User user = userDAO.findByEmailOrUsernameWithMembership(authenticationRequest.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
 
-        // **QUAN TRỌNG**: Tạo JWT bằng ID của người dùng (dạng String)
+        // Có thể giữ lại đoạn truy cập các trường MembershipPlan nếu muốn chắc chắn
+        if (user.getCurrentMembershipPlan() != null) {
+            user.getCurrentMembershipPlan().getPlanName();
+            user.getCurrentMembershipPlan().getDescription();
+            user.getCurrentMembershipPlan().getPrice();
+            user.getCurrentMembershipPlan().getDurationDays();
+            user.getCurrentMembershipPlan().getPlanType();
+            user.getCurrentMembershipPlan().getIsActive();
+            user.getCurrentMembershipPlan().getCreatedAt();
+            user.getCurrentMembershipPlan().getUpdatedAt();
+        }
+
         final String jwt = jwtUtil.generateToken(user); // <-- Truyền UUID dạng String
 
         logger.info("Nguoi dung {} da dang nhap thanh cong, JWT da duoc tao.", user.getEmail());
