@@ -203,6 +203,18 @@ const AppContent = () => {
           }
         />
         <Route
+          path="/ghinhantinhtrang"
+          element={
+            <ProtectedRoute>
+              {hasRecordedStatus ? (
+                <Navigate to="/plan" replace />
+              ) : (
+                <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
+              )}
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
