@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import config from "../../config/config.js";
+import { useAuth } from "../../context/AuthContext";
+
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
@@ -34,12 +37,15 @@ const SettingsPage = () => {
   });
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState({});
+
   useEffect(() => {
-    fetchUserSettings();
-  }, []);
+    if (token) {
+      fetchUserSettings();
+    }
+  }, [token]);
+
   const fetchUserSettings = async () => {
     try {
-      const token = localStorage.getItem("token");
       if (!token) {
         navigate("/login");
         return;
@@ -70,13 +76,13 @@ const SettingsPage = () => {
     } catch (error) {
       console.error("Lỗi khi tải cài đặt:", error);
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
         navigate("/login");
       }
     } finally {
       setLoading(false);
     }
   };
+
   const handleSettingChange = (category, key, value) => {
     setSettings((prev) => ({
       ...prev,
@@ -86,10 +92,10 @@ const SettingsPage = () => {
       },
     }));
   };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
       await axios.put(`${config.API_BASE_URL}/api/users/settings`, settings, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -101,6 +107,7 @@ const SettingsPage = () => {
       setSaving(false);
     }
   };
+
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setChangePasswordData((prev) => ({
@@ -116,6 +123,7 @@ const SettingsPage = () => {
       }));
     }
   };
+
   const validatePassword = () => {
     const errors = {};
     if (!changePasswordData.currentPassword) {
@@ -136,6 +144,7 @@ const SettingsPage = () => {
     setPasswordErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
@@ -143,7 +152,6 @@ const SettingsPage = () => {
       return;
     }
     try {
-      const token = localStorage.getItem("token");
       await axios.put(
         `${config.API_BASE_URL}/api/users/change-password`,
         {
@@ -170,6 +178,7 @@ const SettingsPage = () => {
       }
     }
   };
+
   const handleDeleteAccount = async () => {
     const confirmDelete = window.confirm(
       "Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác!"
@@ -184,18 +193,17 @@ const SettingsPage = () => {
       return;
     }
     try {
-      const token = localStorage.getItem("token");
       await axios.delete(`${config.API_BASE_URL}/api/users/delete-account`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Tài khoản đã được xóa thành công.");
-      localStorage.removeItem("token");
       navigate("/");
     } catch (error) {
       console.error("Lỗi khi xóa tài khoản:", error);
       alert("Có lỗi xảy ra khi xóa tài khoản. Vui lòng thử lại!");
     }
   };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
