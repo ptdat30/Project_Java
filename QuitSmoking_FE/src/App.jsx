@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useState } from "react";
-=======
 import React, { useState, useEffect } from "react";
->>>>>>> f817d679024bd453de803fcc31f85fbe6b4e421a
 import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./auth/LoginPage";
@@ -68,10 +64,7 @@ const GuestOnlyRoute = ({ children }) => {
 const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
-<<<<<<< HEAD
-=======
   const { user } = useAuth();
->>>>>>> f817d679024bd453de803fcc31f85fbe6b4e421a
 
   // Không hiển thị Navigation trên các trang auth
   const hideNavigation = ["/login", "/register", "/recover-password"].includes(
@@ -90,17 +83,11 @@ const AppContent = () => {
 
   // Khi hoàn thành ghi nhận tình trạng, lưu trạng thái theo user
   const handleStatusRecorded = () => {
-<<<<<<< HEAD
-    setHasRecordedStatus(true); // Cập nhật trạng thái trong component
-    localStorage.setItem('hasRecordedStatus', 'true'); // Lưu trạng thái vào localStorage
-    navigate('/plan'); // Sử dụng hook navigate để điều hướng
-=======
     if (user && user.id) {
       localStorage.setItem(`hasRecordedStatus_${user.id}`, 'true');
       setHasRecordedStatus(true);
       navigate('/plan');
     }
->>>>>>> f817d679024bd453de803fcc31f85fbe6b4e421a
   };
 
   return (
@@ -212,6 +199,18 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <GhiNhanTinhTrang />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ghinhantinhtrang"
+          element={
+            <ProtectedRoute>
+              {hasRecordedStatus ? (
+                <Navigate to="/plan" replace />
+              ) : (
+                <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
+              )}
             </ProtectedRoute>
           }
         />

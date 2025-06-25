@@ -60,6 +60,7 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
     if (onComplete) {
       onComplete();
     }
+    
     // Không cần navigate ở đây nữa, vì App.jsx sẽ xử lý việc điều hướng
     // sau khi onComplete được gọi và trạng thái được cập nhật.
   };
