@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import ChatBox from './chatbox';
 
 const AiChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  // Danh sách các trang không hiển thị chatbox
+  const hideOnPaths = [
+    '/login',
+    '/register',
+    '/recover-password',
+    '/forgot-password',
+    '/reset-password'
+  ];
+
+  if (hideOnPaths.includes(location.pathname)) return null;
 
   return (
     <>
