@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
@@ -78,6 +78,7 @@ const GuestOnlyRoute = ({ children }) => {
 
 const AppContent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Không hiển thị Navigation trên các trang auth
   const hideNavigation = ["/login", "/register", "/recover-password"].includes(
@@ -96,7 +97,7 @@ const AppContent = () => {
   const handleStatusRecorded = () => {
     setHasRecordedStatus(true); // Cập nhật trạng thái trong component
     localStorage.setItem('hasRecordedStatus', 'true'); // Lưu trạng thái vào localStorage
-    Navigate('/plan'); // Điều hướng trở lại trang /plan (lúc này sẽ hiển thị PlanPage)
+    navigate('/plan'); // Sử dụng hook navigate để điều hướng
   };
 
   return (
