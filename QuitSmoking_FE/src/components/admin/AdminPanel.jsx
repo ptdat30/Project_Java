@@ -43,7 +43,11 @@ const AdminPanel = () => {
   const [coaches, setCoaches] = useState([]);
   const [reports, setReports] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
-  
+
+  // Pagination states for UsersTab
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(6); // Display 6 users per page
+
   const tabs = [
     { id: "dashboard", name: "Tổng quan", icon: "📊" },
     { id: "users", name: "Quản lý người dùng", icon: "👥" },
@@ -154,7 +158,7 @@ const AdminPanel = () => {
       );
 
       alert(`${action === "ban" ? "Khóa" : "Mở khóa"} người dùng thành công!`);
-      fetchUsers();
+      fetchUsers(); // Refetch users after action
     } catch (error) {
       console.error("Lỗi khi thực hiện hành động:", error);
       alert("Có lỗi xảy ra. Vui lòng thử lại!");
@@ -230,6 +234,14 @@ const AdminPanel = () => {
       currency: "VND",
     }).format(amount);
   };
+
+  // Get current users for pagination
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const DashboardTab = () => (
     <div className="space-y-6">
@@ -471,7 +483,7 @@ const AdminPanel = () => {
               }`}></div>
               <span className="text-sm text-gray-700">
                 Hệ thống: {stats.systemHealth === "HEALTHY" ? "Hoạt động bình thường" : 
-                          stats.systemHealth === "WARNING" ? "Cảnh báo" : "Có vấn đề"}
+                             stats.systemHealth === "WARNING" ? "Cảnh báo" : "Có vấn đề"}
               </span>
             </div>
             <span className="text-xs text-gray-500">Vừa xong</span>
@@ -480,7 +492,7 @@ const AdminPanel = () => {
             <div className="flex items-center">
               <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
               <span className="text-sm text-gray-700">
-                {stats.newUsersThisMonth || 0} người dùng mới đăng ký tháng này
+                {(stats.newUsersThisMonth || 0)} người dùng mới đăng ký tháng này
               </span>
             </div>
             <span className="text-xs text-gray-500">Tháng này</span>
@@ -489,7 +501,7 @@ const AdminPanel = () => {
             <div className="flex items-center">
               <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
               <span className="text-sm text-gray-700">
-                {stats.totalPlans || 0} kế hoạch cai thuốc tổng cộng
+                {(stats.totalPlans || 0)} kế hoạch cai thuốc tổng cộng
               </span>
             </div>
             <span className="text-xs text-gray-500">Tổng cộng</span>
@@ -498,7 +510,7 @@ const AdminPanel = () => {
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
               <span className="text-sm text-gray-700">
-                {stats.successfulQuits || 0} người cai thuốc thành công
+                {(stats.successfulQuits || 0)} người cai thuốc thành công
               </span>
             </div>
             <span className="text-xs text-gray-500">Tổng cộng</span>
@@ -527,22 +539,22 @@ const AdminPanel = () => {
         </h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Người dùng
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Gói thành viên
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Trạng thái
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                 Ngày tham gia
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -551,11 +563,11 @@ const AdminPanel = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => (
+            {currentUsers.map((user) => (
               <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-sm font-semibold">
                         {user.firstName?.charAt(0)}
                         {user.lastName?.charAt(0)}
@@ -571,10 +583,10 @@ const AdminPanel = () => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
                   {user.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                   <span
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       user.membershipPlanName === "VIP"
@@ -589,7 +601,7 @@ const AdminPanel = () => {
                     {user.membershipPlanName || "Chưa đăng ký"}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                   <span
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       user.status === "ACTIVE"
@@ -600,10 +612,8 @@ const AdminPanel = () => {
                     {user.status === "ACTIVE" ? "Hoạt động" : "Bị khóa"}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {user.membershipStartDate
-                    ? new Date(user.membershipStartDate).toLocaleDateString("vi-VN")
-                    : "Chưa có"}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
+                  {new Date(user.createdAt).toLocaleDateString("vi-VN")}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <div className="flex space-x-2">
@@ -631,6 +641,27 @@ const AdminPanel = () => {
             ))}
           </tbody>
         </table>
+      </div>
+      {/* Pagination Controls */}
+      <div className="py-3 px-6 flex justify-between items-center bg-gray-50 border-t border-gray-200">
+        <div className="text-sm text-gray-700">
+          Hiển thị {indexOfFirstUser + 1} đến {Math.min(indexOfLastUser, users.length)} của {users.length} người dùng
+        </div>
+        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          {Array.from({ length: Math.ceil(users.length / usersPerPage) }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => paginate(i + 1)}
+              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                currentPage === i + 1
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </nav>
       </div>
     </div>
   );
