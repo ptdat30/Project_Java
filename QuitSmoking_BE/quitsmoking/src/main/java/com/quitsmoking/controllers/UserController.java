@@ -206,4 +206,28 @@ public class UserController {
                 .body(Map.of("message", "Đã xảy ra lỗi khi cập nhật profile: " + e.getMessage()));
         }
     }
+
+    @GetMapping("/coaches")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getAllCoaches() {
+        try {
+            // Lấy danh sách user có role COACH
+            java.util.List<User> coaches = userDAO.findByRole(com.quitsmoking.model.Role.COACH);
+            // Chỉ trả về các trường cần thiết cho FE
+            java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+            for (User coach : coaches) {
+                java.util.Map<String, Object> coachInfo = new java.util.HashMap<>();
+                coachInfo.put("id", coach.getId());
+                coachInfo.put("username", coach.getUsername());
+                coachInfo.put("email", coach.getEmail());
+                coachInfo.put("firstName", coach.getFirstName());
+                coachInfo.put("lastName", coach.getLastName());
+                coachInfo.put("pictureUrl", coach.getPictureUrl());
+                result.add(coachInfo);
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "Lỗi khi lấy danh sách coach: " + e.getMessage()));
+        }
+    }
 }
