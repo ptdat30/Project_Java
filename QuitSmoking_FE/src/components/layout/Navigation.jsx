@@ -43,7 +43,10 @@ const Navigation = () => {
     { name: "Dashboard", href: "/dashboard", icon: "📊" },
     { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
     { name: "Cộng đồng", href: "/community", icon: "👥" },
-    { name: "Tư vấn Coach", href: "/coach-consultation", icon: "👨‍⚕️" },
+    // Nếu là COACH thì đổi tên và icon
+    user?.role === "COACH"
+      ? { name: "Tin nhắn", href: "/coach-consultation", icon: "💬" }
+      : { name: "Tư vấn Coach", href: "/coach-consultation", icon: "👨‍⚕️" },
     { name: "Huy hiệu", href: "/achievements", icon: "🏆" },
   ];
 

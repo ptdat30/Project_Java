@@ -79,4 +79,31 @@ public class CoachConsultationService {
     public Page<CoachConsultation> getAllConsultations(Pageable pageable) {
         return consultationRepository.findAllByOrderByCreatedAtDesc(pageable);
     }
+    
+    public Optional<CoachConsultation> getConsultationByMemberAndCoach(String memberId, String coachId) {
+        List<CoachConsultation> list = consultationRepository.findByMemberIdAndCoachId(memberId, coachId);
+        if (list != null && !list.isEmpty()) {
+            return Optional.of(list.get(0)); // Lấy session mới nhất
+        }
+        return Optional.empty();
+    }
+    
+    // Lấy tất cả session theo coachId (không phân trang)
+    public List<CoachConsultation> getConsultationsByCoachId(String coachId) {
+        // Sử dụng method với JOIN FETCH để tránh LazyInitializationException
+        return consultationRepository.findByCoachIdWithMemberAndCoach(coachId);
+    }
+    
+    // Thêm method mới để lấy consultation với member và coach đã được load
+    public List<CoachConsultation> getConsultationsByMemberId(String memberId) {
+        return consultationRepository.findByMemberIdWithMemberAndCoach(memberId);
+    }
+    
+    public Optional<CoachConsultation> getConsultationByMemberAndCoachWithDetails(String memberId, String coachId) {
+        List<CoachConsultation> list = consultationRepository.findByMemberIdAndCoachIdWithMemberAndCoach(memberId, coachId);
+        if (list != null && !list.isEmpty()) {
+            return Optional.of(list.get(0)); // Lấy session mới nhất
+        }
+        return Optional.empty();
+    }
 }

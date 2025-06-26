@@ -109,7 +109,9 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = getToken(); // Sử dụng hàm tiện ích
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Đảm bảo luôn set đúng chữ hoa 'Authorization'
+      config.headers['Authorization'] = `Bearer ${token}`;
+      // XÓA mọi dòng set 'authorization' (chữ thường) nếu có
     }
     return config;
   },
