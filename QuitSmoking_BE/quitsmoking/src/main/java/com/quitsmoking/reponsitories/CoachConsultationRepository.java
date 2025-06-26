@@ -27,6 +27,16 @@ public interface CoachConsultationRepository extends JpaRepository<CoachConsulta
     @Query("SELECT cc FROM CoachConsultation cc WHERE cc.coach.id = :coachId ORDER BY cc.createdAt DESC")
     Page<CoachConsultation> findByCoachIdOrderByCreatedAtDesc(@Param("coachId") String coachId, Pageable pageable);
     
+    // Thêm method với JOIN FETCH để tránh LazyInitializationException
+    @Query("SELECT cc FROM CoachConsultation cc JOIN FETCH cc.member JOIN FETCH cc.coach WHERE cc.coach.id = :coachId ORDER BY cc.createdAt DESC")
+    List<CoachConsultation> findByCoachIdWithMemberAndCoach(@Param("coachId") String coachId);
+    
+    @Query("SELECT cc FROM CoachConsultation cc JOIN FETCH cc.member JOIN FETCH cc.coach WHERE cc.member.id = :memberId ORDER BY cc.createdAt DESC")
+    List<CoachConsultation> findByMemberIdWithMemberAndCoach(@Param("memberId") String memberId);
+    
+    @Query("SELECT cc FROM CoachConsultation cc JOIN FETCH cc.member JOIN FETCH cc.coach WHERE cc.member.id = :memberId AND cc.coach.id = :coachId ORDER BY cc.createdAt DESC")
+    List<CoachConsultation> findByMemberIdAndCoachIdWithMemberAndCoach(@Param("memberId") String memberId, @Param("coachId") String coachId);
+    
     List<CoachConsultation> findByStatus(CoachConsultation.ConsultationStatus status);
     
     Page<CoachConsultation> findAllByOrderByCreatedAtDesc(Pageable pageable);
@@ -39,5 +49,8 @@ public interface CoachConsultationRepository extends JpaRepository<CoachConsulta
     
     @Query("SELECT AVG(cc.rating) FROM CoachConsultation cc WHERE cc.coach = :coach AND cc.rating > 0")
     Double getAverageRatingForCoach(@Param("coach") User coach);
+    
+    @Query("SELECT cc FROM CoachConsultation cc WHERE cc.member.id = :memberId AND cc.coach.id = :coachId ORDER BY cc.createdAt DESC")
+    List<CoachConsultation> findByMemberIdAndCoachId(@Param("memberId") String memberId, @Param("coachId") String coachId);
 }
 

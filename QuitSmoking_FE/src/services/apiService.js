@@ -305,6 +305,17 @@ const apiService = {
     const response = await apiClient.get("/api/dashboard/stats");
     return response.data;
   },
+
+  getCoaches: async () => {
+    const response = await apiClient.get("/api/user/coaches");
+    return response.data;
+  },
+
+  getConsultationSession: async (userId, coachId) => {
+    // Giả sử endpoint là /api/coach-consultations?userId=...&coachId=...
+    const response = await apiClient.get(`/api/coach-consultations?userId=${userId}&coachId=${coachId}`);
+    return response.data;
+  },
 };
 
 export default apiService;

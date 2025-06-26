@@ -2,6 +2,7 @@ package com.quitsmoking.controllers;
 
 import com.quitsmoking.model.ChatMessage;
 import com.quitsmoking.services.ChatMessageService;
+import com.quitsmoking.dto.request.ChatMessageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,38 +23,42 @@ public class ChatMessageController {
     
     @PostMapping("/messages")
     @PreAuthorize("hasRole('MEMBER') or hasRole('COACH')")
-    public ResponseEntity<ChatMessage> sendMessage(
-            @RequestParam String consultationId,
-            @RequestParam String senderId,
-            @RequestParam String content,
-            @RequestParam(defaultValue = "TEXT") String messageType,
-            @RequestParam(required = false) String fileUrl) {
-        
-        ChatMessage.MessageType type = ChatMessage.MessageType.valueOf(messageType.toUpperCase());
-        ChatMessage message = chatMessageService.sendMessage(consultationId, senderId, content, type, fileUrl);
-        return ResponseEntity.ok(message);
+    public ResponseEntity<com.quitsmoking.dto.response.ChatMessageResponse> sendMessage(@RequestBody com.quitsmoking.dto.request.ChatMessageRequest request) {
+        ChatMessage.MessageType type = ChatMessage.MessageType.valueOf(request.getMessageType().toUpperCase());
+        ChatMessage message = chatMessageService.sendMessage(
+            request.getConsultationId(),
+            request.getSenderId(),
+            request.getContent(),
+            type,
+            request.getFileUrl()
+        );
+        return ResponseEntity.ok(message.toResponse());
     }
     
     @GetMapping("/messages/{consultationId}")
     @PreAuthorize("hasRole('MEMBER') or hasRole('COACH')")
-    public ResponseEntity<Page<ChatMessage>> getMessages(
+    public ResponseEntity<Page<com.quitsmoking.dto.response.ChatMessageResponse>> getMessages(
             @PathVariable String consultationId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
         Pageable pageable = PageRequest.of(page, size);
         Page<ChatMessage> messages = chatMessageService.getMessagesByConsultation(consultationId, pageable);
-        return ResponseEntity.ok(messages);
+        Page<com.quitsmoking.dto.response.ChatMessageResponse> response = messages.map(ChatMessage::toResponse);
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/messages/{consultationId}/unread")
     @PreAuthorize("hasRole('MEMBER') or hasRole('COACH')")
-    public ResponseEntity<List<ChatMessage>> getUnreadMessages(
+    public ResponseEntity<List<com.quitsmoking.dto.response.ChatMessageResponse>> getUnreadMessages(
             @PathVariable String consultationId,
             @RequestParam String userId) {
         
         List<ChatMessage> unreadMessages = chatMessageService.getUnreadMessages(consultationId, userId);
-        return ResponseEntity.ok(unreadMessages);
+        List<com.quitsmoking.dto.response.ChatMessageResponse> response = unreadMessages.stream()
+            .map(ChatMessage::toResponse)
+            .toList();
+        return ResponseEntity.ok(response);
     }
     
     @PutMapping("/messages/{consultationId}/mark-read")
@@ -85,11 +90,14 @@ public class ChatMessageController {
     
     @GetMapping("/messages/{consultationId}/recent")
     @PreAuthorize("hasRole('MEMBER') or hasRole('COACH')")
-    public ResponseEntity<List<ChatMessage>> getRecentMessages(
+    public ResponseEntity<List<com.quitsmoking.dto.response.ChatMessageResponse>> getRecentMessages(
             @PathVariable String consultationId,
             @RequestParam(defaultValue = "10") int limit) {
         
         List<ChatMessage> recentMessages = chatMessageService.getRecentMessages(consultationId, limit);
-        return ResponseEntity.ok(recentMessages);
+        List<com.quitsmoking.dto.response.ChatMessageResponse> response = recentMessages.stream()
+            .map(ChatMessage::toResponse)
+            .toList();
+        return ResponseEntity.ok(response);
     }
 }

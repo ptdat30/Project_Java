@@ -18,6 +18,7 @@ import AdminPanel from "./components/admin/AdminPanel";
 import DailyProgressPage from "./components/progress/DailyProgressPage";
 import GhiNhanTinhTrang from "./components/ghinhantinhtrang";
 import Feedback from "./components/feedback/feedback";
+import AiChatWidget from "./components/AiChatBox/AiChatWidget";
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // --- Components để bảo vệ Routes ---
@@ -231,6 +232,7 @@ const AppContent = () => {
           }
         />
       </Routes>
+      <AiChatWidget /> {/* Đảm bảo widget luôn hiển thị ngoài Routes */}
     </div>
   );
 };

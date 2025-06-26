@@ -72,4 +72,23 @@ public class CoachConsultation {
         COMPLETED,
         CANCELLED
     }
+    public com.quitsmoking.dto.response.CoachConsultationResponse toDTO() {
+        com.quitsmoking.dto.response.CoachConsultationResponse dto = new com.quitsmoking.dto.response.CoachConsultationResponse();
+        dto.setId(this.getId());
+        dto.setMemberId(this.getMember() != null ? this.getMember().getId() : null);
+        dto.setCoachId(this.getCoach() != null ? this.getCoach().getId() : null);
+        dto.setSessionType(this.getSessionType() != null ? this.getSessionType().name() : null);
+        dto.setStatus(this.getStatus() != null ? this.getStatus().name() : null);
+        dto.setCreatedAt(this.getCreatedAt());
+        dto.setUpdatedAt(this.getUpdatedAt());
+        // Thêm thông tin member chi tiết
+        if (this.getMember() != null) {
+            dto.setMemberFirstName(this.getMember().getFirstName());
+            dto.setMemberLastName(this.getMember().getLastName());
+            dto.setMemberUsername(this.getMember().getUsername());
+            dto.setMemberEmail(this.getMember().getEmail());
+            dto.setMemberPictureUrl(this.getMember().getPictureUrl());
+        }
+        return dto;
+    }
 }

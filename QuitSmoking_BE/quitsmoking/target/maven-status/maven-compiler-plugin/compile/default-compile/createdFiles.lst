@@ -38,6 +38,7 @@ com\quitsmoking\dto\response\PaymentResponse.class
 com\quitsmoking\model\Notification$NotificationType.class
 com\quitsmoking\services\CustomOAuth2UserService.class
 com\quitsmoking\exceptions\EmailAlreadyExistsException.class
+com\quitsmoking\controllers\CoachConsultationController.class
 com\quitsmoking\dto\response\AdminStatsResponse.class
 com\quitsmoking\controllers\CommunityController$CreatePostRequest.class
 com\quitsmoking\dto\request\SmokingStatusRequest.class
@@ -83,6 +84,7 @@ com\quitsmoking\model\GoogleUser.class
 com\quitsmoking\model\AuthProvider.class
 com\quitsmoking\controllers\SettingsController.class
 com\quitsmoking\services\CommunityService.class
+com\quitsmoking\dto\response\CoachConsultationResponse.class
 com\quitsmoking\reponsitories\QuitPlanDAO.class
 com\quitsmoking\services\QuitPlanService$UserNotFoundException.class
 com\quitsmoking\controllers\AchievementController.class
@@ -94,8 +96,10 @@ com\quitsmoking\model\UserSettings.class
 com\quitsmoking\reponsitories\MembershipTransactionRepository.class
 com\quitsmoking\model\LocalUser.class
 com\quitsmoking\dto\response\AuthResponse.class
+com\quitsmoking\dto\response\ChatMessageResponse.class
 com\quitsmoking\model\CommunityComment.class
 com\quitsmoking\controllers\DailyProgressController.class
+com\quitsmoking\dto\request\ChatMessageRequest.class
 com\quitsmoking\services\UserSettingsService.class
 com\quitsmoking\controllers\MembershipController.class
 com\quitsmoking\reponsitories\CommunityPostRepository.class

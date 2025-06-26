@@ -50,7 +50,7 @@ public class ChatMessageService {
     }
     
     public Page<ChatMessage> getMessagesByConsultation(String consultationId, Pageable pageable) {
-        return messageRepository.findByConsultationIdOrderByTimestampAsc(consultationId, pageable);
+        return messageRepository.findByConsultationIdWithSenderOrderByTimestampAsc(consultationId, pageable);
     }
     
     public List<ChatMessage> getUnreadMessages(String consultationId, String userId) {
@@ -76,6 +76,6 @@ public class ChatMessageService {
     }
     
     public List<ChatMessage> getRecentMessages(String consultationId, int limit) {
-        return messageRepository.findByConsultationIdOrderByTimestampDescLimit(consultationId, limit);
+        return messageRepository.findByConsultationIdWithSenderOrderByTimestampDescLimit(consultationId, limit);
     }
 }
