@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+<<<<<<< HEAD
 import { useAuth } from '../../context/AuthContext';
+=======
+>>>>>>> e1cd37d3953330581914c7c138e51dfbb655d4bb
 import ChatBox from './chatbox';
 
 const AiChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+<<<<<<< HEAD
   const { user } = useAuth();
+=======
+>>>>>>> e1cd37d3953330581914c7c138e51dfbb655d4bb
 
   // Danh sách các trang không hiển thị chatbox
   const hideOnPaths = [
@@ -17,11 +23,15 @@ const AiChatWidget = () => {
     '/reset-password'
   ];
 
+<<<<<<< HEAD
   // Ẩn ở trang nhắn với coach cho mọi role
   const isCoachConsultationPage = location.pathname.startsWith('/coach-consultation');
 
   // Nếu là coach, member, admin, guest đều ẩn ở trang coach-consultation
   if (hideOnPaths.includes(location.pathname) || isCoachConsultationPage) return null;
+=======
+  if (hideOnPaths.includes(location.pathname)) return null;
+>>>>>>> e1cd37d3953330581914c7c138e51dfbb655d4bb
 
   return (
     <>
