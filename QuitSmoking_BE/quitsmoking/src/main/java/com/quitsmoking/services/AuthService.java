@@ -212,7 +212,7 @@ public class AuthService implements iRegistrableService, UserDetailsService {
             userDAO.save(user);
         } else {
             // Tạo user mới từ Google info
-            user = new GoogleUser(email, firstName, lastName, googleId, pictureUrl, AuthProvider.GOOGLE, Role.MEMBER);
+            user = new GoogleUser(email, firstName, lastName, googleId, pictureUrl, AuthProvider.GOOGLE, Role.GUEST);
             userDAO.save(user);
         }
         return user;

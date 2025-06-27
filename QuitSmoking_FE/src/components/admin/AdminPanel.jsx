@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import config from "../../config/config.js";
 import { useAuth } from "../../context/AuthContext";
+import websocketService from "../../services/websocketService";
 
 const AdminPanel = () => {
-  const { token, loading: authLoading } = useAuth();
+  const { token, loading: authLoading, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [stats, setStats] = useState({
@@ -43,10 +44,17 @@ const AdminPanel = () => {
   const [coaches, setCoaches] = useState([]);
   const [reports, setReports] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [userStatuses, setUserStatuses] = useState(new Map());
 
   // Pagination states for UsersTab
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(6); // Display 6 users per page
+
+  // Đặt các state điều khiển modal/chỉnh role ở ngoài map
+  const [editRoleId, setEditRoleId] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [showDetailId, setShowDetailId] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
 
   const tabs = [
     { id: "dashboard", name: "Tổng quan", icon: "📊" },
@@ -62,6 +70,41 @@ const AdminPanel = () => {
     console.log("AdminPanel: Token received:", token ? "Present" : "Missing");
     console.log("AdminPanel: Auth loading:", authLoading);
   }, [token, authLoading]);
+
+  // WebSocket connection for user status
+  useEffect(() => {
+    if (token && !authLoading && user) {
+      // Connect to WebSocket for user status updates using actual user ID
+      websocketService.connect(
+        user.id, // Use actual user ID instead of 'admin'
+        'admin-panel', 
+        handleUserStatusUpdate
+      );
+
+      // Listen for user status updates via custom events
+      const handleStatusUpdate = (event) => {
+        const statusUpdate = event.detail;
+        console.log('AdminPanel: Received user status update:', statusUpdate);
+        setUserStatuses(prev => new Map(prev.set(statusUpdate.userId, statusUpdate)));
+        // Cập nhật luôn trường online của user trong state users
+        setUsers(prevUsers => prevUsers.map(u =>
+          u.id === statusUpdate.userId ? { ...u, online: statusUpdate.online } : u
+        ));
+      };
+
+      window.addEventListener('userStatusUpdate', handleStatusUpdate);
+
+      return () => {
+        window.removeEventListener('userStatusUpdate', handleStatusUpdate);
+        websocketService.disconnect();
+      };
+    }
+  }, [token, authLoading, user]);
+
+  const handleUserStatusUpdate = (statusUpdate) => {
+    console.log('User status update:', statusUpdate);
+    setUserStatuses(prev => new Map(prev.set(statusUpdate.userId, statusUpdate)));
+  };
 
   // Fetch data khi component mount và khi tab thay đổi
   useEffect(() => {
@@ -194,37 +237,19 @@ const AdminPanel = () => {
   const handleCreateBackup = async () => {
     try {
       const response = await axios.post(
-        `${config.API_BASE_URL}/api/admin/system/backup`,
+        `${config.API_BASE_URL}/api/admin/backup/create`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       if (response.data.success) {
-        alert("Backup đã được tạo thành công!");
+        alert("Tạo backup thành công!");
       } else {
         alert("Có lỗi khi tạo backup!");
       }
     } catch (error) {
       console.error("Lỗi khi tạo backup:", error);
       alert("Có lỗi xảy ra khi tạo backup!");
-    }
-  };
-
-  const testUserCount = async () => {
-    try {
-      const response = await axios.get(
-        `${config.API_BASE_URL}/api/admin/stats/test-user-count`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (response.data.success) {
-        alert(`Test đếm người dùng thành công!\n\nTổng người dùng: ${response.data.totalUsers}\nNgười dùng hoạt động: ${response.data.activeUsers}\nNgười dùng mới tháng này: ${response.data.newUsersThisMonth}\nNgười dùng bị ban: ${response.data.bannedUsers}`);
-      } else {
-        alert("Có lỗi khi test đếm người dùng!");
-      }
-    } catch (error) {
-      console.error("Lỗi khi test đếm người dùng:", error);
-      alert("Có lỗi xảy ra khi test đếm người dùng!");
     }
   };
 
@@ -242,6 +267,84 @@ const AdminPanel = () => {
 
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Hàm xử lý lưu role mới
+  const handleSaveRole = async (userId) => {
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/api/admin/users/${userId}/update-role`, 
+        { role: selectedRole }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.status === 200) {
+        setUsers(prevUsers => prevUsers.map(u =>
+          u.id === userId ? { ...u, role: selectedRole } : u
+        ));
+        setEditRoleId(null);
+        alert('Cập nhật vai trò thành công!');
+      }
+    } catch (err) {
+      console.error('Error updating role:', err);
+      
+      if (err.response?.status === 401) {
+        // Token hết hạn, logout và redirect
+        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
+      }
+      
+      alert('Lỗi khi cập nhật role: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // Hàm xử lý xem chi tiết user
+  const handleShowDetail = async (userId) => {
+    try {
+      const res = await axios.get(
+        `${config.API_BASE_URL}/api/admin/users/${userId}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUserDetail(res.data);
+      setShowDetailId(userId);
+    } catch (err) {
+      alert('Không thể tải thông tin chi tiết!');
+    }
+  };
+
+  // Kiểm tra và refresh token nếu cần
+  const checkAndRefreshToken = () => {
+    if (!token) return;
+    
+    try {
+      // Decode JWT token để lấy thời gian hết hạn
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expTime = payload.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      const timeUntilExpiry = expTime - currentTime;
+      
+      // Nếu token sẽ hết hạn trong 5 phút tới, refresh
+      if (timeUntilExpiry < 300000) { // 5 minutes = 300000ms
+        console.log('Token will expire soon, refreshing...');
+        // Có thể thêm logic refresh token ở đây
+        // Hoặc logout user để đăng nhập lại
+        alert('Phiên đăng nhập sắp hết hạn. Vui lòng đăng nhập lại!');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Error checking token expiry:', error);
+    }
+  };
+
+  // Kiểm tra token mỗi phút
+  useEffect(() => {
+    const tokenCheckInterval = setInterval(checkAndRefreshToken, 60000); // 1 minute
+    return () => clearInterval(tokenCheckInterval);
+  }, [token]);
 
   const DashboardTab = () => (
     <div className="space-y-6">
@@ -459,13 +562,6 @@ const AdminPanel = () => {
             <div className="text-2xl mb-2">💾</div>
             <div className="text-sm font-medium">Tạo backup</div>
           </button>
-          <button 
-            onClick={testUserCount}
-            className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            <div className="text-2xl mb-2">🔍</div>
-            <div className="text-sm font-medium">Test đếm người dùng</div>
-          </button>
         </div>
       </div>
 
@@ -552,10 +648,10 @@ const AdminPanel = () => {
                 Gói thành viên
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                Trạng thái
+                Vai trò
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                Ngày tham gia
+                Online Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Hành động
@@ -563,82 +659,114 @@ const AdminPanel = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {currentUsers.map((user) => (
-              <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-semibold">
-                        {user.firstName?.charAt(0)}
-                        {user.lastName?.charAt(0)}
-                      </span>
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.firstName} {user.lastName}
+            {currentUsers.map((user) => {
+              const userStatus = userStatuses.get(user.id);
+              const isOnline = userStatus ? userStatus.online : user.online;
+              
+              return (
+                <tr key={user.id}>
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-sm font-semibold">
+                          {user.firstName?.charAt(0)}
+                          {user.lastName?.charAt(0)}
+                        </span>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {user.username}
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {user.username}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
-                  {user.email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.membershipPlanName === "VIP"
-                        ? "bg-purple-100 text-purple-800"
-                        : user.membershipPlanName === "PREMIUM"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : user.membershipPlanName === "BASIC"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {user.membershipPlanName || "Chưa đăng ký"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.status === "ACTIVE"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {user.status === "ACTIVE" ? "Hoạt động" : "Bị khóa"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
-                  {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() =>
-                        handleUserAction(
-                          user.id,
-                          user.status === "ACTIVE" ? "ban" : "unban"
-                        )
-                      }
-                      className={`px-3 py-1 rounded text-xs font-medium ${
-                        user.status === "ACTIVE"
-                          ? "bg-red-100 text-red-800 hover:bg-red-200"
-                          : "bg-green-100 text-green-800 hover:bg-green-200"
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
+                    {user.email}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.membershipPlanName === "VIP"
+                          ? "bg-purple-100 text-purple-800"
+                          : user.membershipPlanName === "PREMIUM"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : user.membershipPlanName === "BASIC"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {user.status === "ACTIVE" ? "Khóa" : "Mở khóa"}
-                    </button>
-                    <button className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200">
-                      Xem chi tiết
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {user.membershipPlanName || "Chưa đăng ký"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200 text-sm">
+                    {editRoleId === user.id ? (
+                      <div className="flex items-center space-x-2">
+                        <select 
+                          value={selectedRole} 
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          className="border rounded px-2 py-1 text-xs"
+                        >
+                          <option value="GUEST">Khách</option>
+                          <option value="MEMBER">Thành viên</option>
+                          <option value="COACH">Huấn luyện viên</option>
+                        </select>
+                        <button 
+                          onClick={() => handleSaveRole(user.id)} 
+                          className="px-2 py-1 bg-green-500 text-white rounded text-xs"
+                        >
+                          Lưu
+                        </button>
+                        <button 
+                          onClick={() => setEditRoleId(null)} 
+                          className="px-2 py-1 bg-gray-300 text-gray-700 rounded text-xs"
+                        >
+                          Hủy
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                        {user.role === "GUEST" ? "Khách" : user.role === "MEMBER" ? "Thành viên" : user.role === "COACH" ? "Huấn luyện viên" : user.role}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.online
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {user.online ? "Online" : "Offline"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex space-x-2">
+                      {(user.role === "GUEST" || user.role === "MEMBER" || user.role === "COACH") && (
+                        <button
+                          onClick={() => {
+                            setEditRoleId(user.id);
+                            setSelectedRole(user.role);
+                          }}
+                          className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium hover:bg-yellow-200"
+                        >
+                          Chỉnh sửa Role
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleShowDetail(user.id)}
+                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
+                      >
+                        Xem chi tiết
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -668,153 +796,302 @@ const AdminPanel = () => {
 
   const CoachesTab = () => (
     <div className="bg-white rounded-lg shadow-sm">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Quản lý huấn luyện viên
-          </h3>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            Thêm huấn luyện viên
-          </button>
-        </div>
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Quản lý huấn luyện viên</h3>
       </div>
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coaches.map((coach) => (
-            <div
-              key={coach.id}
-              className="border border-gray-200 rounded-lg p-4"
-            >
-              <div className="flex items-center mb-4">
-                <div className="h-12 w-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold">
-                    {coach.firstName?.charAt(0)}
-                    {coach.lastName?.charAt(0)}
-                  </span>
-                </div>
-                <div className="ml-3">
-                  <h4 className="font-semibold text-gray-900">
-                    {coach.firstName} {coach.lastName}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    {coach.specialization}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Đánh giá:</span>
-                  <span className="font-medium">{coach.rating}/5 ⭐</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Số buổi tư vấn:</span>
-                  <span className="font-medium">{coach.totalSessions}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Trạng thái:</span>
-                  <span
-                    className={`font-medium ${
-                      coach.isAvailable ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {coach.isAvailable ? "Có sẵn" : "Bận"}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex space-x-2">
-                <button className="flex-1 bg-blue-100 text-blue-800 py-1 px-3 rounded text-sm hover:bg-blue-200">
-                  Xem chi tiết
-                </button>
-                <button className="flex-1 bg-gray-100 text-gray-800 py-1 px-3 rounded text-sm hover:bg-gray-200">
-                  Chỉnh sửa
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-gray-600">Tính năng quản lý huấn luyện viên đang được phát triển...</p>
+      </div>
+    </div>
+  );
+
+  const ReportsTab = () => (
+    <div className="bg-white rounded-lg shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Báo cáo hệ thống</h3>
+      </div>
+      <div className="p-6">
+        <p className="text-gray-600">Tính năng báo cáo đang được phát triển...</p>
+      </div>
+    </div>
+  );
+
+  const FeedbackTab = () => (
+    <div className="bg-white rounded-lg shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Phản hồi từ người dùng</h3>
+      </div>
+      <div className="p-6">
+        <p className="text-gray-600">Tính năng quản lý phản hồi đang được phát triển...</p>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {authLoading ? (
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Đang kiểm tra quyền truy cập...</p>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+              <p className="text-sm text-gray-600">Quản lý hệ thống và người dùng</p>
+            </div>
           </div>
         </div>
-      ) : loading ? (
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Bảng điều khiển quản trị
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Quản lý toàn bộ hệ thống nền tảng cai thuốc
-            </p>
-          </div>
-          {/* Tabs */}
-          <div className="border-b border-gray-200 mb-8">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.name}
-                </button>
-              ))}
-            </nav>
-          </div>
-          {/* Tab Content */}
-          <div>
+        )}
+
+        {/* Content */}
+        {!loading && (
+          <div className="space-y-6">
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === tab.id
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    {tab.name}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
             {activeTab === "dashboard" && <DashboardTab />}
             {activeTab === "users" && <UsersTab />}
             {activeTab === "coaches" && <CoachesTab />}
-            {activeTab === "reports" && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Báo cáo hệ thống
-                </h3>
-                <p className="text-gray-600">
-                  Tính năng báo cáo đang được phát triển...
-                </p>
+            {activeTab === "reports" && <ReportsTab />}
+            {activeTab === "feedback" && <FeedbackTab />}
+          </div>
+        )}
+      </div>
+
+      {/* Modal xem chi tiết user */}
+      {showDetailId && userDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+              onClick={() => {
+                setShowDetailId(null);
+                setUserDetail(null);
+              }}
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-bold mb-6 text-gray-800">Thông tin chi tiết người dùng</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Thông tin cơ bản */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin cơ bản</h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">ID:</label>
+                    <p className="text-sm text-gray-800 font-mono bg-gray-50 p-2 rounded">{userDetail.id}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Username:</label>
+                    <p className="text-sm text-gray-800">{userDetail.username || 'N/A'}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Email:</label>
+                    <p className="text-sm text-gray-800">{userDetail.email}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Họ và tên:</label>
+                    <p className="text-sm text-gray-800">
+                      {userDetail.firstName || ''} {userDetail.lastName || ''}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Vai trò:</label>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      userDetail.role === 'ADMIN' ? 'bg-red-100 text-red-800' :
+                      userDetail.role === 'COACH' ? 'bg-blue-100 text-blue-800' :
+                      userDetail.role === 'MEMBER' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {userDetail.role === "GUEST" ? "Khách" : 
+                       userDetail.role === "MEMBER" ? "Thành viên" : 
+                       userDetail.role === "COACH" ? "Huấn luyện viên" : 
+                       userDetail.role === "ADMIN" ? "Quản trị viên" : userDetail.role}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-            {activeTab === "feedback" && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Phản hồi từ người dùng
-                </h3>
-                <p className="text-gray-600">
-                  Tính năng quản lý phản hồi đang được phát triển...
-                </p>
+              
+              {/* Thông tin bổ sung */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin bổ sung</h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Nhà cung cấp xác thực:</label>
+                    <p className="text-sm text-gray-800">{userDetail.authProvider || 'LOCAL'}</p>
+                  </div>
+                  
+                  {userDetail.googleId && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Google ID:</label>
+                      <p className="text-sm text-gray-800 font-mono bg-gray-50 p-2 rounded text-xs">{userDetail.googleId}</p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Số điện thoại:</label>
+                    <p className="text-sm text-gray-800">{userDetail.phoneNumber || 'Chưa cập nhật'}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Giới tính:</label>
+                    <p className="text-sm text-gray-800">{userDetail.gender || 'Chưa cập nhật'}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600">Ngày sinh:</label>
+                    <p className="text-sm text-gray-800">
+                      {userDetail.dateOfBirth ? new Date(userDetail.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
-            {activeTab === "system" && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Cài đặt hệ thống
-                </h3>
-                <p className="text-gray-600">
-                  Tính năng cài đặt hệ thống đang được phát triển...
-                </p>
+            </div>
+            
+            {/* Thông tin thành viên */}
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin thành viên</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Gói thành viên hiện tại:</label>
+                  <p className="text-sm text-gray-800">
+                    {userDetail.currentMembershipPlan ? userDetail.currentMembershipPlan.planName : 'Chưa đăng ký'}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Đã sử dụng gói miễn phí:</label>
+                  <p className="text-sm text-gray-800">
+                    {userDetail.freePlanClaimed ? 'Có' : 'Chưa'}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Ngày bắt đầu thành viên:</label>
+                  <p className="text-sm text-gray-800">
+                    {userDetail.membershipStartDate ? new Date(userDetail.membershipStartDate).toLocaleDateString('vi-VN') : 'N/A'}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Ngày kết thúc thành viên:</label>
+                  <p className="text-sm text-gray-800">
+                    {userDetail.membershipEndDate ? new Date(userDetail.membershipEndDate).toLocaleDateString('vi-VN') : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Thông tin tài khoản */}
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Trạng thái tài khoản</h3>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Tài khoản kích hoạt:</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    userDetail.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {userDetail.enabled ? 'Có' : 'Không'}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Tài khoản khóa:</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    userDetail.accountNonLocked ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {userDetail.accountNonLocked ? 'Không' : 'Có'}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Tài khoản hết hạn:</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    userDetail.accountNonExpired ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {userDetail.accountNonExpired ? 'Không' : 'Có'}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Mật khẩu hết hạn:</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    userDetail.credentialsNonExpired ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {userDetail.credentialsNonExpired ? 'Không' : 'Có'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Thông tin thời gian */}
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin thời gian</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Ngày tạo tài khoản:</label>
+                  <p className="text-sm text-gray-800">
+                    {userDetail.createdAt ? new Date(userDetail.createdAt).toLocaleString('vi-VN') : 'N/A'}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-600">Cập nhật lần cuối:</label>
+                  <p className="text-sm text-gray-800">
+                    {userDetail.updatedAt ? new Date(userDetail.updatedAt).toLocaleString('vi-VN') : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Avatar */}
+            {userDetail.pictureUrl && (
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Ảnh đại diện</h3>
+                <div className="flex justify-center">
+                  <img 
+                    src={userDetail.pictureUrl} 
+                    alt="Avatar" 
+                    className="w-24 h-24 rounded-full border-4 border-gray-200"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>

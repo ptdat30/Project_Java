@@ -3,6 +3,7 @@ import com.quitsmoking.model.CommunityPost;
 import com.quitsmoking.model.User;
 import com.quitsmoking.services.CommunityService;
 import com.quitsmoking.services.UserService;
+import com.quitsmoking.services.UserStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,12 +21,17 @@ public class CommunityController {
     private CommunityService communityService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private UserStatusService userStatusService;
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(
             @RequestBody CreatePostRequest request,
             Authentication authentication) {
         try {
             User user = userService.findByUsername(authentication.getName());
+            
+            // Track user HTTP activity for online status
+            userStatusService.userHttpActivity(user.getId());
             
             CommunityPost post = communityService.createPost(
                 user,
@@ -69,6 +75,10 @@ public class CommunityController {
     public ResponseEntity<?> getMyPosts(Authentication authentication) {
         try {
             User user = userService.findByUsername(authentication.getName());
+            
+            // Track user HTTP activity for online status
+            userStatusService.userHttpActivity(user.getId());
+            
             List<CommunityPost> posts = communityService.getUserPosts(user);
             return ResponseEntity.ok(posts);
         } catch (Exception e) {

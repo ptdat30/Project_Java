@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import apiService from "../../services/apiService";
+import websocketService from "../../services/websocketService";
 import { useAuth } from "../../context/AuthContext";
 import config from "../../config/config";
 
@@ -61,6 +62,7 @@ const CoachConsultation = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [sessionType, setSessionType] = useState("CHAT");
+  const [websocketStatus, setWebsocketStatus] = useState("disconnected");
   const messagesEndRef = useRef(null);
 
   // Lấy danh sách session nếu là coach, hoặc danh sách coach nếu là member
@@ -90,6 +92,18 @@ const CoachConsultation = () => {
     }
   }, [isCoach, user]);
 
+  // Handle WebSocket message received
+  const handleWebSocketMessage = (message) => {
+    console.log('CoachConsultation: Received WebSocket message:', message);
+    setMessages(prevMessages => [...prevMessages, message]);
+  };
+
+  // Handle WebSocket status changes
+  const handleWebSocketStatusChange = (status) => {
+    console.log('CoachConsultation: WebSocket status changed to:', status);
+    setWebsocketStatus(status);
+  };
+
   // Khi bắt đầu chat với user (coach) hoặc coach chọn session
   const handleStartSession = async (target) => {
     if (isCoach) {
@@ -99,6 +113,29 @@ const CoachConsultation = () => {
       try {
         const res = await apiService.getChatMessages(target.id);
         setMessages(res.content || []);
+        
+        // Connect to WebSocket
+        console.log('CoachConsultation: Connecting to WebSocket for coach session:', target.id);
+        websocketService.connect(
+          user.id, 
+          target.id, 
+          handleWebSocketMessage
+        );
+        
+        // Join session after a short delay to ensure connection is established
+        setTimeout(() => {
+          if (websocketService.isConnected()) {
+            console.log('CoachConsultation: Joining WebSocket session:', target.id);
+            websocketService.joinSession(
+              target.id,
+              user.id,
+              user.firstName + " " + user.lastName,
+              user.username
+            );
+          } else {
+            console.warn('CoachConsultation: WebSocket not connected, cannot join session');
+          }
+        }, 1000);
       } catch (err) {
         alert("Không thể tải tin nhắn. Vui lòng thử lại!");
         setMessages([]);
@@ -119,6 +156,29 @@ const CoachConsultation = () => {
         setActiveSession(session);
         const res = await apiService.getChatMessages(session.id);
         setMessages(res.content || []);
+        
+        // Connect to WebSocket
+        console.log('CoachConsultation: Connecting to WebSocket for member session:', session.id);
+        websocketService.connect(
+          user.id, 
+          session.id, 
+          handleWebSocketMessage
+        );
+        
+        // Join session after a short delay to ensure connection is established
+        setTimeout(() => {
+          if (websocketService.isConnected()) {
+            console.log('CoachConsultation: Joining WebSocket session:', session.id);
+            websocketService.joinSession(
+              session.id,
+              user.id,
+              user.firstName + " " + user.lastName,
+              user.username
+            );
+          } else {
+            console.warn('CoachConsultation: WebSocket not connected, cannot join session');
+          }
+        }, 1000);
       } catch (err) {
         alert("Không thể bắt đầu phiên chat. Vui lòng thử lại!");
         setMessages([]);
@@ -126,20 +186,38 @@ const CoachConsultation = () => {
     }
   };
 
-  // Gửi tin nhắn
+  // Gửi tin nhắn via WebSocket
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeSession) return;
+    
     try {
-      await apiService.sendMessage(activeSession.id, {
-        senderId: user.id,
-        content: newMessage,
-        messageType: "TEXT",
-      });
-      setNewMessage("");
-      const res = await apiService.getChatMessages(activeSession.id);
-      setMessages(res.content || []);
+      // Send via WebSocket (this will also save to database)
+      if (websocketService.isConnected()) {
+        console.log('CoachConsultation: Sending message via WebSocket');
+        websocketService.sendMessage(
+          activeSession.id,
+          user.id,
+          newMessage,
+          "TEXT",
+          user.firstName + " " + user.lastName,
+          user.username
+        );
+        setNewMessage("");
+      } else {
+        // Fallback to REST API if WebSocket is not connected
+        console.warn('CoachConsultation: WebSocket not connected, using REST API fallback');
+        await apiService.sendMessage(activeSession.id, {
+          senderId: user.id,
+          content: newMessage,
+          messageType: "TEXT",
+        });
+        setNewMessage("");
+        const res = await apiService.getChatMessages(activeSession.id);
+        setMessages(res.content || []);
+      }
     } catch (err) {
+      console.error('CoachConsultation: Error sending message:', err);
       alert("Không gửi được tin nhắn!");
     }
   };
@@ -147,6 +225,13 @@ const CoachConsultation = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Cleanup WebSocket on component unmount
+  useEffect(() => {
+    return () => {
+      websocketService.disconnect();
+    };
+  }, []);
 
   // Nếu đang trong session chat
   if (activeSession && selectedSession) {
@@ -162,6 +247,8 @@ const CoachConsultation = () => {
                   setActiveSession(null);
                   setSelectedSession(null);
                   setMessages([]);
+                  // Disconnect WebSocket when leaving chat
+                  websocketService.disconnect();
                 }}
                 className="mr-4 p-2 text-gray-500 hover:text-gray-700"
               >

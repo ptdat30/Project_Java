@@ -1,10 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { askGemini } from '../../services/AIChatboxService';
 
 const ChatBox = ({ isOpen, onClose }) => {
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef(null);
   const chatContentRef = useRef(null);
+
+  // Hiển thị tin nhắn mẫu khi mở chatbox
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      setMessages([
+        {
+          id: 'ai-greeting',
+          sender: 'ai',
+          text: 'Xin chào, tôi có thể giúp gì cho bạn?'
+        }
+      ]);
+    }
+  }, [isOpen]);
+
+  // Tự động scroll xuống cuối khi có tin nhắn mới
+  useEffect(() => {
+    if (chatContentRef.current) {
+      chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleInputChange = (e) => setMessage(e.target.value);
 
@@ -15,11 +37,37 @@ const ChatBox = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (message.trim()) {
-      // Gửi message tới backend ở đây nếu muốn
+      const userMsg = {
+        id: Date.now() + '-user',
+        sender: 'user',
+        text: message.trim()
+      };
+      setMessages((prev) => [...prev, userMsg]);
       setMessage('');
       if (textareaRef.current) textareaRef.current.focus();
+
+      try {
+        const aiReply = await askGemini(message.trim());
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + '-ai',
+            sender: 'ai',
+            text: aiReply
+          }
+        ]);
+      } catch (err) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + '-ai-error',
+            sender: 'ai',
+            text: 'Xin lỗi, AI hiện không phản hồi được.'
+          }
+        ]);
+      }
     }
   };
 
@@ -50,7 +98,13 @@ const ChatBox = ({ isOpen, onClose }) => {
         ref={chatContentRef}
         className="flex-grow p-4 overflow-y-auto h-[500px] bg-[#fdf9e2]"
       >
-        {/* Chat messages sẽ render ở đây */}
+        {messages.map((msg) => (
+          <div key={msg.id} className={`mb-2 flex ${msg.sender === 'ai' ? 'justify-start' : 'justify-end'}`}>
+            <div className={`rounded-lg px-3 py-2 ${msg.sender === 'ai' ? 'bg-white text-gray-800' : 'bg-blue-500 text-white'}`}>
+              {msg.text}
+            </div>
+          </div>
+        ))}
       </div>
       {/* Input area */}
       <div className={`flex items-end border-t border-gray-200 bg-white p-2 ${isFocused ? 'ring-2 ring-blue-200' : ''}`}>
