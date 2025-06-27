@@ -19,6 +19,8 @@ public class UserAdminResponse {
     private LocalDate membershipEndDate;
     private String membershipPlanId;
     private String membershipPlanName;
+    private boolean online;
+    private String lastSeen;
 
     public UserAdminResponse(User user) {
         this.id = user.getId();
@@ -41,6 +43,8 @@ public class UserAdminResponse {
             this.membershipPlanId = null;
             this.membershipPlanName = null;
         }
+        this.online = false;
+        this.lastSeen = null;
     }
 
     // Getters và setters (có thể dùng Lombok nếu muốn)
@@ -59,4 +63,8 @@ public class UserAdminResponse {
     public LocalDate getMembershipEndDate() { return membershipEndDate; }
     public String getMembershipPlanId() { return membershipPlanId; }
     public String getMembershipPlanName() { return membershipPlanName; }
+    public boolean isOnline() { return online; }
+    public void setOnline(boolean online) { this.online = online; }
+    public String getLastSeen() { return lastSeen; }
+    public void setLastSeen(String lastSeen) { this.lastSeen = lastSeen; }
 } 

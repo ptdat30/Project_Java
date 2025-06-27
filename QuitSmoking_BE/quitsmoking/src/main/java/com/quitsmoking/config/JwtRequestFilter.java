@@ -41,12 +41,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         String requestMethod = request.getMethod();
 
-        logger.debug("JwtRequestFilter: Processing request for URI: {} and Method: {}", requestURI, requestMethod);
+        // Chỉ log cho các request quan trọng, không log cho WebSocket và static resources
+        if (!requestURI.startsWith("/ws") && !requestURI.startsWith("/static") && !requestURI.startsWith("/favicon")) {
+            logger.debug("JwtRequestFilter: Processing request for URI: {} and Method: {}", requestURI, requestMethod);
+        }
 
         // 1. BỎ QUA CÁC YÊU CẦU OPTIONS (PREFLIGHT)
         if ("OPTIONS".equalsIgnoreCase(requestMethod)) {
             response.setStatus(HttpServletResponse.SC_OK); // Trả về 200 OK cho OPTIONS
-            logger.debug("JwtRequestFilter: Handled OPTIONS request for URI: {}", requestURI);
             return; // Dừng xử lý filter chain ở đây
         }
 
@@ -57,13 +59,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             requestURI.startsWith("/oauth2/code") || // <-- SỬA TỪ "/oauth2/callback" THÀNH "/oauth2/code"
             requestURI.startsWith("/login/oauth2") // <-- Đảm bảo bao gồm cả /login/oauth2/** (ví dụ: /login/oauth2/code/google)
             ) {
-            logger.debug("JwtRequestFilter: Skipping authentication for public/auth/oauth2 URI: {}", requestURI);
             chain.doFilter(request, response);
             return;
         }
 
         // 3. XỬ LÝ CÁC YÊU CẦU KHÁC (YÊU CẦU CÓ JWT)
-        logger.debug("JwtRequestFilter: Proceeding with JWT authentication for: {}", requestURI);
         // Logic xử lý JWT token (chỉ chạy cho các request khác)
         final String authorizationHeader = request.getHeader("Authorization");
 
@@ -74,7 +74,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             jwt = authorizationHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(jwt);
-                logger.debug("Đã trích xuất thành công tên người dùng '{}' từ JWT.", username);
             } catch (ExpiredJwtException e) {
                 logger.warn("JWT Token đã hết hạn cho URI {}: {}", requestURI, e.getMessage());
                 // Token hết hạn, đặt trạng thái phản hồi là 401 và dừng xử lý filter này
@@ -99,7 +98,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 logger.error("Đã xảy ra lỗi không mong muốn trong quá trình xử lý JWT cho URI {}: {}", requestURI, e.getMessage(), e);
             }
         } else {
-            logger.debug("Không có header Authorization hoặc không phải là token Bearer cho URI: {}", requestURI);
+            // Chỉ log cho các request quan trọng, không log cho WebSocket
+            if (!requestURI.startsWith("/ws")) {
+                logger.debug("Không có header Authorization hoặc không phải là token Bearer cho URI: {}", requestURI);
+            }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

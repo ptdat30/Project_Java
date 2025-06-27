@@ -15,6 +15,8 @@ import com.quitsmoking.reponsitories.QuitPlanDAO;
 import com.quitsmoking.reponsitories.DailyProgressRepository;
 import com.quitsmoking.reponsitories.MembershipTransactionRepository;
 import com.quitsmoking.reponsitories.MembershipPlanRepository;
+import com.quitsmoking.exceptions.ResourceNotFoundException;
+import com.quitsmoking.exceptions.BadRequestException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,12 +38,14 @@ public class AdminService {
     private final DailyProgressRepository dailyProgressRepository;
     private final MembershipTransactionRepository membershipTransactionRepository;
     private final MembershipPlanRepository membershipPlanRepository;
+    private final UserStatusService userStatusService;
 
     // Constructor để tiêm các dependencies
     public AdminService(UserDAO userDAO, AuthService authService, UserService userService,
                        QuitPlanDAO quitPlanDAO, DailyProgressRepository dailyProgressRepository,
                        MembershipTransactionRepository membershipTransactionRepository,
-                       MembershipPlanRepository membershipPlanRepository) {
+                       MembershipPlanRepository membershipPlanRepository,
+                       UserStatusService userStatusService) {
         this.userDAO = userDAO;
         this.authService = authService;
         this.userService = userService;
@@ -49,6 +53,7 @@ public class AdminService {
         this.dailyProgressRepository = dailyProgressRepository;
         this.membershipTransactionRepository = membershipTransactionRepository;
         this.membershipPlanRepository = membershipPlanRepository;
+        this.userStatusService = userStatusService;
     }
 
     // Phương thức để Admin tạo tài khoản mới
@@ -122,9 +127,29 @@ public class AdminService {
     public List<UserAdminResponse> getAllUsers(int page, int size, String sortBy, String sortDir, String search) {
         List<User> users = userDAO.findAllWithMembership();
         List<UserAdminResponse> result = new ArrayList<>();
+        System.out.println("AdminService: Processing " + users.size() + " users for admin panel");
+
+        // Lấy map userId -> lastSeen
+        Map<String, java.time.LocalDateTime> userStatusMap = userStatusService.getUserStatusMap();
+
         for (User user : users) {
-            result.add(new UserAdminResponse(user));
+            UserAdminResponse userResponse = new UserAdminResponse(user);
+
+            // Set online status
+            boolean isOnline = userStatusService.isUserOnline(user.getId());
+            userResponse.setOnline(isOnline);
+
+            // Set last seen time
+            java.time.LocalDateTime lastSeen = userStatusMap.get(user.getId());
+            if (lastSeen != null) {
+                userResponse.setLastSeen(lastSeen.toString());
+            }
+
+            System.out.println("AdminService: User " + user.getUsername() + " (ID: " + user.getId() + ") - Online: " + isOnline);
+            result.add(userResponse);
         }
+
+        System.out.println("AdminService: Total users in response: " + result.size());
         return result;
     }
 
@@ -343,19 +368,18 @@ public class AdminService {
     }
 
     public User updateUserRole(String userId, String newRole) {
-        try {
-            Optional<User> userOptional = userDAO.findById(userId);
-            if (userOptional.isEmpty()) {
-                return null;
-            }
-            
-            User user = userOptional.get();
-            Role role = Role.valueOf(newRole.toUpperCase());
-            user.setRole(role);
-            return userDAO.save(user);
-        } catch (Exception e) {
-            return null;
+        User user = userDAO.findById(userId).orElse(null);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with id: " + userId);
         }
+        
+        // Validate role
+        if (!(newRole.equals("GUEST") || newRole.equals("MEMBER") || newRole.equals("COACH"))) {
+            throw new BadRequestException("Invalid role: " + newRole);
+        }
+        
+        user.setRole(Role.valueOf(newRole));
+        return userDAO.save(user);
     }
 
     public List<User> getAllCoaches() {
@@ -520,5 +544,9 @@ public class AdminService {
     public User updateCoach(String coachId) {
         // Implementation for updating coach information
         return null;
+    }
+
+    public User getUserById(String userId) {
+        return userDAO.findById(userId).orElse(null);
     }
 }

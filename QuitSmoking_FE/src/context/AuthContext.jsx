@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import authService from "../services/authService"; // Đảm bảo đường dẫn này đúng
 import apiService from "../services/apiService"; // Import apiService để fetch user profile
+import websocketService from "../services/websocketService"; // Import WebSocket service
 
 const AuthContext = createContext();
 
@@ -210,40 +211,54 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
+    dispatch({ type: "LOGIN_START" });
     try {
-      dispatch({ type: "LOGIN_START" });
       const response = await authService.login(credentials);
-      // Sau khi login thành công, fetch lại profile mới nhất
-      const userProfile = await apiService.getUserProfile();
-      const userData = {
-        id: userProfile.id,
-        username: userProfile.username,
-        email: userProfile.email,
-        role: userProfile.role,
-        firstName: userProfile.firstName || "",
-        lastName: userProfile.lastName || "",
-        pictureUrl: userProfile.pictureUrl || "",
-        membership: userProfile.membership || null,
-        phoneNumber: userProfile.phoneNumber || "",
-        gender: userProfile.gender || "",
-        dateOfBirth: userProfile.dateOfBirth || "",
-        // Thêm các trường khác nếu backend trả về
-      };
-      authService.setCurrentUser(userData);
-      dispatch({
-        type: "LOGIN_SUCCESS",
-        payload: {
-          token: response.token,
-          ...userData,
-        },
-      });
-      return response;
+      console.log("AuthContext: Login response:", response);
+
+      if (response.success) {
+        const userData = response.user;
+        const token = response.token;
+
+        // Lưu vào localStorage
+        authService.setToken(token);
+        authService.setCurrentUser(userData);
+
+        // Cập nhật context
+        dispatch({
+          type: "LOGIN_SUCCESS",
+          payload: {
+            token: token,
+            ...userData,
+          },
+        });
+
+        // Connect to WebSocket for user activity tracking
+        if (userData.id) {
+          websocketService.connect(
+            userData.id,
+            'user-activity',
+            (message) => {
+              console.log('User activity message:', message);
+            }
+          );
+        }
+
+        return { success: true };
+      } else {
+        dispatch({
+          type: "LOGIN_FAILURE",
+          payload: response.message || "Đăng nhập thất bại",
+        });
+        return { success: false, message: response.message };
+      }
     } catch (error) {
+      console.error("AuthContext: Login error:", error);
       dispatch({
         type: "LOGIN_FAILURE",
         payload: error.message || "Đăng nhập thất bại",
       });
-      throw error;
+      return { success: false, message: error.message };
     }
   };
 
@@ -319,8 +334,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    authService.logout(); // authService.logout đã dispatch LOGOUT và xóa localStorage
-    dispatch({ type: "LOGOUT" }); // Đảm bảo trạng thái AuthContext được cập nhật
+    // Disconnect WebSocket
+    websocketService.disconnect();
+    
+    // Clear localStorage
+    authService.logout();
+    
+    // Update context
+    dispatch({ type: "LOGOUT" });
   };
 
   const updateUser = (userData) => {

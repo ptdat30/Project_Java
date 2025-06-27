@@ -3,6 +3,7 @@ package com.quitsmoking.controllers;
 import com.quitsmoking.model.User;
 import com.quitsmoking.reponsitories.UserDAO;
 import com.quitsmoking.dto.request.UpdateProfileRequest;
+import com.quitsmoking.services.UserStatusService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +32,12 @@ public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     private final UserDAO userDAO;
+    private final UserStatusService userStatusService;
 
     @Autowired
-    public UserController(UserDAO userDAO) {
+    public UserController(UserDAO userDAO, UserStatusService userStatusService) {
         this.userDAO = userDAO;
+        this.userStatusService = userStatusService;
     }
 
     @GetMapping("/profile")
@@ -61,6 +64,9 @@ public class UserController {
             // SỬ DỤNG findByEmailOrUsername CỦA BẠN!
             User user = userDAO.findByEmailOrUsernameWithMembership(identifier)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + identifier));
+
+            // Track user HTTP activity for online status
+            userStatusService.userHttpActivity(user.getId());
 
             // Tạo Map chứa thông tin profile
             Map<String, Object> profile = new HashMap<>();
@@ -132,6 +138,9 @@ public class UserController {
 
             User user = userDAO.findByEmailOrUsername(identifier)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + identifier));
+
+            // Track user HTTP activity for online status
+            userStatusService.userHttpActivity(user.getId());
 
             // Cập nhật các trường
             user.setFirstName(request.getFirstName());
@@ -211,6 +220,22 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getAllCoaches() {
         try {
+            // Track user HTTP activity for online status
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String identifier;
+            if (principal instanceof UserDetails) {
+                identifier = ((UserDetails) principal).getUsername();
+            } else if (principal instanceof User) {
+                identifier = ((User) principal).getId();
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Không thể xác định người dùng đã xác thực."));
+            }
+            
+            User currentUser = userDAO.findByEmailOrUsername(identifier)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với định danh: " + identifier));
+            
+            userStatusService.userHttpActivity(currentUser.getId());
+
             // Lấy danh sách user có role COACH
             java.util.List<User> coaches = userDAO.findByRole(com.quitsmoking.model.Role.COACH);
             // Chỉ trả về các trường cần thiết cho FE

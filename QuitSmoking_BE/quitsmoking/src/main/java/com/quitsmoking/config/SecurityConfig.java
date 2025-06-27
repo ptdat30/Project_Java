@@ -64,10 +64,14 @@ public class SecurityConfig {
             .cors(org.springframework.security.config.Customizer.withDefaults())
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Cho phép WebSocket endpoints
+                .requestMatchers("/ws/**").permitAll()
                 // Cho phép các endpoint xác thực cục bộ (đăng nhập, đăng ký)
                 .requestMatchers("/api/auth/**").permitAll()
                 // Cho phép truy cập các file trong thư mục uploads (PUBLIC)
                 .requestMatchers("/uploads/**").permitAll()
+                // Cho phép truy cập endpoint AI chatbox (Gemini proxy)
+                .requestMatchers("/api/ai/chat").permitAll()
                 // Cho phép truy cập endpoint coach-consultations
                 .requestMatchers("/api/coach-consultations", "/api/coach-consultations/**").hasAnyRole("COACH", "ADMIN", "MEMBER")
                 // Cho phép truy cập endpoint chat
