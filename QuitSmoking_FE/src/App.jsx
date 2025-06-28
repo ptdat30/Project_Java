@@ -232,9 +232,7 @@ const AppContent = () => {
           }
         />
       </Routes>
-
-      <AiChatWidget /> {/* Đảm bảo widget luôn hiển thị ngoài Routes */}
-
+      <AiChatWidget />
     </div>
   );
 };
