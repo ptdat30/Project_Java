@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/smoking-status") // Base URL cho API này
+@CrossOrigin(origins = "*")
 public class SmokingStatusController {
 
     private final SmokingStatusService smokingStatusService;
@@ -21,7 +22,7 @@ public class SmokingStatusController {
 
     // Endpoint để thêm tình trạng hút thuốc mới
     // userId có thể được lấy từ JWT/Spring Security Context thay vì truyền qua PathVariable
-    @PostMapping("/user/{userId}")
+    @PostMapping
     public ResponseEntity<?> addSmokingStatus(@PathVariable String userId,
                                               @RequestBody SmokingStatusRequest request) {
         try {
@@ -35,7 +36,7 @@ public class SmokingStatusController {
     }
 
     // Endpoint để lấy tất cả tình trạng hút thuốc của một người dùng
-    @GetMapping("/user/{userId}")
+    @GetMapping
     public ResponseEntity<List<SmokingStatus>> getSmokingStatusesByUser(@PathVariable String userId) {
         try {
             List<SmokingStatus> statuses = smokingStatusService.getAllSmokingStatusesByUser(userId);

@@ -1,36 +1,81 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const PlanPage = () => {
-  const [startDate, setStartDate] = useState("today");
-  const [customDate, setCustomDate] = useState("");
+  const navigate = useNavigate(); // Khởi tạo useNavigate
+
+  // State variables for form inputs
+  const [startDate, setStartDate] = useState("today"); // 'today', 'tomorrow', 'custom'
+  const [customDate, setCustomDate] = useState(""); // For specific custom date
   const [cigarettesPerDay, setCigarettesPerDay] = useState("");
   const [pricePerPack, setPricePerPack] = useState("");
-  const [selectedReasons, setSelectedReasons] = useState([]);
-  const [selectedTriggers, setSelectedTriggers] = useState([]);
+  const [selectedReasons, setSelectedReasons] = useState([]); // Array of selected reason indices
+  const [selectedTriggers, setSelectedTriggers] = useState([]); // Array of selected trigger IDs (e.g., "situation-0", "emotion-1")
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // Define the full list of reasons to quit with their titles and images
+  // Dữ liệu này phải được định nghĩa ở đây để có thể truy cập trong handleStartPlan
+  const allReasons = [
+    { title: "Cải thiện sức khoẻ", image: "/images/suckhoe.png" },
+    { title: "Cho gia đình, bạn bè", image: "/images/giadinh.png" },
+    { title: "Yêu cầu của bác sĩ", image: "/images/yeucaubacsi.png" },
+    { title: "Tiết kiệm tiền", image: "/images/tietkiemtien.png" },
+    { title: "Bảo vệ môi trường", image: "/images/baovemoitruong.png" },
+    { title: "Cải thiện mùi, ngoại hình", image: "/images/caithienmui.png" },
+    { title: "Cho em bé", image: "/images/choembe.png" },
+    {
+      title: "Kiểm soát bản thân",
+      image:
+        "https://readdy.ai/api/search-image?query=Person%20looking%20in%20mirror%20with%20determined%20expression%2C%20self%20improvement%20concept&width=200&height=200&seq=9&orientation=squarish",
+    },
+    { title: "Tương lai tốt hơn", image: "/images/tuonglaitothon.png" },
+    { title: "Cho thú cưng", image: "/images/chothucung.png" },
+  ];
+
+  // Define the full list of situation triggers
+  const allSituationTriggers = [
+    "Được mời một điếu thuốc",
+    "Uống rượu hoặc đi đến quán bar",
+    "Đi dự tiệc hoặc sự kiện xã hội khác",
+    "Ở gần những người hút thuốc hoặc sử dụng sản phẩm thuốc lá khác",
+    "Nhìn thấy người khác hút thuốc",
+    "Ngửi thấy khói thuốc lá",
+  ];
+
+  // Define the full list of emotion triggers
+  const allEmotionTriggers = [
+    "Tức giận",
+    "Lo lắng, bồn chồn",
+    "Phấn khởi, hạnh phúc",
+    "Cô đơn",
+    "Buồn, thất vọng",
+    "Căng thẳng hoặc quá tải",
+  ];
+
+  // Handler for start date radio button changes
   const handleDateOptionChange = (option) => {
     setStartDate(option);
-    if (option !== "custom") {
-      setShowDatePicker(false);
-    } else {
-      setShowDatePicker(true);
-    }
+    setShowDatePicker(option === "custom"); // Simplified condition
   };
 
+  // Handler for cigarettes per day input
   const handleCigarettesChange = (e) => {
-    // Only allow integers
-    const value = e.target.value.replace(/\D/g, "");
+    const value = e.target.value.replace(/\D/g, ""); // Only allow digits
     setCigarettesPerDay(value);
   };
 
+  // Handler for price per pack input
   const handlePriceChange = (e) => {
-    // Allow decimal numbers
-    const value = e.target.value.replace(/[^0-9.]/g, "");
+    const value = e.target.value.replace(/[^0-9.]/g, ""); // Allow digits and a single dot
+    // Ensure only one decimal point
+    if (value.split('.').length > 2) {
+      return;
+    }
     setPricePerPack(value);
   };
 
-  // Hàm xử lý chọn/bỏ chọn lý do bỏ thuốc
+  // Handler for selecting/deselecting reasons to quit
   const handleReasonSelect = (index) => {
     if (selectedReasons.includes(index)) {
       setSelectedReasons(selectedReasons.filter((id) => id !== index));
@@ -39,9 +84,9 @@ const PlanPage = () => {
     }
   };
 
-  // Hàm xử lý chọn/bỏ chọn trigger
-  const handleTriggerSelect = (trigger, type) => {
-    const triggerId = `${type}-${trigger}`; // Tạo ID duy nhất cho mỗi trigger (ví dụ: "situation-0", "emotion-1")
+  // Handler for selecting/deselecting craving triggers
+  const handleTriggerSelect = (index, type) => {
+    const triggerId = `${type}-${index}`;
     if (selectedTriggers.includes(triggerId)) {
       setSelectedTriggers(selectedTriggers.filter((id) => id !== triggerId));
     } else {
@@ -49,17 +94,100 @@ const PlanPage = () => {
     }
   };
 
-  const handleStartPlan = () => {
-    console.log("Bắt đầu kế hoạch với các lựa chọn:");
-    console.log("Ngày bắt đầu:", startDate === "custom" ? customDate : startDate);
-    console.log("Số điếu thuốc mỗi ngày:", cigarettesPerDay);
-    console.log("Giá mỗi bao thuốc:", pricePerPack);
-    console.log("Lý do bỏ thuốc:", selectedReasons);
-    console.log("Kích hoạt thèm khát:", selectedTriggers);
-    alert("Kế hoạch của bạn đã bắt đầu!");
+  // Main handler to start the quit plan and send data to backend
+  const handleStartPlan = async () => {
+    let actualStartDate;
+    if (startDate === "today") {
+      actualStartDate = new Date().toISOString().split("T")[0];
+    } else if (startDate === "tomorrow") {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      actualStartDate = tomorrow.toISOString().split("T")[0];
+    } else {
+      actualStartDate = customDate;
+    }
+
+    // --- Xử lý selectedReasons để tạo JSON string cho 'selectedReasonsJson' ---
+    // Chuyển đổi mảng các index thành chuỗi JSON
+    const selectedReasonsJsonString = JSON.stringify(selectedReasons);
+
+    // Chuỗi lý do cho trường 'reason' (lydocaythuoc)
+    // Lấy tiêu đề của các lý do đã chọn và nối chúng lại
+    const reasonTitles = selectedReasons.map(index => allReasons[index].title);
+    const reasonStringForBackend = reasonTitles.length > 0
+      ? reasonTitles.join(', ') // Nối các tên lý do
+      : "Không có lý do cụ thể"; // Giá trị mặc định nếu không chọn gì
+
+
+    // --- Xử lý selectedTriggers để tạo JSON string cho 'selectedTriggersJson' ---
+    const actualSelectedTriggers = selectedTriggers.map(triggerId => {
+        const [type, index] = triggerId.split('-');
+        if (type === 'situation') {
+            return allSituationTriggers[parseInt(index)];
+        } else if (type === 'emotion') {
+            return allEmotionTriggers[parseInt(index)];
+        }
+        return '';
+    }).filter(Boolean); // Filter out any empty strings if an invalid type appears
+    const selectedTriggersJsonString = JSON.stringify(actualSelectedTriggers);
+
+    // Prepare the data payload for the backend
+    const planData = {
+      startDate: actualStartDate,
+      cigarettesPerDay: parseInt(cigarettesPerDay, 10),
+      pricePerPack: parseFloat(pricePerPack),
+      
+      reason: reasonStringForBackend, // Gán chuỗi tên lý do đã xử lý
+
+      selectedReasonsJson: selectedReasonsJsonString, // Gán chuỗi JSON của mảng index
+      selectedTriggersJson: selectedTriggersJsonString, // Gán chuỗi JSON của mảng triggers
+
+      initialSmokingHabit: String(cigarettesPerDay), // Backend yêu cầu String
+      quittingPhases: "Giai đoạn 1", // Giá trị mặc định hoặc có thể thêm input cho người dùng
+      targetQuitDate: actualStartDate, // Hoặc tính toán ngày mục tiêu dựa trên logic
+    };
+
+    console.log("Dữ liệu kế hoạch gửi đi:", planData);
+
+    try {
+      const token = localStorage.getItem("jwt_token");
+
+      if (!token) {
+        alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để tạo kế hoạch.");
+        console.warn("Không tìm thấy JWT token trong localStorage. Yêu cầu gửi bị hủy.");
+        navigate('/login'); // Redirect to login page
+        return;
+      }
+
+      console.log("Đang gửi request Axios đến backend...");
+
+      const response = await axios.post(
+        "http://localhost:8080/api/quit-plans", // Đảm bảo URL này chính xác
+        planData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Kế hoạch đã được lưu thành công:", response.data);
+      alert("Kế hoạch của bạn đã bắt đầu và được lưu thành công!");
+      navigate('/dashboard'); // Redirect to dashboard after successful plan creation
+    } catch (error) {
+      console.error("Lỗi khi lưu kế hoạch:", error.response ? error.response.data : error.message);
+
+      if (error.response) {
+        alert(`Lỗi: ${error.response.status} - ${error.response.data.message || 'Có lỗi xảy ra từ máy chủ.'}`);
+      } else if (error.request) {
+        alert("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng hoặc CORS.");
+      } else {
+        alert("Có lỗi không xác định xảy ra khi gửi kế hoạch. Vui lòng thử lại.");
+      }
+    }
   };
 
-  // Định nghĩa màu xanh nhạt mới
   const lightGreen = "#49b08b";
 
   return (
@@ -220,62 +348,10 @@ const PlanPage = () => {
                 Lý do tôi muốn bỏ thuốc:
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {[
-                  {
-                    title: "Cải thiện sức khoẻ",
-                    image:
-                      "/images/suckhoe.png",
-                  },
-                  {
-                    title: "Cho gia đình, bạn bè",
-                    image:
-                      "/images/giadinh.png",
-                  },
-                  {
-                    title: "Yêu cầu của bác sĩ",
-                    image:
-                      "/images/yeucaubacsi.png",
-                  },
-                  {
-                    title: "Tiết kiệm tiền",
-                    image:
-                      "/images/tietkiemtien.png",
-                  },
-                  {
-                    title: "Bảo vệ môi trường",
-                    image:
-                      "/images/baovemoitruong.png",
-                  },
-                  {
-                    title: "Cải thiện mùi, ngoại hình",
-                    image:
-                      "/images/caithienmui.png",
-                  },
-                  {
-                    title: "Cho em bé",
-                    image:
-                      "/images/choembe.png",
-                  },
-                  {
-                    title: "Kiểm soát bản thân",
-                    image:
-                      "https://readdy.ai/api/search-image?query=Person%20looking%20in%20mirror%20with%20determined%20expression%2C%20self%20improvement%20concept&width=200&height=200&seq=9&orientation=squarish",
-                  },
-                  {
-                    title: "Tương lai tốt hơn",
-                    image:
-                      "/images/tuonglaitothon.png",
-                  },
-                  {
-                    title: "Cho thú cưng",
-                    // Đã cập nhật lại liên kết hình ảnh tại đây
-                    image:
-                      "/images/chothucung.png",
-                  },
-                ].map((reason, index) => (
+                {allReasons.map((reason, index) => ( // Sử dụng allReasons đã định nghĩa
                   <div
                     key={index}
-                    onClick={() => handleReasonSelect(index)} // Sử dụng hàm handleReasonSelect
+                    onClick={() => handleReasonSelect(index)}
                     className={`rounded-lg p-4 border transition-all cursor-pointer ${
                       selectedReasons.includes(index)
                         ? "border-green-600 bg-green-100 shadow-md"
@@ -324,14 +400,7 @@ const PlanPage = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">TÌNH HUỐNG</h3>
                 <div className="space-y-4">
-                  {[
-                    "Được mời một điếu thuốc",
-                    "Uống rượu hoặc đi đến quán bar",
-                    "Đi dự tiệc hoặc sự kiện xã hội khác",
-                    "Ở gần những người hút thuốc hoặc sử dụng sản phẩm thuốc lá khác",
-                    "Nhìn thấy người khác hút thuốc",
-                    "Ngửi thấy khói thuốc lá",
-                  ].map((situation, index) => (
+                  {allSituationTriggers.map((situation, index) => ( // Sử dụng allSituationTriggers
                     <div
                       key={`situation-${index}`}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -339,7 +408,7 @@ const PlanPage = () => {
                           ? "bg-green-100 border-green-500"
                           : "bg-white border-gray-200 hover:border-gray-300"
                       }`}
-                      onClick={() => handleTriggerSelect(index, "situation")} // Sử dụng hàm handleTriggerSelect
+                      onClick={() => handleTriggerSelect(index, "situation")}
                     >
                       <div
                         className={`w-6 h-6 border-2 rounded mr-3 flex items-center justify-center ${
@@ -360,14 +429,7 @@ const PlanPage = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">CẢM XÚC</h3>
                 <div className="space-y-4">
-                  {[
-                    "Tức giận",
-                    "Lo lắng, bồn chồn",
-                    "Phấn khởi, hạnh phúc",
-                    "Cô đơn",
-                    "Buồn, thất vọng",
-                    "Căng thẳng hoặc quá tải",
-                  ].map((emotion, index) => (
+                  {allEmotionTriggers.map((emotion, index) => ( // Sử dụng allEmotionTriggers
                     <div
                       key={`emotion-${index}`}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -375,7 +437,7 @@ const PlanPage = () => {
                           ? "bg-green-100 border-green-500"
                           : "bg-white border-gray-200 hover:border-gray-300"
                       }`}
-                      onClick={() => handleTriggerSelect(index, "emotion")} // Sử dụng hàm handleTriggerSelect
+                      onClick={() => handleTriggerSelect(index, "emotion")}
                     >
                       <div
                         className={`w-6 h-6 border-2 rounded mr-3 flex items-center justify-center ${
