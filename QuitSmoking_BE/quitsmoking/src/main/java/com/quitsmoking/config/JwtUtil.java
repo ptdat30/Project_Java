@@ -160,7 +160,7 @@ public Boolean validateToken(String token, UserDetails userDetails) {
      * @return The Key object used for signing and verifying tokens.
      */
     private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        return Keys.hmacShaKeyFor(keyBytes);
+        // Sử dụng secret key dạng chuỗi thường, không decode base64
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 }

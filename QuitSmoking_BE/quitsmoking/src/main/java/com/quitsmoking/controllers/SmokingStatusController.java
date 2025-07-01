@@ -1,6 +1,7 @@
 package com.quitsmoking.controllers;
 
 import com.quitsmoking.dto.request.SmokingStatusRequest;
+import com.quitsmoking.dto.response.SmokingStatusResponse;
 import com.quitsmoking.model.SmokingStatus;
 import com.quitsmoking.services.SmokingStatusService;
 import org.springframework.http.HttpStatus;
@@ -22,11 +23,11 @@ public class SmokingStatusController {
 
     // Endpoint để thêm tình trạng hút thuốc mới
     // userId có thể được lấy từ JWT/Spring Security Context thay vì truyền qua PathVariable
-    @PostMapping
+    @PostMapping("/user/{userId}")
     public ResponseEntity<?> addSmokingStatus(@PathVariable String userId,
                                               @RequestBody SmokingStatusRequest request) {
         try {
-            SmokingStatus newStatus = smokingStatusService.addSmokingStatus(userId, request);
+            SmokingStatusResponse newStatus = smokingStatusService.addSmokingStatus(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(newStatus);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

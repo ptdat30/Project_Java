@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDate; // Để lưu ngày tháng
+import java.util.UUID;
 
 @Entity
 @Table(name = "smoking_status") // Tên bảng trong database
@@ -15,8 +16,15 @@ import java.time.LocalDate; // Để lưu ngày tháng
 public class SmokingStatus {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ID tự động tăng
-    private Long id;
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "VARCHAR(36)")
+    private String id;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.id == null || this.id.isEmpty()) {
+            this.id = UUID.randomUUID().toString();
+        }
+    }
 
     // Mối quan hệ Many-to-One với User
     @ManyToOne(fetch = FetchType.LAZY) // Lazy loading: chỉ load User khi cần thiết
