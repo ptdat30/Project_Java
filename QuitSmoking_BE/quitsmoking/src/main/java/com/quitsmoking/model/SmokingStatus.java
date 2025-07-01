@@ -16,7 +16,7 @@ public class SmokingStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // ID tự động tăng
-    private Long id;
+    private String id;
 
     // Mối quan hệ Many-to-One với User
     @ManyToOne(fetch = FetchType.LAZY) // Lazy loading: chỉ load User khi cần thiết

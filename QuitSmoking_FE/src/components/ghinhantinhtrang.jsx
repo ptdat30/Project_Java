@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import apiService from '../services/apiService';
 
 // Component GhiNhanTinhTrang nhận một prop 'onComplete'
 const GhiNhanTinhTrang = ({ onComplete }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Form states
   const [selectedTobaccoType, setSelectedTobaccoType] = useState("cigarettes");
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState("Gói");
@@ -12,7 +18,16 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
   const [selectedTobaccoBrand, setSelectedTobaccoBrand] = useState("");
   const [selectedHealthIssue, setSelectedHealthIssue] = useState("");
   const [otherTobaccoBrand, setOtherTobaccoBrand] = useState("");
-  const navigate = useNavigate(); // Khởi tạo hook navigate
+  
+  // Additional form fields
+  const [numberOfCigarettes, setNumberOfCigarettes] = useState("");
+  const [smokingDurationYears, setSmokingDurationYears] = useState("");
+  const [costPerPack, setCostPerPack] = useState("");
+  
+  // UI states
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -30,46 +45,123 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
   const handleTobaccoTypeChange = (type) => {
     setSelectedTobaccoType(type);
   };
+  
   const toggleUnitDropdown = () => {
     setIsUnitDropdownOpen(!isUnitDropdownOpen);
   };
+  
   const selectUnit = (unit) => {
     setSelectedUnit(unit);
     setIsUnitDropdownOpen(false);
   };
+  
   const toggleTobaccoTypeDropdown = () => {
     setIsTobaccoTypeDropdownOpen(!isTobaccoTypeDropdownOpen);
   };
+  
   const toggleHealthIssueDropdown = () => {
     setIsHealthIssueDropdownOpen(!isHealthIssueDropdownOpen);
   };
 
-  const handleSubmit = () => {
-    // Logic để lưu dữ liệu của form ghi nhận tình trạng ở đây (nếu có)
-    // Ví dụ: gửi lên API, lưu vào localStorage, v.v.
-    console.log("Dữ liệu ghi nhận tình trạng:", {
-      selectedTobaccoType,
-      selectedUnit,
-      selectedTobaccoBrand: selectedTobaccoBrand === "Khác" ? otherTobaccoBrand : selectedTobaccoBrand,
-      selectedHealthIssue
-      // ... thêm các trường dữ liệu khác từ form của bạn
-    });
-
-    // Gọi hàm onComplete được truyền từ App.jsx
-    // Điều này sẽ thông báo cho App.jsx rằng form đã được hoàn thành
-    if (onComplete) {
-      onComplete();
+  // Validation function
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!numberOfCigarettes || numberOfCigarettes <= 0) {
+      newErrors.numberOfCigarettes = "Vui lòng nhập số lượng thuốc hút mỗi ngày";
     }
     
-    // Không cần navigate ở đây nữa, vì App.jsx sẽ xử lý việc điều hướng
-    // sau khi onComplete được gọi và trạng thái được cập nhật.
+    if (!smokingDurationYears || smokingDurationYears <= 0) {
+      newErrors.smokingDurationYears = "Vui lòng nhập thời gian hút thuốc";
+    }
+    
+    if (!selectedTobaccoBrand) {
+      newErrors.tobaccoBrand = "Vui lòng chọn loại thuốc";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
+
+  const handleSubmit = async () => {
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Prepare data for API
+      const smokingStatusData = {
+        tobaccoType: selectedTobaccoType,
+        tobaccoBrand: selectedTobaccoBrand === "Khác" ? otherTobaccoBrand : selectedTobaccoBrand,
+        numberOfCigarettes: parseInt(numberOfCigarettes),
+        unit: selectedUnit,
+        smokingDurationYears: parseInt(smokingDurationYears),
+        healthIssue: selectedHealthIssue,
+        costPerPack: costPerPack ? parseFloat(costPerPack) : null,
+        recordDate: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+        recorUpdate: new Date().toISOString().split('T')[0]
+      };
+
+      console.log("Sending smoking status data:", smokingStatusData);
+
+      // Call API to save smoking status
+      const response = await apiService.post(
+        `/api/smoking-status/user/${user.id}`,
+        smokingStatusData
+      );
+
+      console.log("Smoking status saved successfully:", response);
+      setSubmitSuccess(true);
+      
+      // Show success message briefly
+      setTimeout(() => {
+        // Call onComplete callback to notify parent component
+        if (onComplete) {
+          onComplete();
+        }
+      }, 1500);
+      
+    } catch (error) {
+      console.error("Error saving smoking status:", error);
+      setErrors({
+        submit: error.response?.data?.message || "Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (submitSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-green-500 text-6xl mb-4">✓</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Lưu thông tin thành công!</h2>
+          <p className="text-gray-600">Thông tin tình trạng hút thuốc của bạn đã được lưu.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 max-w-3xl">
-        <h2 className="text-2xl font-bold text-center mb-8">VỀ VIỆC HÚT THUỐC CỦa BẠN</h2>
+        <h2 className="text-2xl font-bold text-center mb-8">VỀ VIỆC HÚT THUỐC CỦA BẠN</h2>
+        
+        {/* Error message */}
+        {errors.submit && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {errors.submit}
+          </div>
+        )}
+        
         <div className="space-y-8">
           {/* Tobacco Type Selection */}
           <div>
@@ -107,14 +199,19 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
               </label>
             </div>
           </div>
+          
           {/* Amount per day */}
           <div>
             <h3 className="text-lg font-medium mb-3">Số lượng (xấp xỉ) mà bạn hút (hoặc đã hút) một ngày?</h3>
             <div className="flex">
               <input
-                type="text"
+                type="number"
                 placeholder="Số lượng trong một ngày"
-                className="flex-grow p-2 bg-gray-100 rounded-l-md border-none focus:outline-none text-sm"
+                value={numberOfCigarettes}
+                onChange={(e) => setNumberOfCigarettes(e.target.value)}
+                className={`flex-grow p-2 bg-gray-100 rounded-l-md border-none focus:outline-none text-sm ${
+                  errors.numberOfCigarettes ? 'border-red-500' : ''
+                }`}
               />
               <div className="relative">
                 <button
@@ -133,15 +230,21 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                 )}
               </div>
             </div>
+            {errors.numberOfCigarettes && (
+              <p className="text-red-500 text-xs mt-1">{errors.numberOfCigarettes}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1 text-right">Bắt buộc điền vào</p>
           </div>
+          
           {/* Tobacco Brand */}
           <div>
             <h3 className="text-lg font-medium mb-3">Loại thuốc bạn hút (hoặc đã hút)?</h3>
             <div className="relative">
               <button
                 onClick={toggleTobaccoTypeDropdown}
-                className="w-full bg-gray-100 p-2 rounded-md flex items-center justify-between cursor-pointer text-sm"
+                className={`w-full bg-gray-100 p-2 rounded-md flex items-center justify-between cursor-pointer text-sm ${
+                  errors.tobaccoBrand ? 'border border-red-500' : ''
+                }`}
               >
                 <span>{selectedTobaccoBrand || "Jet, Hero..."}</span>
                 <i className="fas fa-chevron-down text-xs"></i>
@@ -194,17 +297,42 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                 </div>
               )}
             </div>
+            {errors.tobaccoBrand && (
+              <p className="text-red-500 text-xs mt-1">{errors.tobaccoBrand}</p>
+            )}
           </div>
+          
           {/* Smoking Duration */}
           <div>
             <h3 className="text-lg font-medium mb-3">Bạn đã hút được bao lâu?</h3>
             <input
-              type="text"
+              type="number"
               placeholder="bao nhiêu năm"
-              className="w-full p-2 bg-gray-100 rounded-md border-none focus:outline-none text-sm"
+              value={smokingDurationYears}
+              onChange={(e) => setSmokingDurationYears(e.target.value)}
+              className={`w-full p-2 bg-gray-100 rounded-md border-none focus:outline-none text-sm ${
+                errors.smokingDurationYears ? 'border border-red-500' : ''
+              }`}
             />
+            {errors.smokingDurationYears && (
+              <p className="text-red-500 text-xs mt-1">{errors.smokingDurationYears}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1 text-right">Bắt buộc điền vào</p>
           </div>
+          
+          {/* Cost per pack (optional) */}
+          <div>
+            <h3 className="text-lg font-medium mb-3">Giá tiền mỗi gói thuốc (VND) - Tùy chọn</h3>
+            <input
+              type="number"
+              placeholder="Ví dụ: 25000"
+              value={costPerPack}
+              onChange={(e) => setCostPerPack(e.target.value)}
+              className="w-full p-2 bg-gray-100 rounded-md border-none focus:outline-none text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">Để tính toán số tiền tiết kiệm được</p>
+          </div>
+          
           {/* Health Issues */}
           <div>
             <h3 className="text-lg font-medium mb-3">Bạn có gặp vấn đề sức khỏe nào sau khi hút không?</h3>
@@ -246,13 +374,27 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
               )}
             </div>
           </div>
+          
           {/* Submit Button */}
           <button
-            onClick={handleSubmit} // Gọi handleSubmit khi click
-            className="w-full bg-green-500 text-white py-3 rounded-md font-medium text-lg cursor-pointer whitespace-nowrap !rounded-button"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className={`w-full py-3 rounded-md font-medium text-lg cursor-pointer whitespace-nowrap !rounded-button ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-green-500 text-white hover:bg-green-600'
+            }`}
           >
-            Hoàn thành
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Đang lưu...
+              </div>
+            ) : (
+              'Hoàn thành'
+            )}
           </button>
+          
           {/* Footer Text */}
           <p className="text-center text-gray-600 mt-4">
             Điều này cho phép chúng tôi trình bày số tiền bạn tiết kiệm được bằng cách cai hút thuốc.

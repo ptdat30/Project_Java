@@ -42,6 +42,15 @@ public class QuitPlanService {
             plan.setActive(false);
             quitPlanDAO.save(plan);
         });
+        String selectedReasonsJsonToSave = request.getSelectedReasonsJson();
+        if (selectedReasonsJsonToSave == null || selectedReasonsJsonToSave.trim().isEmpty()) {
+        selectedReasonsJsonToSave = "[]"; // Phòng thủ: mặc định là mảng JSON rỗng
+        }
+
+        String selectedTriggersJsonToSave = request.getSelectedTriggersJson();
+        if (selectedTriggersJsonToSave == null || selectedTriggersJsonToSave.trim().isEmpty()) {
+        selectedTriggersJsonToSave = "[]"; // Phòng thủ: mặc định là mảng JSON rỗng
+        }
 
         // Tạo kế hoạch mới từ request DTO
         QuitPlan newPlan = new QuitPlan(

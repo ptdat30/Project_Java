@@ -38,24 +38,36 @@ const apiService = {
   },
 
   // Smoking Status
-  getSmokingStatus: async () => {
-    const response = await apiClient.get(config.endpoints.smokingStatus);
+  getSmokingStatus: async (userId) => {
+    const response = await apiClient.get(`${config.endpoints.smokingStatus}/user/${userId}`);
     return response.data;
   },
 
-  createSmokingStatus: async (statusData) => {
+  createSmokingStatus: async (userId, statusData) => {
     const response = await apiClient.post(
-      config.endpoints.smokingStatus,
+      `${config.endpoints.smokingStatus}/user/${userId}`,
       statusData
     );
     return response.data;
   },
 
-  updateSmokingStatus: async (statusData) => {
+  updateSmokingStatus: async (statusId, statusData) => {
     const response = await apiClient.put(
-      config.endpoints.smokingStatus,
+      `${config.endpoints.smokingStatus}/${statusId}`,
       statusData
     );
+    return response.data;
+  },
+
+  deleteSmokingStatus: async (statusId) => {
+    const response = await apiClient.delete(
+      `${config.endpoints.smokingStatus}/${statusId}`
+    );
+    return response.data;
+  },
+
+  getSmokingStatusById: async (statusId) => {
+    const response = await apiClient.get(`${config.endpoints.smokingStatus}/${statusId}`);
     return response.data;
   },
 

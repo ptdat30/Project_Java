@@ -17,10 +17,10 @@ public class QuitPlan {
     @JoinColumn(name = "user_id", nullable = false) // Tên cột khóa ngoại trong bảng quit_plans
     private User user; // Liên kết với User entity
 
-    @Column(name = "lydocaythuoc",nullable = false)
+    @Column(name = "lydocaythuoc",nullable = true)
     private String reason; // Lý do cai thuốc (ví do: Sức khỏe, Gia đình, Tiền bạc)
 
-    @Column(name = "timebatdau", nullable = false)
+    @Column(name = "timebatdau", nullable = true)
     private LocalDate startDate; // Thời điểm bắt đầu thực hiện kế hoạch
 
     @Column(nullable = false)
