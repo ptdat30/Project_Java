@@ -72,7 +72,7 @@ const AppContent = () => {
     location.pathname
   );
 
-  // --- SỬA ĐOẠN NÀY: Lưu trạng thái theo từng user ---
+  // --- Lưu trạng thái ghi nhận tình trạng ---
   const [hasRecordedStatus, setHasRecordedStatus] = useState(false);
 
   useEffect(() => {
@@ -82,13 +82,39 @@ const AppContent = () => {
     }
   }, [user]);
 
-  // Khi hoàn thành ghi nhận tình trạng, lưu trạng thái theo user
+  // Khi hoàn thành ghi nhận tình trạng, lưu trạng thái theo user và chuyển sang PlanPage
   const handleStatusRecorded = () => {
     if (user && user.id) {
       localStorage.setItem(`hasRecordedStatus_${user.id}`, 'true');
       setHasRecordedStatus(true);
-      navigate('/plan');
+      navigate('/plan', { replace: true });
     }
+  };
+
+  // Hàm kiểm tra đã có kế hoạch chưa
+  const hasPlan = () => {
+  const planStr = localStorage.getItem("quitPlan");
+  try {
+    const plan = JSON.parse(planStr);
+    // Phải có startDate và không rỗng
+    return !!plan && !!plan.startDate && plan.startDate !== "";
+  } catch {
+    return false;
+  }
+};
+
+  // --- Route /plan logic ---
+  const renderPlanRoute = () => {
+    if (!hasRecordedStatus) {
+      // Chưa ghi nhận tình trạng
+      return <GhiNhanTinhTrang onComplete={handleStatusRecorded} />;
+    }
+    if (!hasPlan()) {
+      // Đã ghi nhận tình trạng nhưng chưa lập kế hoạch
+      return <PlanPage />;
+    }
+    // Đã có kế hoạch
+    return <Navigate to="/dashboard" replace />;
   };
 
   return (
@@ -163,13 +189,7 @@ const AppContent = () => {
         />
         <Route
           path="/plan"
-          element={
-            hasRecordedStatus ? (
-              <PlanPage />
-            ) : (
-              <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
-            )
-          }
+          element={renderPlanRoute()}
         />
         <Route
           path="/settings"

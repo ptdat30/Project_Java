@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const PlanPage = () => {
   const [startDate, setStartDate] = useState("today");
@@ -49,15 +50,21 @@ const PlanPage = () => {
     }
   };
 
+    const navigate = useNavigate();
+
   const handleStartPlan = () => {
-    console.log("Bắt đầu kế hoạch với các lựa chọn:");
-    console.log("Ngày bắt đầu:", startDate === "custom" ? customDate : startDate);
-    console.log("Số điếu thuốc mỗi ngày:", cigarettesPerDay);
-    console.log("Giá mỗi bao thuốc:", pricePerPack);
-    console.log("Lý do bỏ thuốc:", selectedReasons);
-    console.log("Kích hoạt thèm khát:", selectedTriggers);
-    alert("Kế hoạch của bạn đã bắt đầu!");
+  const planData = {
+    startDate: startDate === "custom" ? customDate : startDate,
+    cigarettesPerDay,
+    pricePerPack,
+    selectedReasons,
+    selectedTriggers,
+    createdAt: new Date().toISOString()
   };
+  localStorage.setItem("quitPlan", JSON.stringify(planData)); // CHỈ ở đây!
+  alert("Kế hoạch của bạn đã bắt đầu!");
+  navigate("/dashboard");
+};
 
   // Định nghĩa màu xanh nhạt mới
   const lightGreen = "#49b08b";
