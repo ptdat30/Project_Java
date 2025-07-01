@@ -9,55 +9,90 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.quitsmoking.exceptions.EmailAlreadyExistsException; 
 import com.quitsmoking.exceptions.UserAlreadyExistsException;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.quitsmoking.model.interfaces.iAuthenticatable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger; 
+import org.slf4j.LoggerFactory;
+import com.quitsmoking.config.JwtUtil;
 
 import java.util.Collections;
+import java.util.regex.Pattern;
 import java.util.Optional;
-// import java.util.UUID;
+import java.util.UUID;
 
 @Service
 public class AuthService implements iRegistrableService, UserDetailsService {
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class); // Khởi tạo logger
 
     private final UserDAO userDAO;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public AuthService(UserDAO userDAO, PasswordEncoder passwordEncoder) {
+        // Thêm các dependency mới
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private OtpManagementService otpService;
+
+    public AuthService(UserDAO userDAO, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userDAO = userDAO;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+    }
+
+    // Thêm methods cho reset password
+    public void sendPasswordResetOtp(String email) {
+        User user = userDAO.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+        
+        String otp = otpService.generateOtp(email);
+        emailService.sendOtpEmail(email, otp);
+    }
+
+    public void resetPassword(String email, String otp, String newPassword) {
+        if (!otpService.validateOtp(email, otp)) {
+            throw new IllegalArgumentException("Mã OTP không hợp lệ hoặc đã hết hạn");
+        }
+        
+        User user = userDAO.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userDAO.save(user);
     }
 
     @Override
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        // Sử dụng phương thức findByEmailOrUsername đã được tạo trong UserDAO
         Optional<User> userOptional = userDAO.findByEmailOrUsername(identifier);
+
+        if (userOptional.isEmpty()) {
+            if (isValidUUID(identifier)) {
+                userOptional = userDAO.findByIdWithMembership(identifier);
+            }
+        }
 
         User user = userOptional.orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
 
-        // --- ĐIỂM SỬA ĐỔI QUAN TRỌNG NHẤT ---
-        // Đảm bảo mật khẩu và vai trò không bao giờ là null
-        String password = user.getPassword();
-        if (password == null || password.isEmpty()) {
-            // Đối với người dùng OAuth2 (Google), họ không có mật khẩu trong DB của bạn.
-            // Spring Security vẫn yêu cầu một chuỗi mật khẩu không null.
-            // Sử dụng một placeholder hoặc chuỗi rỗng an toàn.
-            // Chuỗi "N/A" hoặc "{noop}N/A" thường được dùng, hoặc đơn giản là một chuỗi trống
-            password = ""; // Hoặc "{noop}password_placeholder" nếu bạn không muốn mã hóa
-        }
-
-        String role = user.getRole() != null ? user.getRole().name() : "USER"; // Đặt vai trò mặc định nếu null
-
-        // Dòng 39 (hoặc tương tự) sẽ nằm ở đây:
-        return new org.springframework.security.core.userdetails.User(
-            user.getUsername(), // Hoặc user.getEmail() tùy vào cách bạn muốn Spring Security định danh
-            password,
-            Collections.singleton(new SimpleGrantedAuthority(role))
-        );
+        logger.info("AuthService: Successfully loaded user details for '{}'. User ID: {}, Role: {}", identifier, user.getId(), user.getRole().name());
+        return user; 
     }
 
-    @Override
+    // Hàm kiểm tra xem một chuỗi có phải là UUID hợp lệ hay không
+    private boolean isValidUUID(String str) {
+        try {
+            UUID.fromString(str);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+        @Override
     public User register(String username, String rawPassword, String email, String firstName, String lastName, Role requestedRole) {
         // Kiểm tra dữ liệu đầu vào
         if (username == null || username.trim().isEmpty() ||
@@ -155,53 +190,32 @@ public class AuthService implements iRegistrableService, UserDetailsService {
     }
 
     public User processGoogleLogin(String email, String firstName, String lastName, String googleId, String pictureUrl) {
-        Optional<User> existingUser = userDAO.findByGoogleId(googleId);
+        Optional<User> userOpt = userDAO.findByGoogleId(googleId);
         User user;
-
-        if (existingUser.isPresent()) {
-            user = existingUser.get();
-            // Cập nhật thông tin người dùng Google hiện có
-            user.setEmail(email);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setPictureUrl(pictureUrl);
-            user.setAuthProvider(AuthProvider.GOOGLE);
-            // GoogleId không cần cập nhật vì nó là key chính để tìm
-            System.out.println("Đã tìm thấy và cập nhật người dùng Google hiện có: " + user.getEmail());
-        } else {
-            // Kiểm tra email đã tồn tại với tài khoản LOCAL
-            Optional<User> existingUserByEmail = userDAO.findByEmail(email);
-            if (existingUserByEmail.isPresent()) {
-                user = existingUserByEmail.get();
-                if (user.getAuthProvider().equals(AuthProvider.LOCAL)) {
-                    // Liên kết tài khoản Local hiện có với Google
-                    user.setFirstName(firstName);
-                    user.setLastName(lastName);
-                    user.setPictureUrl(pictureUrl);
-                    user.setGoogleId(googleId); // Cập nhật GoogleId
-                    user.setAuthProvider(AuthProvider.GOOGLE); // Cập nhật AuthProvider
-                    System.out.println("Da lien ket nguoi dung hien co voi Google: " + user.getEmail());
-                } else {
-                    // Nếu email đã đăng ký với nhà cung cấp khác (không phải LOCAL và không phải GoogleId hiện tại)
-                    throw new EmailAlreadyExistsException("Email '" + email + "' da dang ky voi tai khoan " +
-                            user.getAuthProvider() + ". Vui long su dung tai khoan " + user.getAuthProvider() +
-                            " cua ban de dang nhap.");
-                }
-            } else {
-                // Tạo GoogleUser mới
-                user = new GoogleUser(
-                        email,
-                        firstName,
-                        lastName,
-                        googleId,
-                        pictureUrl,
-                        AuthProvider.GOOGLE,
-                        Role.GUEST // Mặc định là GUEST cho người dùng mới qua Google
-                );
-                System.out.println("Da tao nguoi dung Google moi: " + user.getEmail());
+        if (userOpt.isPresent()) {
+            user = userOpt.get();
+            
+    
+            // Chỉ cập nhật nếu trường đó đang null/rỗng
+            if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
+                user.setFirstName(firstName);
             }
+            if (user.getLastName() == null || user.getLastName().isEmpty()) {
+                user.setLastName(lastName);
+            }
+            if (user.getPictureUrl() == null || user.getPictureUrl().isEmpty()) {
+                user.setPictureUrl(pictureUrl);
+            }
+            // Có thể cập nhật googleId/email nếu muốn
+            user.setGoogleId(googleId);
+            user.setEmail(email);
+            userDAO.save(user);
+        } else {
+            // Tạo user mới từ Google info
+            user = new GoogleUser(email, firstName, lastName, googleId, pictureUrl, AuthProvider.GOOGLE, Role.GUEST);
+            userDAO.save(user);
         }
-        return userDAO.save(user); // Lưu hoặc cập nhật người dùng
+        return user;
     }
 
     public User changeUserRole(String userId, Role newRole) {
@@ -224,5 +238,8 @@ public class AuthService implements iRegistrableService, UserDetailsService {
 
         System.out.println("User '" + user.getUsername() + "' (ID: " + userId + ") role changed to " + newRole.name() + ".");
         return updatedUser;
+    }
+    public String generateJwtToken(User user) {
+        return jwtUtil.generateToken(user);
     }
 }

@@ -1,5 +1,6 @@
 package com.quitsmoking.services;
 
+import com.quitsmoking.dto.request.WebSocketMessageRequest;
 import com.quitsmoking.model.ChatMessage;
 import com.quitsmoking.model.CoachConsultation;
 import com.quitsmoking.model.User;
@@ -49,8 +50,26 @@ public class ChatMessageService {
         return messageRepository.save(message);
     }
     
+    public ChatMessage saveMessageFromWebSocket(WebSocketMessageRequest request) {
+        CoachConsultation consultation = consultationRepository.findById(request.getSessionId())
+            .orElseThrow(() -> new RuntimeException("Consultation not found"));
+        
+        User sender = userDAO.findById(request.getSenderId())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        ChatMessage message = new ChatMessage();
+        message.setConsultation(consultation);
+        message.setSender(sender);
+        message.setContent(request.getContent());
+        message.setMessageType(ChatMessage.MessageType.valueOf(request.getMessageType()));
+        message.setTimestamp(LocalDateTime.now());
+        message.setIsRead(false);
+        
+        return messageRepository.save(message);
+    }
+    
     public Page<ChatMessage> getMessagesByConsultation(String consultationId, Pageable pageable) {
-        return messageRepository.findByConsultationIdOrderByTimestampAsc(consultationId, pageable);
+        return messageRepository.findByConsultationIdWithSenderOrderByTimestampAsc(consultationId, pageable);
     }
     
     public List<ChatMessage> getUnreadMessages(String consultationId, String userId) {
@@ -76,6 +95,6 @@ public class ChatMessageService {
     }
     
     public List<ChatMessage> getRecentMessages(String consultationId, int limit) {
-        return messageRepository.findByConsultationIdOrderByTimestampDescLimit(consultationId, limit);
+        return messageRepository.findByConsultationIdWithSenderOrderByTimestampDescLimit(consultationId, limit);
     }
 }

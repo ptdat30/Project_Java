@@ -1,170 +1,232 @@
 // src/components/laylaimatkhau/laylaimatkhau2.jsx
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { passwordResetAPI } from '../../services/passwordResetAPI';
 
-// Đảm bảo nhận các props onNext và onGoToLogin
-const LayLaiMatKhau2 = ({ onNext, onGoToLogin }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [rememberLogin, setRememberLogin] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isHovered, setIsHovered] = useState(false);
-  const [isActive, setIsActive] = useState(false);
-  const handleMouseEnter = () => {
-    setIsHovered(true);
+const LayLaiMatKhau2 = ({
+                          email,
+                          onPasswordResetSuccess,
+                          onPasswordResetError,
+                          onGoToLogin,
+                          onBackToStep1,
+                          errorMessage
+                        }) => {
+  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [countdown, setCountdown] = useState(300); // 5 phút = 300 giây
+
+  // Đếm ngược thời gian hết hạn OTP
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Hiển thị error từ parent component
+  useEffect(() => {
+    if (errorMessage) {
+      setError(errorMessage);
+    }
+  }, [errorMessage]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setIsActive(false);
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!otp.trim()) {
+      newErrors.otp = 'Vui lòng nhập mã OTP';
+    } else if (otp.length !== 6) {
+      newErrors.otp = 'Mã OTP phải có 6 chữ số';
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Vui lòng nhập mật khẩu mới';
+    } else if (password.length < 6) {
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+    }
+
+    return newErrors;
   };
 
-  const handleMouseDown = () => {
-    setIsActive(true);
-  };
-
-  const handleMouseUp = () => {
-    setIsActive(false);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Xử lý logic đặt lại mật khẩu ở đây
-    console.log("Đặt lại mật khẩu:", password, confirmPassword);
-    // Sau khi xử lý xong, chuyển sang bước tiếp theo
-    if (onNext) {
-      // Kiểm tra xem prop onNext có tồn tại không
-      onNext();
+    setError('');
+    setFieldErrors({});
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      return;
+    }
+
+    if (countdown <= 0) {
+      setError('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await passwordResetAPI.verifyOTPAndResetPassword(email, otp, password);
+
+      if (response.success) {
+        onPasswordResetSuccess();
+      } else {
+        if (response.errors) {
+          setFieldErrors(response.errors);
+        } else {
+          const errorMessage = response.message || 'Có lỗi xảy ra khi đặt lại mật khẩu';
+          setError(errorMessage);
+          onPasswordResetError(errorMessage);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error.message || 'Không thể kết nối đến server';
+      setError(errorMessage);
+      onPasswordResetError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      setLoading(true);
+      const response = await passwordResetAPI.sendResetOTP(email);
+
+      if (response.success) {
+        setCountdown(300); // Reset countdown
+        setError('');
+        alert('Đã gửi lại mã OTP mới!');
+      } else {
+        setError(response.message || 'Không thể gửi lại mã OTP');
+      }
+    } catch (error) {
+      setError('Không thể gửi lại mã OTP');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#ffe6d5] p-4">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold mb-4">Lấy lại mật khẩu</h1>
+      <div className="password-reset-step">
+        <div className="reset-form-container">
+          <h2>Xác thực OTP</h2>
+          <p className="instruction">
+            Mã OTP đã được gửi đến: <strong>{email}</strong>
+          </p>
 
-        <p className="text-gray-700 mb-6">
-          Đừng lo lắng, giờ bạn chỉ cần nhập mã tài khoản của bạn, sau đó chúng
-          tôi sẽ gửi một đoạn mã đến email của bạn để khôi phục mật khẩu.
-        </p>
+          <div className="countdown">
+            <p>Mã OTP sẽ hết hạn sau: <strong>{formatTime(countdown)}</strong></p>
+          </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Mật khẩu mới */}
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-lg font-bold mb-2">
-              Mật khẩu mới
-            </label>
-            <div className="relative">
+          <form onSubmit={handleSubmit} className="reset-form">
+            <div className="form-group">
+              <label htmlFor="otp">Mã OTP (6 chữ số)</label>
               <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                className="w-full py-3 px-4 bg-[#fffde7] border-none focus:outline-none focus:ring-2 focus:ring-[#f0b27a] text-sm"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                  type="text"
+                  id="otp"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Nhập mã OTP"
+                  disabled={loading}
+                  className={fieldErrors.otp ? 'error' : ''}
+                  maxLength="6"
               />
-              <button
-                type="button" // Luôn là type="button" để không submit form
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label="Toggle password visibility"
-              >
-                <i
-                  className={`fas ${
-                    showPassword ? "fa-eye-slash" : "fa-eye"
-                  } text-gray-600`}
-                ></i>
-                <span className="ml-2 text-gray-600">hiển thị</span>
-              </button>
+              {fieldErrors.otp && (
+                  <span className="field-error">{fieldErrors.otp}</span>
+              )}
             </div>
-          </div>
 
-          {/* Nhập lại mật khẩu */}
-          <div className="mb-6">
-            <label
-              htmlFor="confirmPassword"
-              className="block text-lg font-bold mb-2"
-            >
-              Nhập lại mật khẩu
-            </label>
-            <div className="relative">
+            <div className="form-group">
+              <label htmlFor="password">Mật khẩu mới</label>
               <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                className="w-full py-3 px-4 bg-[#fffde7] border-none focus:outline-none focus:ring-2 focus:ring-[#f0b27a] text-sm"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                  disabled={loading}
+                  className={fieldErrors.password ? 'error' : ''}
               />
-              <button
-                type="button" // Luôn là type="button" để không submit form
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label="Toggle password visibility"
-              >
-                <i
-                  className={`fas ${
-                    showConfirmPassword ? "fa-eye-slash" : "fa-eye"
-                  } text-gray-600`}
-                ></i>
-                <span className="ml-2 text-gray-600">hiển thị</span>
-              </button>
+              {fieldErrors.password && (
+                  <span className="field-error">{fieldErrors.password}</span>
+              )}
             </div>
-          </div>
 
-          {/* Duy trì đăng nhập */}
-          <div className="mb-6">
-            <label className="flex items-center cursor-pointer">
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
               <input
-                type="checkbox"
-                className="sr-only" // Ẩn checkbox mặc định
-                checked={rememberLogin}
-                onChange={() => setRememberLogin(!rememberLogin)}
+                  type="password"
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                  disabled={loading}
+                  className={fieldErrors.confirmPassword ? 'error' : ''}
               />
-              {/* Custom checkbox visual */}
-              <div
-                className={`w-5 h-5 ${
-                  rememberLogin ? "bg-[#f0b27a]" : "bg-[#fffde7]"
-                } border border-gray-300 mr-2 flex items-center justify-center`}
-              >
-                {rememberLogin && (
-                  <i className="fas fa-check text-white text-xs"></i>
-                )}
-              </div>
-              <span className="text-lg font-bold">Duy trì đăng nhập</span>
-            </label>
-          </div>
+              {fieldErrors.confirmPassword && (
+                  <span className="field-error">{fieldErrors.confirmPassword}</span>
+              )}
+            </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            {error && <div className="error-message">{error}</div>}
+
             <button
-              type="submit" // Giữ type submit nếu bạn muốn gửi form
-              className="bg-[#c8a79b] hover:bg-[#b3937f] active:bg-[#a58474] text-white py-3 px-8 rounded-md mb-4 sm:mb-0 cursor-pointer whitespace-nowrap !rounded-button"
+                type="submit"
+                className="submit-btn"
+                disabled={loading || countdown <= 0}
             >
-              Tiếp theo
+              {loading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
             </button>
-            <Link // <--- CHANGE FROM <div> TO <Link>
-              to="/login" // <--- Specify the path to your login page route
-              className={`bg-[#fffbe5] py-3 px-4 rounded-md transition-all duration-300 cursor-pointer flex items-center justify-center ${
-                isHovered ? "bg-[#f7f3d7]" : ""
-              } ${isActive ? "bg-[#f0ecc8] transform scale-[0.98]" : ""}`}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-              // onClick={onGoToLogin} // <--- Remove this onClick if using Link for navigation
+          </form>
+
+          <div className="form-footer">
+            <button
+                type="button"
+                className="link-btn"
+                onClick={handleResendOTP}
+                disabled={loading || countdown > 240} // Chỉ cho phép gửi lại sau 1 phút
             >
-              {/* The content of the link */}
-              <span
-                className={`text-green-500 font-medium whitespace-nowrap ${
-                  isHovered ? "text-green-600" : ""
-                } ${isActive ? "text-green-700" : ""}`}
-              >
-                Đi đến trang đăng nhập.
-              </span>
-            </Link>
+              Gửi lại mã OTP
+            </button>
+            <button
+                type="button"
+                className="link-btn"
+                onClick={onBackToStep1}
+            >
+              Thay đổi email
+            </button>
+            <button
+                type="button"
+                className="link-btn"
+                onClick={onGoToLogin}
+            >
+              Quay lại đăng nhập
+            </button>
           </div>
-        </form>
+        </div>
       </div>
-    </div>
   );
 };
 

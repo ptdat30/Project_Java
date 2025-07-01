@@ -19,7 +19,7 @@ public class Guest extends User {
                  String googleId, String pictureUrl, AuthProvider authProvider,
                  MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.GUEST, MemberShipPlan, membershipEndDate);
+              authProvider, Role.GUEST, MemberShipPlan, membershipEndDate, false);
         // Khi là Guest, gói thành viên sẽ là null, chúng ta set lại để đảm bảo
         this.setCurrentMembershipPlan(null);
         this.setMembershipEndDate(null);

@@ -18,7 +18,7 @@ public class Member extends User {
                   String googleId, String pictureUrl, AuthProvider authProvider,
                   MembershipPlan  MemberShipPlan, LocalDate membershipEndDate) {
         super(id, username, password, email, firstName, lastName, googleId, pictureUrl,
-              authProvider, Role.MEMBER, MemberShipPlan, membershipEndDate);
+              authProvider, Role.MEMBER, MemberShipPlan, membershipEndDate, true);
         // Các trường MembershipPlan và membershipEndDate sẽ được truyền vào từ lớp cha
     }
 

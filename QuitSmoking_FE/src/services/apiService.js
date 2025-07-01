@@ -16,6 +16,27 @@ const apiService = {
     return response.data;
   },
 
+  // Generic HTTP methods
+  get: async (url) => {
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
+  post: async (url, data) => {
+    const response = await apiClient.post(url, data);
+    return response.data;
+  },
+
+  put: async (url, data) => {
+    const response = await apiClient.put(url, data);
+    return response.data;
+  },
+
+  delete: async (url) => {
+    const response = await apiClient.delete(url);
+    return response.data;
+  },
+
   // Smoking Status
   getSmokingStatus: async () => {
     const response = await apiClient.get(config.endpoints.smokingStatus);
@@ -218,11 +239,21 @@ const apiService = {
     return response.data;
   },
 
-  upgradeMembership: async (planData) => {
+  registerFreeMembership: async () => {
+    const response = await apiClient.post(config.endpoints.freeMembership);
+    return response.data;
+  },
+
+  upgradeMembership: async (upgradeRequestData) => {
+    // Nâng cấp lên một gói thành viên có phí
+    // API có thể yêu cầu planId hoặc một payload chi tiết hơn
+    // Dựa trên config, endpoint là `/api/membership/upgrade`, có thể cần truyền planId trong body hoặc URL.
+    // Giả sử API nhận { planId: "..." } trong body
     const response = await apiClient.post(
-      `${config.endpoints.membership}/upgrade`,
-      planData
+      config.endpoints.upgradeMembership,
+      upgradeRequestData
     );
+
     return response.data;
   },
 
@@ -272,6 +303,17 @@ const apiService = {
   // Dashboard Statistics
   getDashboardStats: async () => {
     const response = await apiClient.get("/api/dashboard/stats");
+    return response.data;
+  },
+
+  getCoaches: async () => {
+    const response = await apiClient.get("/api/user/coaches");
+    return response.data;
+  },
+
+  getConsultationSession: async (userId, coachId) => {
+    // Giả sử endpoint là /api/coach-consultations?userId=...&coachId=...
+    const response = await apiClient.get(`/api/coach-consultations?userId=${userId}&coachId=${coachId}`);
     return response.data;
   },
 };

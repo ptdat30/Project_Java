@@ -1,14 +1,18 @@
 package com.quitsmoking.controllers;
 import com.quitsmoking.model.User;
 import com.quitsmoking.services.AdminService;
+import com.quitsmoking.services.UserStatusService;
 import com.quitsmoking.dto.response.AdminStatsResponse;
+import com.quitsmoking.dto.response.UserAdminResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 /**
  * Controller cho các chức năng quản trị hệ thống
  * Chỉ cho phép ADMIN truy cập
@@ -20,6 +24,12 @@ import java.util.Map;
 public class AdminController {
     @Autowired
     private AdminService adminService;
+    
+    @Autowired
+    private UserStatusService userStatusService;
+
+    @Autowired
+    private ApplicationContext applicationContext;
     /**
      * Lấy thống kê tổng quan hệ thống
      */
@@ -32,23 +42,68 @@ public class AdminController {
      * Quản lý người dùng - Lấy danh sách tất cả người dùng
      */
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers(
+    public ResponseEntity<List<UserAdminResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search) {
-        
-        List<User> users = adminService.getAllUsers(page, size, sortBy, sortDir, search);
+        List<UserAdminResponse> users = adminService.getAllUsers(page, size, sortBy, sortDir, search);
         return ResponseEntity.ok(users);
     }
     /**
      * Lấy thông tin chi tiết người dùng
      */
     @GetMapping("/users/{userId}")
-    public ResponseEntity<User> getUserDetails(@PathVariable String userId) {
-        User user = adminService.getUserDetails(userId);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<Map<String, Object>> getUserById(@PathVariable String userId) {
+        try {
+            User user = adminService.getUserById(userId);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Create a DTO to avoid Hibernate proxy issues
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
+            userInfo.put("username", user.getUsername());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("firstName", user.getFirstName());
+            userInfo.put("lastName", user.getLastName());
+            userInfo.put("role", user.getRole());
+            userInfo.put("authProvider", user.getAuthProvider());
+            userInfo.put("gender", user.getGender());
+            userInfo.put("dateOfBirth", user.getDateOfBirth());
+            userInfo.put("phoneNumber", user.getPhoneNumber());
+            userInfo.put("pictureUrl", user.getPictureUrl());
+            userInfo.put("createdAt", user.getCreatedAt());
+            userInfo.put("updatedAt", user.getUpdatedAt());
+            userInfo.put("enabled", user.isEnabled());
+            userInfo.put("freePlanClaimed", user.isFreePlanClaimed());
+            
+            // Handle membership info safely - avoid accessing proxy objects
+            try {
+                if (user.getCurrentMembershipPlan() != null) {
+                    Map<String, Object> membershipInfo = new HashMap<>();
+                    membershipInfo.put("id", user.getCurrentMembershipPlan().getId());
+                    membershipInfo.put("planName", user.getCurrentMembershipPlan().getPlanName());
+                    membershipInfo.put("planType", user.getCurrentMembershipPlan().getPlanType());
+                    userInfo.put("currentMembershipPlan", membershipInfo);
+                }
+            } catch (Exception e) {
+                // If we can't access membership plan due to proxy issues, just skip it
+                System.err.println("Could not access membership plan for user " + userId + ": " + e.getMessage());
+                userInfo.put("currentMembershipPlan", null);
+            }
+            
+            userInfo.put("membershipStartDate", user.getMembershipStartDate());
+            userInfo.put("membershipEndDate", user.getMembershipEndDate());
+            
+            return ResponseEntity.ok(userInfo);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to retrieve user information: " + e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
     }
     /**
      * Khóa/Mở khóa tài khoản người dùng
@@ -66,14 +121,24 @@ public class AdminController {
     /**
      * Nâng cấp/Hạ cấp vai trò người dùng
      */
-    @PostMapping("/users/{userId}/promote")
-    public ResponseEntity<User> promoteUser(
-            @PathVariable String userId,
-            @RequestBody Map<String, String> request) {
-        
+    @PostMapping("/users/{userId}/update-role")
+    public ResponseEntity<Map<String, Object>> updateUserRole(@PathVariable String userId, @RequestBody Map<String, String> request) {
         String newRole = request.get("role");
-        User user = adminService.updateUserRole(userId, newRole);
-        return ResponseEntity.ok(user);
+        Map<String, Object> result = new HashMap<>();
+        if (newRole == null || !(newRole.equals("GUEST") || newRole.equals("MEMBER") || newRole.equals("COACH"))) {
+            result.put("success", false);
+            result.put("message", "Role không hợp lệ!");
+            return ResponseEntity.badRequest().body(result);
+        }
+        try {
+            User user = adminService.updateUserRole(userId, newRole);
+            result.put("success", true);
+            result.put("user", user);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
     }
     /**
      * Quản lý huấn luyện viên - Lấy danh sách
@@ -213,5 +278,43 @@ public class AdminController {
         
         List<Object> logs = adminService.getSystemReports(page, size, level);
         return ResponseEntity.ok(logs);
+    }
+    /**
+     * Lấy trạng thái online/offline của tất cả người dùng
+     */
+    @GetMapping("/users/status")
+    public ResponseEntity<Map<String, Boolean>> getAllUserStatuses() {
+        Map<String, Boolean> userStatuses = userStatusService.getAllUserStatuses();
+        return ResponseEntity.ok(userStatuses);
+    }
+    /**
+     * Lấy trạng thái online/offline của một người dùng cụ thể
+     */
+    @GetMapping("/users/{userId}/status")
+    public ResponseEntity<Map<String, Object>> getUserStatus(@PathVariable String userId) {
+        boolean isOnline = userStatusService.isUserOnline(userId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", userId);
+        result.put("online", isOnline);
+        
+        // Lấy lastSeen nếu có
+        Map<String, java.time.LocalDateTime> userStatusMap = userStatusService.getUserStatusMap();
+        java.time.LocalDateTime lastSeen = userStatusMap.get(userId);
+        if (lastSeen != null) {
+            result.put("lastSeen", lastSeen.toString());
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+    /**
+     * Kiểm tra xem người dùng có online không
+     */
+    @GetMapping("/users/{userId}/online")
+    public ResponseEntity<Map<String, Object>> isUserOnline(@PathVariable String userId) {
+        boolean isOnline = userStatusService.isUserOnline(userId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("userId", userId);
+        result.put("online", isOnline);
+        return ResponseEntity.ok(result);
     }
 }

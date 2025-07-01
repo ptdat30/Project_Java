@@ -6,6 +6,8 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.quitsmoking.config.JwtUtil;
 import com.quitsmoking.dto.request.AuthRequest;
+import com.quitsmoking.dto.request.OtpVerificationRequest;
+import com.quitsmoking.dto.request.PasswordResetRequest;
 import com.quitsmoking.dto.request.RegisterRequest;
 import com.quitsmoking.dto.response.AuthResponse;
 import com.quitsmoking.exceptions.EmailAlreadyExistsException; 
@@ -87,13 +89,27 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Incorrect username or password"));
         }
 
-        final UserDetails userDetails = authService.loadUserByUsername(authenticationRequest.getUsername());
-        final String jwt = jwtUtil.generateToken(userDetails);
+        // SỬA: Dùng findByEmailOrUsernameWithMembership để fetch membership đầy đủ
+        User user = userDAO.findByEmailOrUsernameWithMembership(authenticationRequest.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
 
-        User user = userDAO.findByEmailOrUsername(authenticationRequest.getUsername())
-                           .orElseThrow(() -> new UsernameNotFoundException("User not found after successful authentication. This should not happen."));
+        // Có thể giữ lại đoạn truy cập các trường MembershipPlan nếu muốn chắc chắn
+        if (user.getCurrentMembershipPlan() != null) {
+            user.getCurrentMembershipPlan().getPlanName();
+            user.getCurrentMembershipPlan().getDescription();
+            user.getCurrentMembershipPlan().getPrice();
+            user.getCurrentMembershipPlan().getDurationDays();
+            user.getCurrentMembershipPlan().getPlanType();
+            user.getCurrentMembershipPlan().getIsActive();
+            user.getCurrentMembershipPlan().getCreatedAt();
+            user.getCurrentMembershipPlan().getUpdatedAt();
+        }
 
-        return ResponseEntity.ok(new AuthResponse(jwt, user.getId() ,user.getUsername(), user.getRole().name()));
+        final String jwt = jwtUtil.generateToken(user); // <-- Truyền UUID dạng String
+
+        logger.info("Nguoi dung {} da dang nhap thanh cong, JWT da duoc tao.", user.getEmail());
+        // Trả về AuthResponse với user.getId()
+        return ResponseEntity.ok(new AuthResponse(jwt, user));
     }
 
     @PostMapping("/register")
@@ -178,13 +194,13 @@ public class AuthController {
         // Tìm hoặc tạo người dùng
         // Optional<User> existingUser = userDAO.findByGoogleId(googleId);
         User user;
-
         try {
-            // **CHUYỂN GIAO LOGIC TẠO/CẬP NHẬT GOOGLE USER CHO AUTHSERVICE**
             user = authService.processGoogleLogin(email, firstName, lastName, googleId, pictureUrl);
-        } catch (EmailAlreadyExistsException e) { // Bắt ngoại lệ nếu email đã được sử dụng với nhà cung cấp khác
+            user = userDAO.findByIdWithMembership(user.getId())
+                          .orElseThrow(() -> new UsernameNotFoundException("User not found after Google login processing."));
+        } catch (EmailAlreadyExistsException e) {
             logger.warn("Dang nhap voi Google that bai: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT) // 409 Conflict
+            return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("success", false, "message", e.getMessage()));
         } catch (Exception e) {
             logger.error("Loi khi xu li nguoi dung google: {}", e.getMessage(), e);
@@ -192,26 +208,63 @@ public class AuthController {
                     .body(Map.of("success", false, "message", "Da xay ra loi khi xu li tai khoan Google cua ban."));
         }
 
-        // Tạo Authentication
+        // Tạo Authentication (có thể giữ nguyên nếu bạn cần nó cho các logic khác sau này trong request scope)
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user,
+                user, // Ở đây User object được đặt vào principal
                 null,
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name().toUpperCase()))
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Tạo JWT
-        final String jwt = jwtUtil.generateToken(user);
+        // **QUAN TRỌNG**: Tạo JWT với ID của người dùng (dạng String)
+        final String jwt = jwtUtil.generateToken(user); 
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Dang nhap thanh cong!");
-        response.put("token", jwt);
-        response.put("email", user.getEmail());
-        response.put("userId", user.getId());
-        response.put("username", user.getUsername());
-        response.put("role", user.getRole().name());
         logger.info("Nguoi dung {} da dang nhap thanh cong, JWT da duoc tao.", user.getEmail());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new AuthResponse(jwt, user));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody PasswordResetRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Dữ liệu không hợp lệ", "errors", errors));
+        }
+        
+        try {
+            authService.sendPasswordResetOtp(request.getEmail());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Mã OTP đã được gửi đến email của bạn"));
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "message", "Không tìm thấy tài khoản với email này"));
+        } catch (Exception e) {
+            logger.error("Lỗi khi gửi OTP: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Có lỗi xảy ra khi gửi mã OTP"));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody OtpVerificationRequest request, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = bindingResult.getFieldErrors().stream()
+                    .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Dữ liệu không hợp lệ", "errors", errors));
+        }
+        
+        try {
+            authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Mật khẩu đã được đặt lại thành công"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("success", false, "message", e.getMessage()));
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("success", false, "message", "Không tìm thấy tài khoản với email này"));
+        } catch (Exception e) {
+            logger.error("Lỗi khi đặt lại mật khẩu: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("success", false, "message", "Có lỗi xảy ra khi đặt lại mật khẩu"));
+        }
     }
 }

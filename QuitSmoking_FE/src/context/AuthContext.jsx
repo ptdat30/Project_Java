@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import authService from "../services/authService"; // Đảm bảo đường dẫn này đúng
 import apiService from "../services/apiService"; // Import apiService để fetch user profile
+import websocketService from "../services/websocketService"; // Import WebSocket service
 
 const AuthContext = createContext();
 
@@ -19,21 +20,26 @@ const authReducer = (state, action) => {
         error: null,
       };
     case "LOGIN_SUCCESS":
-      const userPayload = action.payload;
+      const userPayload = action.payload; // userPayload sẽ là đối tượng chứa token và các trường của user
       const newState = {
         ...state,
         loading: false,
         isAuthenticated: true,
         user: {
-          id: userPayload.userId,
+          // Ánh xạ trực tiếp từ userPayload (phản hồi từ backend hoặc storedUser)
+          id: userPayload.id,
           username: userPayload.username,
           email: userPayload.email,
           role: userPayload.role,
           firstName: userPayload.firstName,
           lastName: userPayload.lastName,
           pictureUrl: userPayload.pictureUrl,
+          membership: userPayload.membership || null,
+          phoneNumber: userPayload.phoneNumber || "",
+          gender: userPayload.gender || "",
+          dateOfBirth: userPayload.dateOfBirth || "",
         },
-        token: userPayload.token,
+        token: userPayload.token, // Lấy token từ payload
         error: null,
       };
       console.log(
@@ -71,7 +77,7 @@ const authReducer = (state, action) => {
     case "UPDATE_USER":
       const updatedUserState = {
         ...state,
-        user: { ...state.user, ...action.payload },
+        user: { ...state.user, ...action.payload }, // Cập nhật các trường user hiện có
       };
       console.log(
         "AuthContext (Reducer): UPDATE_USER - Trạng thái mới:",
@@ -108,40 +114,63 @@ const initialState = {
   isAuthenticated: false,
   user: null,
   token: null,
-  loading: true,
+  loading: true, // Bắt đầu với loading: true để chờ kiểm tra xác thực
   error: null,
 };
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  // Helper function để kiểm tra đồng bộ state vs localStorage
+  const checkAuthSync = () => {
+    const token = authService.getToken();
+    const user = authService.getCurrentUser();
 
+    console.log(
+      "AuthContext: Kiểm tra đồng bộ - State isAuthenticated:",
+      state.isAuthenticated
+    );
+    console.log(
+      "AuthContext: Kiểm tra đồng bộ - Token trong localStorage:",
+      token ? "Có" : "Không"
+    );
+    console.log(
+      "AuthContext: Kiểm tra đồng bộ - User trong localStorage:",
+      user ? "Có" : "Không"
+    );
+
+    // Nếu state nghĩ đã login nhưng không có token/user → logout
+    if (state.isAuthenticated && (!token || !user)) {
+      console.warn("AuthContext: Phát hiện mất đồng bộ - logout tự động");
+      dispatch({ type: "LOGOUT" });
+    }
+    // Nếu có token/user nhưng state chưa login → login
+    else if (!state.isAuthenticated && token && user) {
+      console.log(
+        "AuthContext: Phát hiện có token/user mà chưa login - đồng bộ state"
+      );
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { ...user, token },
+      });
+    }
+  };
+
+  // useEffect để kiểm tra đồng bộ định kỳ
+  useEffect(() => {
+    if (!state.loading) {
+      // Chỉ check khi không loading
+      checkAuthSync();
+    }
+  }, [state.isAuthenticated, state.loading]);
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = authService.getToken(); // Lấy token từ localStorage
-        let storedUser = authService.getCurrentUser(); // Lấy user từ localStorage
-
-        console.log("AuthContext (useEffect): Token khi khởi tạo:", token);
-        console.log(
-          "AuthContext (useEffect): User từ localStorage khi khởi tạo:",
-          storedUser
-        );
-
-        // Nếu có token nhưng user là null hoặc thiếu thông tin, thử fetch user profile từ API
-        if (
-          token &&
-          (!storedUser ||
-            !storedUser.id ||
-            !storedUser.username ||
-            !storedUser.role)
-        ) {
-          console.log(
-            "AuthContext (useEffect): Có token nhưng user không hợp lệ/thiếu. Đang cố gắng fetch User Profile..."
-          );
+        const token = authService.getToken();
+        if (token) {
+          // Luôn fetch user profile mới nhất từ backend
           try {
-            const userProfile = await apiService.getUserProfile(); // Gọi API để lấy user profile
-            // Cập nhật storedUser với dữ liệu từ API
-            storedUser = {
+            const userProfile = await apiService.getUserProfile();
+            const userData = {
               id: userProfile.id,
               username: userProfile.username,
               email: userProfile.email,
@@ -149,58 +178,31 @@ export const AuthProvider = ({ children }) => {
               firstName: userProfile.firstName || "",
               lastName: userProfile.lastName || "",
               pictureUrl: userProfile.pictureUrl || "",
+              membership: userProfile.membership || null,
+              phoneNumber: userProfile.phoneNumber || "",
+              gender: userProfile.gender || "",
+              dateOfBirth: userProfile.dateOfBirth || "",
+              // Thêm các trường khác nếu backend trả về
             };
-            localStorage.setItem("user", JSON.stringify(storedUser)); // Lưu lại user mới vào localStorage
-            console.log(
-              "AuthContext (useEffect): Đã fetch và lưu User Profile thành công:",
-              storedUser
-            );
+            // Lưu vào localStorage
+            authService.setCurrentUser(userData);
+            // Cập nhật context
+            dispatch({
+              type: "LOGIN_SUCCESS",
+              payload: {
+                token: token,
+                ...userData,
+              },
+            });
           } catch (profileError) {
-            console.error(
-              "AuthContext (useEffect): Lỗi khi fetch User Profile:",
-              profileError
-            );
-            // Nếu không fetch được profile, có thể token đã hết hạn hoặc không hợp lệ
-            authService.logout(); // Đăng xuất để xóa token cũ
+            // Nếu lỗi, logout
+            authService.logout();
             dispatch({ type: "SET_LOADING", payload: false });
-            return; // Dừng lại ở đây
           }
-        }
-
-        if (
-          token &&
-          storedUser &&
-          storedUser.id &&
-          storedUser.username &&
-          storedUser.role
-        ) {
-          console.log(
-            "AuthContext (useEffect): Đã tìm thấy token và user hợp lệ. Đang dispatch LOGIN_SUCCESS."
-          );
-          dispatch({
-            type: "LOGIN_SUCCESS",
-            payload: {
-              token: token,
-              userId: storedUser.id,
-              username: storedUser.username,
-              email: storedUser.email,
-              role: storedUser.role,
-              firstName: storedUser.firstName,
-              lastName: storedUser.lastName,
-              pictureUrl: storedUser.pictureUrl,
-            },
-          });
         } else {
-          console.log(
-            "AuthContext (useEffect): Không tìm thấy token hoặc user hợp lệ trong localStorage. Đặt loading = false."
-          );
           dispatch({ type: "SET_LOADING", payload: false });
         }
       } catch (error) {
-        console.error(
-          "AuthContext (useEffect): Lỗi khi khởi tạo authentication:",
-          error
-        );
         dispatch({ type: "SET_LOADING", payload: false });
       }
     };
@@ -209,20 +211,54 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (credentials) => {
+    dispatch({ type: "LOGIN_START" });
     try {
-      dispatch({ type: "LOGIN_START" });
       const response = await authService.login(credentials);
-      dispatch({
-        type: "LOGIN_SUCCESS",
-        payload: response,
-      });
-      return response;
+      console.log("AuthContext: Login response:", response);
+
+      if (response.success) {
+        const userData = response.user;
+        const token = response.token;
+
+        // Lưu vào localStorage
+        authService.setToken(token);
+        authService.setCurrentUser(userData);
+
+        // Cập nhật context
+        dispatch({
+          type: "LOGIN_SUCCESS",
+          payload: {
+            token: token,
+            ...userData,
+          },
+        });
+
+        // Connect to WebSocket for user activity tracking
+        if (userData.id) {
+          websocketService.connect(
+            userData.id,
+            'user-activity',
+            (message) => {
+              console.log('User activity message:', message);
+            }
+          );
+        }
+
+        return { success: true };
+      } else {
+        dispatch({
+          type: "LOGIN_FAILURE",
+          payload: response.message || "Đăng nhập thất bại",
+        });
+        return { success: false, message: response.message };
+      }
     } catch (error) {
+      console.error("AuthContext: Login error:", error);
       dispatch({
         type: "LOGIN_FAILURE",
         payload: error.message || "Đăng nhập thất bại",
       });
-      throw error;
+      return { success: false, message: error.message };
     }
   };
 
@@ -231,6 +267,24 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await authService.register(userData);
       dispatch({ type: "SET_LOADING", payload: false });
+      // Nếu đăng ký tự động đăng nhập, có thể dispatch LOGIN_SUCCESS ở đây
+      if (response.token && response.userId) {
+        // Kiểm tra token và userId có trong response
+        dispatch({
+          type: "LOGIN_SUCCESS",
+          payload: {
+            token: response.token,
+            id: response.userId,
+            username: response.username,
+            email: response.email,
+            role: response.role,
+            firstName: response.firstName,
+            lastName: response.lastName,
+            pictureUrl: response.pictureUrl,
+            membership: response.membership,
+          },
+        });
+      }
       return response;
     } catch (error) {
       dispatch({
@@ -245,9 +299,29 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: "LOGIN_START" });
       const response = await authService.googleLogin(token);
+      // Sau khi Google login thành công, fetch lại profile mới nhất
+      const userProfile = await apiService.getUserProfile();
+      const userData = {
+        id: userProfile.id,
+        username: userProfile.username,
+        email: userProfile.email,
+        role: userProfile.role,
+        firstName: userProfile.firstName || "",
+        lastName: userProfile.lastName || "",
+        pictureUrl: userProfile.pictureUrl || "",
+        membership: userProfile.membership || null,
+        phoneNumber: userProfile.phoneNumber || "",
+        gender: userProfile.gender || "",
+        dateOfBirth: userProfile.dateOfBirth || "",
+        // Thêm các trường khác nếu backend trả về
+      };
+      authService.setCurrentUser(userData);
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: response,
+        payload: {
+          token: response.token,
+          ...userData,
+        },
       });
       return response;
     } catch (error) {
@@ -260,7 +334,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Disconnect WebSocket
+    websocketService.disconnect();
+    
+    // Clear localStorage
     authService.logout();
+    
+    // Update context
     dispatch({ type: "LOGOUT" });
   };
 
@@ -271,10 +351,8 @@ export const AuthProvider = ({ children }) => {
     });
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ ...currentUser, ...userData })
-      );
+      // SỬA: Cập nhật localStorage bằng hàm tiện ích của authService
+      authService.setCurrentUser({ ...currentUser, ...userData });
     }
   };
 
@@ -322,6 +400,7 @@ export const AuthProvider = ({ children }) => {
     clearError,
     forgotPassword,
     resetPassword,
+    checkAuthSync,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,7 +1,7 @@
 package com.quitsmoking.reponsitories;
 
 import com.quitsmoking.model.SmokingStatus;
-import com.quitsmoking.model.User;
+import com.quitsmoking.model.User; // Cần import User để dùng trong tìm kiếm
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

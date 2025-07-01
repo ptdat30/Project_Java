@@ -64,9 +64,27 @@ public class SecurityConfig {
             .cors(org.springframework.security.config.Customizer.withDefaults())
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Cho phép WebSocket endpoints
+                .requestMatchers("/ws/**").permitAll()
                 // Cho phép các endpoint xác thực cục bộ (đăng nhập, đăng ký)
                 .requestMatchers("/api/auth/**").permitAll()
-                
+                // Cho phép truy cập các file trong thư mục uploads (PUBLIC)
+                .requestMatchers("/uploads/**").permitAll()
+                // Cho phép truy cập endpoint AI chatbox (Gemini proxy)
+                .requestMatchers("/api/ai/chat").permitAll()
+                // Cho phép truy cập endpoint coach-consultations
+                .requestMatchers("/api/coach-consultations", "/api/coach-consultations/**").hasAnyRole("COACH", "ADMIN", "MEMBER")
+                // Cho phép truy cập endpoint chat
+                .requestMatchers("/api/chat/messages", "/api/chat/messages/**").hasAnyRole("MEMBER", "COACH", "ADMIN")
+                // Cho phép truy cập endpoint profile
+                .requestMatchers("/api/user/profile").authenticated()
+                // Endpoint free-trial yêu cầu vai trò GUEST
+                .requestMatchers(HttpMethod.POST, "/api/membership/free-trial").hasAnyRole("GUEST")
+                // Endpoint upgrade yêu cầu các vai trò này
+                .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+
+                // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực
+                .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -95,8 +113,8 @@ public class SecurityConfig {
             "http://127.0.0.1:3000",
             "http://127.0.0.1:5500",
             "http://localhost:5500",
-                "http://localhost:4173/",
-                "http://localhost:5173/"
+                "http://localhost:4173",
+                "http://localhost:5173"
 
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

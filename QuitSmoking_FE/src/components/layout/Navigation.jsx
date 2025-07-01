@@ -41,9 +41,12 @@ const Navigation = () => {
   const authNavigationItems = [
     { name: "Trang chủ", href: "/", icon: "🏠" },
     { name: "Dashboard", href: "/dashboard", icon: "📊" },
-    { name: "Kế hoạch", href: "/plan", icon: "📋" },
+    { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
     { name: "Cộng đồng", href: "/community", icon: "👥" },
-    { name: "Tư vấn Coach", href: "/coach-consultation", icon: "👨‍⚕️" },
+    // Nếu là COACH thì đổi tên và icon
+    user?.role === "COACH"
+      ? { name: "Tin nhắn", href: "/coach-consultation", icon: "💬" }
+      : { name: "Tư vấn Coach", href: "/coach-consultation", icon: "👨‍⚕️" },
     { name: "Huy hiệu", href: "/achievements", icon: "🏆" },
   ];
 
@@ -57,10 +60,14 @@ const Navigation = () => {
     ? [...authNavigationItems]
     : [...publicNavigationItems];
 
-  // Thêm menu Admin nếu user là admin
-  if (isAuthenticated && user?.role === "ADMIN") {
+  // Thêm menu Admin nếu user là admin, hoặc Feedback nếu là member
+if (isAuthenticated) {
+  if (user?.role === "ADMIN") {
     navigationItems.push({ name: "Quản trị", href: "/admin", icon: "⚙️" });
+  } else if (user?.role === "MEMBER") {
+    navigationItems.push({ name: "Phản hồi", href: "/feedback", icon: "📝" });
   }
+}
 
   const handleLogout = () => {
     logout();
@@ -216,10 +223,16 @@ const Navigation = () => {
                 >
                   {user?.pictureUrl ? (
                     <img
-                      src={user.pictureUrl}
-                      alt="User Avatar"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
+                    src={
+                      user.pictureUrl
+                        ? user.pictureUrl.startsWith("http")
+                          ? user.pictureUrl
+                          : `http://localhost:8080${user.pictureUrl}`
+                        : "/images/default-avatar.png"
+                    }
+                    alt="User Avatar"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-md">
                       <span className="text-white font-bold text-sm">
@@ -355,10 +368,16 @@ const Navigation = () => {
                   <div className="flex items-center px-3 py-2">
                     {user?.pictureUrl ? (
                       <img
-                        src={user.pictureUrl}
-                        alt="User Avatar"
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
+                      src={
+                        user.pictureUrl
+                          ? user.pictureUrl.startsWith("http")
+                            ? user.pictureUrl
+                            : `http://localhost:8080${user.pictureUrl}`
+                          : "/images/default-avatar.png"
+                      }
+                      alt="User Avatar"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
                     ) : (
                       <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-md">
                         <span className="text-white font-bold text-sm">

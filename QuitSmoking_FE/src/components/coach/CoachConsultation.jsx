@@ -1,177 +1,241 @@
 import React, { useState, useEffect, useRef } from "react";
+import apiService from "../../services/apiService";
+import websocketService from "../../services/websocketService";
+import { useAuth } from "../../context/AuthContext";
+import config from "../../config/config";
+
+// Thông tin mẫu cho coach theo email
+const defaultCoachInfoByEmail = {
+  "vuman6699@gmail.com": {
+    specialty: "Chuyên gia cai nghiện thuốc lá",
+    experience: "10 năm kinh nghiệm",
+    rating: 4.9,
+    totalSessions: 1250,
+    status: "ONLINE",
+    description:
+      "Bác sĩ chuyên về tâm lý và hành vi cai nghiện. Đã giúp hơn 1000 người cai thuốc thành công.",
+    price: 150000,
+    specialties: ["Tâm lý học", "Liệu pháp hành vi", "Coaching cai nghiện"],
+  },
+  "123123123@gmail.com": {
+    specialty: "Chuyên gia cai nghiện thuốc lào",
+    experience: "20 năm kinh nghiệm",
+    rating: 4.7,
+    totalSessions: 900,
+    status: "BUSY",
+    description:
+      "Bác sĩ chuyên về tâm lý và hành vi cai nghiện. Đã giúp hơn 500 người cai thuốc thành công.",
+    price: 100000,
+    specialties: ["Tâm lý học", "Liệu pháp hành vi", "Coaching cai nghiện"],
+  },
+  // "":{
+
+  // },
+};
+
+// Hàm tiện ích để tạo full URL cho avatar
+const getFullAvatarUrl = (pictureUrl) => {
+  if (!pictureUrl) return null;
+  if (pictureUrl.startsWith('http')) return pictureUrl;
+  return `${config.API_BASE_URL}${pictureUrl}`;
+};
+
+// Hàm tiện ích lưu/lấy thông tin giới thiệu coach từ localStorage hoặc mẫu
+const saveCoachInfo = (coachId, info) => {
+  const allInfo = JSON.parse(localStorage.getItem("coachExtraInfo") || "{}");
+  allInfo[coachId] = info;
+  localStorage.setItem("coachExtraInfo", JSON.stringify(allInfo));
+};
+const getCoachInfo = (coach) => {
+  const allInfo = JSON.parse(localStorage.getItem("coachExtraInfo") || "{}");
+  if (allInfo[coach.id]) return allInfo[coach.id];
+  if (defaultCoachInfoByEmail[coach.email]) return defaultCoachInfoByEmail[coach.email];
+  return {};
+};
+
 const CoachConsultation = () => {
-  const [coaches, setCoaches] = useState([]);
-  const [selectedCoach, setSelectedCoach] = useState(null);
+  const { user } = useAuth();
+  const isCoach = user?.role === "COACH";
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [sessionType, setSessionType] = useState("CHAT");
+  const [websocketStatus, setWebsocketStatus] = useState("disconnected");
   const messagesEndRef = useRef(null);
+
+  // Lấy danh sách session nếu là coach, hoặc danh sách coach nếu là member
   useEffect(() => {
-    // Mock data - coaches
-    setCoaches([
-      {
-        id: "1",
-        name: "Dr. Nguyễn Thanh Hà",
-        specialty: "Chuyên gia cai nghiện thuốc lá",
-        experience: "8 năm kinh nghiệm",
-        rating: 4.9,
-        totalSessions: 1250,
-        avatar: null,
-        status: "ONLINE",
-        description:
-          "Bác sĩ chuyên về tâm lý và hành vi cai nghiện. Đã giúp hơn 1000 người cai thuốc thành công.",
-        price: 150000,
-        specialties: ["Tâm lý học", "Liệu pháp hành vi", "Coaching cai nghiện"],
-      },
-      {
-        id: "2",
-        name: "ThS. Trần Minh Tuấn",
-        specialty: "Tư vấn sức khỏe tâm thần",
-        experience: "5 năm kinh nghiệm",
-        rating: 4.8,
-        totalSessions: 890,
-        avatar: null,
-        status: "BUSY",
-        description:
-          "Chuyên gia tâm lý lâm sàng với phương pháp tiếp cận nhân văn.",
-        price: 120000,
-        specialties: [
-          "Tâm lý lâm sàng",
-          "Trị liệu nhận thức",
-          "Quản lý stress",
-        ],
-      },
-      {
-        id: "3",
-        name: "Coach Lê Thị Mai",
-        specialty: "Life Coach chuyên cai nghiện",
-        experience: "6 năm kinh nghiệm",
-        rating: 4.7,
-        totalSessions: 650,
-        avatar: null,
-        status: "ONLINE",
-        description:
-          "Life coach chuyên về thay đổi thói quen và xây dựng lối sống tích cực.",
-        price: 100000,
-        specialties: ["Life Coaching", "Thay đổi thói quen", "Motivation"],
-      },
-    ]);
-    // Mock active session
-    setActiveSession({
-      id: "1",
-      coachId: "1",
-      status: "ACTIVE",
-      sessionType: "CHAT",
-      startTime: new Date().toISOString(),
-      duration: 30,
-    });
-    // Mock messages
-    setMessages([
-      {
-        id: "1",
-        senderId: "1",
-        senderType: "COACH",
-        content:
-          "Chào bạn! Tôi là Dr. Hà. Rất vui được hỗ trợ bạn trong hành trình cai thuốc. Bạn đã cai thuốc được bao lâu rồi?",
-        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-        messageType: "TEXT",
-      },
-      {
-        id: "2",
-        senderId: "user",
-        senderType: "USER",
-        content:
-          "Chào bác sĩ! Em đã cai được 25 ngày rồi ạ. Nhưng hôm nay em cảm thấy rất muốn hút thuốc.",
-        timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-        messageType: "TEXT",
-      },
-      {
-        id: "3",
-        senderId: "1",
-        senderType: "COACH",
-        content:
-          "Tuyệt vời! 25 ngày là một thành tích đáng tự hào. Cảm giác muốn hút thuốc là bình thường. Bạn có thể chia sẻ điều gì đang làm bạn căng thẳng không?",
-        timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-        messageType: "TEXT",
-      },
-    ]);
-  }, []);
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-    const message = {
-      id: Date.now().toString(),
-      senderId: "user",
-      senderType: "USER",
-      content: newMessage,
-      timestamp: new Date().toISOString(),
-      messageType: "TEXT",
-    };
-    setMessages([...messages, message]);
-    setNewMessage("");
-    // Simulate coach response after 2 seconds
-    setTimeout(() => {
-      const coachResponse = {
-        id: (Date.now() + 1).toString(),
-        senderId: selectedCoach?.id || "1",
-        senderType: "COACH",
-        content: getCoachResponse(newMessage),
-        timestamp: new Date().toISOString(),
-        messageType: "TEXT",
+    if (isCoach) {
+      // Coach: lấy các session mà mình là coach
+      const fetchSessions = async () => {
+        try {
+          const data = await apiService.get(`/api/coach-consultations?coachId=${user.id}`);
+          setSessions(data);
+        } catch (err) {
+          setSessions([]);
+        }
       };
-      setMessages((prev) => [...prev, coachResponse]);
-    }, 2000);
+      fetchSessions();
+    } else {
+      // Member: lấy danh sách coach như cũ
+      const fetchCoaches = async () => {
+        try {
+          const data = await apiService.getCoaches();
+          setSessions(data); // sessions = coaches cho member
+        } catch (err) {
+          setSessions([]);
+        }
+      };
+      fetchCoaches();
+    }
+  }, [isCoach, user]);
+
+  // Handle WebSocket message received
+  const handleWebSocketMessage = (message) => {
+    console.log('CoachConsultation: Received WebSocket message:', message);
+    setMessages(prevMessages => [...prevMessages, message]);
   };
-  const getCoachResponse = (userMessage) => {
-    const responses = [
-      "Tôi hiểu cảm giác của bạn. Hãy thử áp dụng kỹ thuật hít thở sâu 4-7-8: Hít vào trong 4 giây, giữ 7 giây, thở ra trong 8 giây.",
-      "Đó là phản ứng tự nhiên của cơ thể. Hãy uống một ly nước lạnh và đi bộ 5 phút để chuyển hướng sự chú ý.",
-      "Bạn đang làm rất tốt! Hãy nhớ lại lý do ban đầu khiến bạn muốn cai thuốc. Điều đó sẽ giúp bạn vượt qua.",
-      "Có thể bạn cần một hoạt động thay thế. Hãy thử nhai kẹo cao su hoặc giữ tay bận rộn với fidget spinner.",
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+
+  // Handle WebSocket status changes
+  const handleWebSocketStatusChange = (status) => {
+    console.log('CoachConsultation: WebSocket status changed to:', status);
+    setWebsocketStatus(status);
   };
-  const handleStartSession = (coach) => {
-    setSelectedCoach(coach);
-    setActiveSession({
-      id: Date.now().toString(),
-      coachId: coach.id,
-      status: "ACTIVE",
-      sessionType: sessionType,
-      startTime: new Date().toISOString(),
-      duration: 30,
-    });
-    setMessages([
-      {
-        id: "1",
-        senderId: coach.id,
-        senderType: "COACH",
-        content: `Chào bạn! Tôi là ${coach.name}. Rất vui được hỗ trợ bạn trong hành trình cai thuốc. Bạn có thể chia sẻ về tình hình hiện tại của mình không?`,
-        timestamp: new Date().toISOString(),
-        messageType: "TEXT",
-      },
-    ]);
+
+  // Khi bắt đầu chat với user (coach) hoặc coach chọn session
+  const handleStartSession = async (target) => {
+    if (isCoach) {
+      // target là session, lấy member làm selected user
+      setSelectedSession(target);
+      setActiveSession(target);
+      try {
+        const res = await apiService.getChatMessages(target.id);
+        setMessages(res.content || []);
+        
+        // Connect to WebSocket
+        console.log('CoachConsultation: Connecting to WebSocket for coach session:', target.id);
+        websocketService.connect(
+          user.id, 
+          target.id, 
+          handleWebSocketMessage
+        );
+        
+        // Join session after a short delay to ensure connection is established
+        setTimeout(() => {
+          if (websocketService.isConnected()) {
+            console.log('CoachConsultation: Joining WebSocket session:', target.id);
+            websocketService.joinSession(
+              target.id,
+              user.id,
+              user.firstName + " " + user.lastName,
+              user.username
+            );
+          } else {
+            console.warn('CoachConsultation: WebSocket not connected, cannot join session');
+          }
+        }, 1000);
+      } catch (err) {
+        alert("Không thể tải tin nhắn. Vui lòng thử lại!");
+        setMessages([]);
+      }
+    } else {
+      // member: target là coach
+      setSelectedSession(target);
+      let session;
+      try {
+        session = await apiService.getConsultationSession(user.id, target.id);
+        if (!session || !session.id) {
+          session = await apiService.createConsultation({
+            userId: user.id,
+            coachId: target.id,
+            sessionType,
+          });
+        }
+        setActiveSession(session);
+        const res = await apiService.getChatMessages(session.id);
+        setMessages(res.content || []);
+        
+        // Connect to WebSocket
+        console.log('CoachConsultation: Connecting to WebSocket for member session:', session.id);
+        websocketService.connect(
+          user.id, 
+          session.id, 
+          handleWebSocketMessage
+        );
+        
+        // Join session after a short delay to ensure connection is established
+        setTimeout(() => {
+          if (websocketService.isConnected()) {
+            console.log('CoachConsultation: Joining WebSocket session:', session.id);
+            websocketService.joinSession(
+              session.id,
+              user.id,
+              user.firstName + " " + user.lastName,
+              user.username
+            );
+          } else {
+            console.warn('CoachConsultation: WebSocket not connected, cannot join session');
+          }
+        }, 1000);
+      } catch (err) {
+        alert("Không thể bắt đầu phiên chat. Vui lòng thử lại!");
+        setMessages([]);
+      }
+    }
   };
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
+
+  // Gửi tin nhắn via WebSocket
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !activeSession) return;
+    
+    try {
+      // Send via WebSocket (this will also save to database)
+      if (websocketService.isConnected()) {
+        console.log('CoachConsultation: Sending message via WebSocket');
+        websocketService.sendMessage(
+          activeSession.id,
+          user.id,
+          newMessage,
+          "TEXT",
+          user.firstName + " " + user.lastName,
+          user.username
+        );
+        setNewMessage("");
+      } else {
+        // Fallback to REST API if WebSocket is not connected
+        console.warn('CoachConsultation: WebSocket not connected, using REST API fallback');
+        await apiService.sendMessage(activeSession.id, {
+          senderId: user.id,
+          content: newMessage,
+          messageType: "TEXT",
+        });
+        setNewMessage("");
+        const res = await apiService.getChatMessages(activeSession.id);
+        setMessages(res.content || []);
+      }
+    } catch (err) {
+      console.error('CoachConsultation: Error sending message:', err);
+      alert("Không gửi được tin nhắn!");
+    }
   };
-  const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-  if (activeSession && selectedCoach) {
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Cleanup WebSocket on component unmount
+  useEffect(() => {
+    return () => {
+      websocketService.disconnect();
+    };
+  }, []);
+
+  // Nếu đang trong session chat
+  if (activeSession && selectedSession) {
+    // Nếu là coach, làm nổi bật tin nhắn từ user
     return (
       <div className="h-screen flex flex-col bg-gray-50">
         {/* Chat Header */}
@@ -181,35 +245,46 @@ const CoachConsultation = () => {
               <button
                 onClick={() => {
                   setActiveSession(null);
-                  setSelectedCoach(null);
+                  setSelectedSession(null);
                   setMessages([]);
+                  // Disconnect WebSocket when leaving chat
+                  websocketService.disconnect();
                 }}
                 className="mr-4 p-2 text-gray-500 hover:text-gray-700"
               >
                 ←
               </button>
               <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
-                <span className="text-white font-medium">
-                  {selectedCoach.name.charAt(0)}
-                </span>
+                {isCoach && selectedSession.memberPictureUrl ? (
+                  <img
+                    src={getFullAvatarUrl(selectedSession.memberPictureUrl)}
+                    alt="Avatar"
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-medium">
+                    {isCoach
+                      ? (selectedSession.memberFirstName
+                          ? selectedSession.memberFirstName.charAt(0)
+                          : selectedSession.memberUsername?.charAt(0))
+                      : (selectedSession.firstName
+                          ? selectedSession.firstName.charAt(0)
+                          : selectedSession.username.charAt(0))}
+                  </span>
+                )}
               </div>
               <div className="ml-3">
                 <h3 className="text-lg font-medium text-gray-900">
-                  {selectedCoach.name}
+                  {isCoach
+                    ? (selectedSession.memberFirstName
+                        ? `${selectedSession.memberFirstName} ${selectedSession.memberLastName}`
+                        : selectedSession.memberUsername)
+                    : (selectedSession.firstName
+                        ? `${selectedSession.firstName} ${selectedSession.lastName}`
+                        : selectedSession.username)}
                 </h3>
                 <p className="text-sm text-green-600">● Online</p>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">
-                Phiên tư vấn: {sessionType === "CHAT" ? "Chat" : "Video call"}
-              </span>
-              <button className="p-2 text-gray-500 hover:text-red-600">
-                📞
-              </button>
-              <button className="p-2 text-gray-500 hover:text-red-600">
-                🔚
-              </button>
             </div>
           </div>
         </div>
@@ -219,26 +294,40 @@ const CoachConsultation = () => {
             <div
               key={message.id}
               className={`flex ${
-                message.senderType === "USER" ? "justify-end" : "justify-start"
+                message.senderId === user.id ? "justify-end" : "justify-start"
               }`}
             >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.senderType === "USER"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-900 border border-gray-200"
-                }`}
-              >
-                <p className="text-sm">{message.content}</p>
-                <p
-                  className={`text-xs mt-1 ${
-                    message.senderType === "USER"
-                      ? "text-blue-100"
-                      : "text-gray-500"
+              <div className="flex flex-col">
+                {/* Sender name */}
+                <div className={`text-xs text-gray-500 mb-1 ${
+                  message.senderId === user.id ? "text-right" : "text-left"
+                }`}>
+                  {message.senderName || message.senderUsername || "Unknown"}
+                </div>
+                {/* Message bubble */}
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.senderId === user.id
+                      ? "bg-blue-600 text-white"
+                      : isCoach
+                        ? "bg-yellow-100 text-gray-900 border border-yellow-300"
+                        : "bg-white text-gray-900 border border-gray-200"
                   }`}
                 >
-                  {formatTime(message.timestamp)}
-                </p>
+                  <p className="text-sm">{message.content}</p>
+                  <p
+                    className={`text-xs mt-1 ${
+                      message.senderId === user.id
+                        ? "text-blue-100"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {new Date(message.timestamp).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
@@ -265,156 +354,148 @@ const CoachConsultation = () => {
       </div>
     );
   }
+
+  // Giao diện danh sách session cho coach hoặc danh sách coach cho member
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Tư vấn với Coach
+            {isCoach ? "Tin nhắn từ người dùng" : "Tư vấn với Coach"}
           </h1>
           <p className="text-gray-600 mb-4">
-            Nhận hỗ trợ chuyên nghiệp từ các huấn luyện viên cai nghiện thuốc lá
+            {isCoach
+              ? "Chọn một người dùng để trả lời tin nhắn."
+              : "Nhận hỗ trợ chuyên nghiệp từ các huấn luyện viên cai nghiện thuốc lá"}
           </p>
-
-          {/* Session Type Selection */}
-          <div className="flex space-x-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                value="CHAT"
-                checked={sessionType === "CHAT"}
-                onChange={(e) => setSessionType(e.target.value)}
-                className="mr-2"
-              />
-              💬 Chat trực tuyến
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                value="VIDEO_CALL"
-                checked={sessionType === "VIDEO_CALL"}
-                onChange={(e) => setSessionType(e.target.value)}
-                className="mr-2"
-              />
-              📹 Video call
-            </label>
-          </div>
+          {!isCoach && (
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="CHAT"
+                  checked={sessionType === "CHAT"}
+                  onChange={(e) => setSessionType(e.target.value)}
+                  className="mr-2"
+                />
+                💬 Chat trực tuyến
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="VIDEO_CALL"
+                  checked={sessionType === "VIDEO_CALL"}
+                  onChange={(e) => setSessionType(e.target.value)}
+                  className="mr-2"
+                />
+                📹 Video call
+              </label>
+            </div>
+          )}
         </div>
-        {/* Coaches List */}
+        {/* Danh sách session cho coach hoặc danh sách coach cho member */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coaches.map((coach) => (
-            <div key={coach.id} className="bg-white rounded-lg shadow-sm p-6">
-              {/* Coach Header */}
-              <div className="flex items-center mb-4">
-                <div className="h-16 w-16 rounded-full bg-green-600 flex items-center justify-center">
-                  <span className="text-white text-xl font-medium">
-                    {coach.name.charAt(0)}
-                  </span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {coach.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">{coach.specialty}</p>
-                  <div className="flex items-center mt-1">
-                    <span
-                      className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                        coach.status === "ONLINE"
-                          ? "bg-green-500"
-                          : "bg-yellow-500"
-                      }`}
-                    />
-                    <span className="text-xs text-gray-500">
-                      {coach.status === "ONLINE" ? "Trực tuyến" : "Bận"}
-                    </span>
+          {isCoach
+            ? sessions.map((session) => (
+                <div key={session.id} className="bg-white rounded-lg shadow-sm p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="h-16 w-16 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                      {session.memberPictureUrl ? (
+                        <img
+                          src={getFullAvatarUrl(session.memberPictureUrl)}
+                          alt="Avatar"
+                          className="h-16 w-16 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white text-xl font-medium">
+                          {session.memberFirstName
+                            ? session.memberFirstName.charAt(0)
+                            : session.memberUsername?.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {session.memberFirstName
+                          ? `${session.memberFirstName} ${session.memberLastName}`
+                          : session.memberUsername}
+                      </h3>
+                      <p className="text-sm text-gray-600">{session.memberEmail}</p>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-100 pt-4">
+                    <button
+                      onClick={() => handleStartSession(session)}
+                      className="w-full py-2 px-4 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700"
+                    >
+                      Xem tin nhắn
+                    </button>
                   </div>
                 </div>
-              </div>
-              {/* Coach Info */}
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">
-                  {coach.description}
-                </p>
-
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                  <span>{coach.experience}</span>
-                  <span>⭐ {coach.rating}</span>
-                </div>
-
-                <p className="text-sm text-gray-500 mb-3">
-                  {coach.totalSessions} phiên tư vấn
-                </p>
-                {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mb-4">
-                  {coach.specialties.map((specialty, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              {/* Pricing and Action */}
-              <div className="border-t border-gray-100 pt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-semibold text-gray-900">
-                    {formatCurrency(coach.price)}
-                  </span>
-                  <span className="text-sm text-gray-500">/ phiên</span>
-                </div>
-
-                <button
-                  onClick={() => handleStartSession(coach)}
-                  disabled={coach.status === "BUSY"}
-                  className={`w-full py-2 px-4 rounded-lg font-medium ${
-                    coach.status === "ONLINE"
-                      ? "bg-green-600 text-white hover:bg-green-700"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                >
-                  {coach.status === "ONLINE"
-                    ? `Bắt đầu ${
-                        sessionType === "CHAT" ? "chat" : "video call"
-                      }`
-                    : "Hiện không khả dụng"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Help Section */}
-        <div className="mt-12 bg-blue-50 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            💡 Cách tận dụng tối đa phiên tư vấn
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Trước phiên tư vấn:
-              </h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Chuẩn bị những câu hỏi cụ thể</li>
-                <li>• Ghi chú tình hình hiện tại của bạn</li>
-                <li>• Chia sẻ về những khó khăn đang gặp</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Trong phiên tư vấn:
-              </h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Thành thật và mở lòng</li>
-                <li>• Ghi chú lại lời khuyên quan trọng</li>
-                <li>• Đặt câu hỏi khi không hiểu</li>
-              </ul>
-            </div>
-          </div>
+              ))
+            : sessions.map((coach) => {
+                const extraInfo = getCoachInfo(coach);
+                return (
+                  <div key={coach.id} className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center mb-4">
+                      <div className="h-16 w-16 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                        {coach.pictureUrl ? (
+                          <img
+                            src={getFullAvatarUrl(coach.pictureUrl)}
+                            alt="Avatar"
+                            className="h-16 w-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white text-xl font-medium">
+                            {coach.firstName
+                              ? coach.firstName.charAt(0)
+                              : coach.username.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {coach.firstName
+                            ? `${coach.lastName} ${coach.firstName}`
+                            : coach.username}
+                        </h3>
+                        <p className="text-sm text-gray-600">{coach.email}</p>
+                      </div>
+                    </div>
+                    {/* Hiển thị thông tin giới thiệu nếu có */}
+                    {extraInfo.specialty && (
+                      <div className="mb-2 text-sm text-gray-700">
+                        <b>Chuyên môn:</b> {extraInfo.specialty}
+                      </div>
+                    )}
+                    {extraInfo.experience && (
+                      <div className="mb-2 text-sm text-gray-700">
+                        <b>Kinh nghiệm:</b> {extraInfo.experience}
+                      </div>
+                    )}
+                    {extraInfo.description && (
+                      <div className="mb-2 text-sm text-gray-700">
+                        <b>Mô tả:</b> {extraInfo.description}
+                      </div>
+                    )}
+                    <div className="mb-2 text-sm text-gray-700">
+                      <b>Trạng thái:</b> {extraInfo.status || "ONLINE"}
+                    </div>
+                    <div className="border-t border-gray-100 pt-4">
+                      <button
+                        onClick={() => handleStartSession(coach)}
+                        className="w-full py-2 px-4 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700"
+                      >
+                        Bắt đầu chat
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
         </div>
       </div>
     </div>
   );
 };
+
 export default CoachConsultation;

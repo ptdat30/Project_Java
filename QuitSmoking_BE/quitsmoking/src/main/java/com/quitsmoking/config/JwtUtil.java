@@ -1,5 +1,6 @@
 package com.quitsmoking.config;
 
+import com.quitsmoking.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -14,6 +15,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.slf4j.Logger;         // Thêm dòng này
+import org.slf4j.LoggerFactory;
 
 @Component
 public class JwtUtil {
@@ -22,9 +25,10 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
-    // Token expiration time: 10 hours in milliseconds
-    public static final long JWT_TOKEN_VALIDITY = 10 * 60 * 60 * 1000; // 10 hours in milliseconds
+    // thời gian hiệu lực của JWT token
+    public static final long JWT_TOKEN_VALIDITY = 1 * 60 * 60 * 1000; // thời gian 1 giờ
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
     /**
      * Extracts the username (subject) from the given JWT token.
      *
@@ -89,10 +93,18 @@ public class JwtUtil {
      * @param userDetails The UserDetails object representing the user.
      * @return The generated JWT token string.
      */
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        // You can add additional claims here if needed, e.g., user roles
-        return createToken(claims, userDetails.getUsername());
+        // Thêm các thông tin khác của user vào claims nếu cần
+        claims.put("id", user.getId()); // Vẫn có thể giữ ID trong claims
+        claims.put("email", user.getEmail());
+        claims.put("role", user.getRole().name());
+        claims.put("firstName", user.getFirstName());
+        claims.put("lastName", user.getLastName());
+        claims.put("pictureUrl", user.getPictureUrl());
+
+        // Sử dụng username của model User làm subject
+        return createToken(claims, user.getUsername());
     }
 
     /**
@@ -119,10 +131,28 @@ public class JwtUtil {
      * @param userDetails The UserDetails object for validation.
      * @return True if the token is valid (username matches and not expired), false otherwise.
      */
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+public Boolean validateToken(String token, UserDetails userDetails) {
+    final String username = extractUsername(token); // Tên người dùng từ token
+
+    // 1. So sánh tên người dùng từ token với tên người dùng được tải từ DB
+    // Đây là điểm có khả năng cao gây ra lỗi nếu chúng không khớp.
+    if (!username.equals(userDetails.getUsername())) {
+        logger.warn("Validation failed: Username in token '{}' does not match UserDetails username '{}'.", username, userDetails.getUsername());
+        return false;
     }
+
+    // 2. Kiểm tra xem token đã hết hạn chưa
+    // Bạn đã xác nhận nó chưa hết hạn khi phân tích token, nhưng kiểm tra lại code.
+    if (isTokenExpired(token)) {
+        logger.warn("Validation failed: Token for user '{}' has expired.", username);
+        return false;
+    }
+
+    // Các kiểm tra khác nếu có (ví dụ: audience, issuer)
+
+    logger.debug("JWT Token for user '{}' is valid.", username);
+    return true; // Nếu tất cả các kiểm tra đều qua
+}
 
     /**
      * Decodes the base64 secret key and creates an HMAC-SHA key.

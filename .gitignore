@@ -3,6 +3,10 @@
 # thì các dòng này sẽ bỏ qua chúng.
 .idea/
 *.iml
+*.jar
+*.war
+*.zip
+*.tar.gz
 
 # Thư mục cơ sở dữ liệu (đã thấy trong git status của bạn)
 # Nếu bạn không muốn thư mục QuitSmoking_DB/ được theo dõi bởi Git, hãy giữ dòng này.
@@ -10,10 +14,12 @@
 # File cấu hình môi trường cho Frontend (RẤT QUAN TRỌNG: KHÔNG BAO GIỜ ĐẨY LÊN GIT)
 # File .env thường chứa các khóa API, thông tin nhạy cảm.
 /QuitSmoking_FE/.env
-
+# Thư mục đầu ra của quá trình build Backend
+/QuitSmoking_BE/quitsmoking/target/
 # Thư mục dependencies của Node.js cho Frontend
 # Được tạo khi chạy 'npm install' hoặc 'yarn install'
 /QuitSmoking_FE/node_modules/
+
 
 # Thư mục đầu ra của quá trình build Frontend (ví dụ: 'dist' cho Vite/Webpack)
 /QuitSmoking_FE/dist/
@@ -26,3 +32,4 @@ yarn-debug.log*
 
 # Các file hệ điều hành
 Thumbs.db           
+.vscode/

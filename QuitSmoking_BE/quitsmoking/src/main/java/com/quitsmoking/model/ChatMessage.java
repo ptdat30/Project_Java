@@ -46,4 +46,35 @@ public class ChatMessage {
     public enum MessageType {
         TEXT, IMAGE, FILE
     }
+
+    public com.quitsmoking.dto.response.ChatMessageResponse toResponse() {
+        com.quitsmoking.dto.response.ChatMessageResponse dto = new com.quitsmoking.dto.response.ChatMessageResponse();
+        dto.setId(this.getId());
+        dto.setConsultationId(this.getConsultation() != null ? this.getConsultation().getId() : null);
+        dto.setSenderId(this.getSender() != null ? this.getSender().getId() : null);
+        
+        // Add sender information
+        if (this.getSender() != null) {
+            dto.setSenderFirstName(this.getSender().getFirstName());
+            dto.setSenderLastName(this.getSender().getLastName());
+            dto.setSenderUsername(this.getSender().getUsername());
+            dto.setSenderRole(this.getSender().getRole() != null ? this.getSender().getRole().name() : null);
+            
+            // Set sender name (full name or username)
+            if (this.getSender().getFirstName() != null && this.getSender().getLastName() != null) {
+                dto.setSenderName(this.getSender().getFirstName() + " " + this.getSender().getLastName());
+            } else if (this.getSender().getFirstName() != null) {
+                dto.setSenderName(this.getSender().getFirstName());
+            } else {
+                dto.setSenderName(this.getSender().getUsername());
+            }
+        }
+        
+        dto.setContent(this.getContent());
+        dto.setMessageType(this.getMessageType() != null ? this.getMessageType().name() : null);
+        dto.setFileUrl(this.getFileUrl());
+        dto.setRead(this.getIsRead());
+        dto.setTimestamp(this.getTimestamp());
+        return dto;
+    }
 }

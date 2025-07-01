@@ -1,54 +1,59 @@
 package com.quitsmoking.dto.response;
 
+import com.quitsmoking.dto.response.MembershipPlanResponse; // Đảm bảo bạn có import cho Role enum của mình
+import com.quitsmoking.model.User;
 // Đảm bảo bạn có import cho Role enum của mình
-// import com.quitsmoking.model.Role; // Hoặc đường dẫn đúng đến enum Role của bạn
+import com.quitsmoking.model.Role; // Hoặc đường dẫn đúng đến enum Role của bạn
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 
 @Data // Tự động tạo getters, setters, equals, hashCode, toString
 @NoArgsConstructor // Tạo constructor không đối số
 @AllArgsConstructor
 public class AuthResponse {
     private String token;
-    private String username; // Có thể thêm username nếu muốn hiển thị ở frontend
-    private String role; 
     private String userId;      
+    private String username;    
+    private String email;       
+    private String role;        
+    private String firstName;   
+    private String lastName;    
+    private String pictureUrl;
+    private MembershipPlanResponse membership;
+    private boolean freePlanClaimed;
+    private LocalDate membershipEndDate;
 
-    // public AuthResponse(String token) {
-    //     this.token = token;
-    // }
+    private String message; // Thông báo lỗi hoặc thông tin bổ sung
 
-    // public AuthResponse(String token, String userId , String username, String role) { // Constructor mới
-    //     this.token = token;
-    //     this.userId = userId;
-    //     this.username = username;
-    //     this.role = role;
-    // }
+    public AuthResponse(String token, User user) {
+        this.token = token;
+        this.userId = user.getId();
+        this.username = user.getUsername();
+        this.email = user.getEmail();
+        this.role = user.getRole().name();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
+        this.pictureUrl = user.getPictureUrl();
+        this.freePlanClaimed = user.isFreePlanClaimed();
+        this.membershipEndDate = user.getMembershipEndDate();
 
-    // // Getters
-    // public String getToken() {
-    //     return token;
-    // }
+        if (user.getCurrentMembershipPlan() != null) {
+            this.membership = new MembershipPlanResponse(user.getCurrentMembershipPlan());
+        } else {
+            this.membership = null;
+        }
+        this.message = null;
+    }
+    public AuthResponse(User user) {
+        this(null, user); // Gọi constructor trên với token là null
+    }
 
-    // public String getUsername() {
-    //     return username;
-    // }
-
-    // public String getRole() { // Getter cho Role
-    //     return role;
-    // }
-
-    // // Setters (nếu cần, nhưng thường không cần cho response DTO)
-    // public void setToken(String token) {
-    //     this.token = token;
-    // }
-
-    // public void setUsername(String username) {
-    //     this.username = username;
-    // }
-
-    // public void setRole(String role) { // Setter cho Role
-    //     this.role = role;
-    // }
+    public AuthResponse(String message) {
+        // Gọi constructor không đối số để khởi tạo các trường thành null/default
+        this(); 
+        this.message = message; // Chỉ đặt thông báo lỗi
+    }
 }

@@ -1,686 +1,486 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import axios from "axios";
-import config from "../../config/config.js";
-import { Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+
 const PlanPage = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [currentPlan, setCurrentPlan] = useState(null);
-  const [smokingStatus, setSmokingStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showCreatePlan, setShowCreatePlan] = useState(false);
-  const [formData, setFormData] = useState({
-    reason: "",
-    startDate: "",
-    targetQuitDate: "",
-    planType: "GRADUAL",
-    dailyReductionGoal: "",
-    milestones: [],
-  });
-  const [errors, setErrors] = useState({});
-  const planTypes = [
+  const navigate = useNavigate(); // Khởi tạo useNavigate
+
+  // State variables for form inputs
+  const [startDate, setStartDate] = useState("today"); // 'today', 'tomorrow', 'custom'
+  const [customDate, setCustomDate] = useState(""); // For specific custom date
+  const [cigarettesPerDay, setCigarettesPerDay] = useState("");
+  const [pricePerPack, setPricePerPack] = useState("");
+  const [selectedReasons, setSelectedReasons] = useState([]); // Array of selected reason indices
+  const [selectedTriggers, setSelectedTriggers] = useState([]); // Array of selected trigger IDs (e.g., "situation-0", "emotion-1")
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Define the full list of reasons to quit with their titles and images
+  // Dữ liệu này phải được định nghĩa ở đây để có thể truy cập trong handleStartPlan
+  const allReasons = [
+    { title: "Cải thiện sức khoẻ", image: "/images/suckhoe.png" },
+    { title: "Cho gia đình, bạn bè", image: "/images/giadinh.png" },
+    { title: "Yêu cầu của bác sĩ", image: "/images/yeucaubacsi.png" },
+    { title: "Tiết kiệm tiền", image: "/images/tietkiemtien.png" },
+    { title: "Bảo vệ môi trường", image: "/images/baovemoitruong.png" },
+    { title: "Cải thiện mùi, ngoại hình", image: "/images/caithienmui.png" },
+    { title: "Cho em bé", image: "/images/choembe.png" },
     {
-      id: "GRADUAL",
-      name: "Giảm dần",
-      description: "Giảm số lượng thuốc từ từ theo thời gian",
-      icon: "📉",
-      suitable: "Phù hợp với người hút nhiều, muốn thay đổi từ từ",
+      title: "Kiểm soát bản thân",
+      image:
+        "https://readdy.ai/api/search-image?query=Person%20looking%20in%20mirror%20with%20determined%20expression%2C%20self%20improvement%20concept&width=200&height=200&seq=9&orientation=squarish",
     },
-    {
-      id: "COLD_TURKEY",
-      name: "Ngưng hoàn toàn",
-      description: "Dừng hút thuốc ngay lập tức",
-      icon: "🛑",
-      suitable: "Phù hợp với người có ý chí mạnh mẽ",
-    },
-    {
-      id: "NICOTINE_REPLACEMENT",
-      name: "Thay thế nicotine",
-      description: "Sử dụng kẹo cao su, miếng dán nicotine",
-      icon: "🍬",
-      suitable: "Phù hợp với người muốn giảm cơn thèm nicotine",
-    },
+    { title: "Tương lai tốt hơn", image: "/images/tuonglaitothon.png" },
+    { title: "Cho thú cưng", image: "/images/chothucung.png" },
   ];
-  useEffect(() => {
-    fetchData();
-  }, []);
-  const fetchData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-      // Fetch user profile
-      const userResponse = await axios.get(
-        `${config.API_BASE_URL}${config.endpoints.userProfile}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setUser(userResponse.data);
-      // Fetch current plan
-      try {
-        const planResponse = await axios.get(
-          `${config.API_BASE_URL}/api/quit-plans/current`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setCurrentPlan(planResponse.data);
-      } catch (planError) {
-        // Nếu không có plan hiện tại, không cần xử lý lỗi
-        console.log("Không có kế hoạch hiện tại");
-      }
-      // Fetch smoking status
-      try {
-        const statusResponse = await axios.get(
-          `${config.API_BASE_URL}/api/smoking-status/current`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setSmokingStatus(statusResponse.data);
-      } catch (statusError) {
-        console.log("Chưa có thông tin tình trạng hút thuốc");
-      }
-    } catch (error) {
-      console.error("Lỗi khi tải dữ liệu:", error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/login");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
 
-    // Clear error khi user nhập
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
-  };
-  const handleMilestoneChange = (index, field, value) => {
-    const newMilestones = [...formData.milestones];
-    newMilestones[index] = {
-      ...newMilestones[index],
-      [field]: value,
-    };
-    setFormData((prev) => ({
-      ...prev,
-      milestones: newMilestones,
-    }));
-  };
-  const addMilestone = () => {
-    setFormData((prev) => ({
-      ...prev,
-      milestones: [
-        ...prev.milestones,
-        { date: "", description: "", targetCigarettes: "" },
-      ],
-    }));
-  };
-  const removeMilestone = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      milestones: prev.milestones.filter((_, i) => i !== index),
-    }));
-  };
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.reason.trim()) {
-      newErrors.reason = "Vui lòng nhập lý do cai thuốc";
-    }
-    if (!formData.startDate) {
-      newErrors.startDate = "Vui lòng chọn ngày bắt đầu";
-    }
-    if (!formData.targetQuitDate) {
-      newErrors.targetQuitDate = "Vui lòng chọn ngày dự kiến cai được thuốc";
-    }
-    if (formData.startDate && formData.targetQuitDate) {
-      const startDate = new Date(formData.startDate);
-      const targetDate = new Date(formData.targetQuitDate);
+  // Define the full list of situation triggers
+  const allSituationTriggers = [
+    "Được mời một điếu thuốc",
+    "Uống rượu hoặc đi đến quán bar",
+    "Đi dự tiệc hoặc sự kiện xã hội khác",
+    "Ở gần những người hút thuốc hoặc sử dụng sản phẩm thuốc lá khác",
+    "Nhìn thấy người khác hút thuốc",
+    "Ngửi thấy khói thuốc lá",
+  ];
 
-      if (targetDate <= startDate) {
-        newErrors.targetQuitDate = "Ngày dự kiến phải sau ngày bắt đầu";
-      }
-    }
-    if (formData.planType === "GRADUAL" && !formData.dailyReductionGoal) {
-      newErrors.dailyReductionGoal = "Vui lòng nhập mục tiêu giảm hàng ngày";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Define the full list of emotion triggers
+  const allEmotionTriggers = [
+    "Tức giận",
+    "Lo lắng, bồn chồn",
+    "Phấn khởi, hạnh phúc",
+    "Cô đơn",
+    "Buồn, thất vọng",
+    "Căng thẳng hoặc quá tải",
+  ];
 
-    if (!validateForm()) {
+  // Handler for start date radio button changes
+  const handleDateOptionChange = (option) => {
+    setStartDate(option);
+    setShowDatePicker(option === "custom"); // Simplified condition
+  };
+
+  // Handler for cigarettes per day input
+  const handleCigarettesChange = (e) => {
+    const value = e.target.value.replace(/\D/g, ""); // Only allow digits
+    setCigarettesPerDay(value);
+  };
+
+  // Handler for price per pack input
+  const handlePriceChange = (e) => {
+    const value = e.target.value.replace(/[^0-9.]/g, ""); // Allow digits and a single dot
+    // Ensure only one decimal point
+    if (value.split('.').length > 2) {
       return;
     }
-    try {
-      const token = localStorage.getItem("token");
-      const submitData = {
-        ...formData,
-        milestones: JSON.stringify(formData.milestones),
-      };
-      const response = await axios.post(
-        `${config.API_BASE_URL}/api/quit-plans`,
-        submitData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("Tạo kế hoạch cai thuốc thành công!");
-      setShowCreatePlan(false);
-      fetchData(); // Refresh data
-    } catch (error) {
-      console.error("Lỗi khi tạo kế hoạch:", error);
-      alert("Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại!");
+    setPricePerPack(value);
+  };
+
+  // Handler for selecting/deselecting reasons to quit
+  const handleReasonSelect = (index) => {
+    if (selectedReasons.includes(index)) {
+      setSelectedReasons(selectedReasons.filter((id) => id !== index));
+    } else {
+      setSelectedReasons([...selectedReasons, index]);
     }
   };
-  const calculateDaysLeft = (targetDate) => {
-    const today = new Date();
-    const target = new Date(targetDate);
-    const diffTime = target.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+
+  // Handler for selecting/deselecting craving triggers
+  const handleTriggerSelect = (index, type) => {
+    const triggerId = `${type}-${index}`;
+    if (selectedTriggers.includes(triggerId)) {
+      setSelectedTriggers(selectedTriggers.filter((id) => id !== triggerId));
+    } else {
+      setSelectedTriggers([...selectedTriggers, triggerId]);
+    }
   };
-  const calculateProgress = (plan) => {
-    if (!plan) return 0;
 
-    const startDate = new Date(plan.startDate);
-    const targetDate = new Date(plan.targetQuitDate);
-    const today = new Date();
+  // Main handler to start the quit plan and send data to backend
+  const handleStartPlan = async () => {
+    let actualStartDate;
+    if (startDate === "today") {
+      actualStartDate = new Date().toISOString().split("T")[0];
+    } else if (startDate === "tomorrow") {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      actualStartDate = tomorrow.toISOString().split("T")[0];
+    } else {
+      actualStartDate = customDate;
+    }
 
-    const totalDays =
-      (targetDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-    const passedDays =
-      (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    // --- Xử lý selectedReasons để tạo JSON string cho 'selectedReasonsJson' ---
+    // Chuyển đổi mảng các index thành chuỗi JSON
+    const selectedReasonsJsonString = JSON.stringify(selectedReasons);
 
-    return Math.min(Math.max((passedDays / totalDays) * 100, 0), 100);
+    // Chuỗi lý do cho trường 'reason' (lydocaythuoc)
+    // Lấy tiêu đề của các lý do đã chọn và nối chúng lại
+    const reasonTitles = selectedReasons.map(index => allReasons[index].title);
+    const reasonStringForBackend = reasonTitles.length > 0
+      ? reasonTitles.join(', ') // Nối các tên lý do
+      : "Không có lý do cụ thể"; // Giá trị mặc định nếu không chọn gì
+
+
+    // --- Xử lý selectedTriggers để tạo JSON string cho 'selectedTriggersJson' ---
+    const actualSelectedTriggers = selectedTriggers.map(triggerId => {
+        const [type, index] = triggerId.split('-');
+        if (type === 'situation') {
+            return allSituationTriggers[parseInt(index)];
+        } else if (type === 'emotion') {
+            return allEmotionTriggers[parseInt(index)];
+        }
+        return '';
+    }).filter(Boolean); // Filter out any empty strings if an invalid type appears
+    const selectedTriggersJsonString = JSON.stringify(actualSelectedTriggers);
+
+    // Prepare the data payload for the backend
+    const planData = {
+      startDate: actualStartDate,
+      cigarettesPerDay: parseInt(cigarettesPerDay, 10),
+      pricePerPack: parseFloat(pricePerPack),
+      
+      reason: reasonStringForBackend, // Gán chuỗi tên lý do đã xử lý
+
+      selectedReasonsJson: selectedReasonsJsonString, // Gán chuỗi JSON của mảng index
+      selectedTriggersJson: selectedTriggersJsonString, // Gán chuỗi JSON của mảng triggers
+
+      initialSmokingHabit: String(cigarettesPerDay), // Backend yêu cầu String
+      quittingPhases: "Giai đoạn 1", // Giá trị mặc định hoặc có thể thêm input cho người dùng
+      targetQuitDate: actualStartDate, // Hoặc tính toán ngày mục tiêu dựa trên logic
+    };
+
+    console.log("Dữ liệu kế hoạch gửi đi:", planData);
+
+    try {
+      const token = localStorage.getItem("jwt_token");
+
+      if (!token) {
+        alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để tạo kế hoạch.");
+        console.warn("Không tìm thấy JWT token trong localStorage. Yêu cầu gửi bị hủy.");
+        navigate('/login'); // Redirect to login page
+        return;
+      }
+
+      console.log("Đang gửi request Axios đến backend...");
+
+      const response = await axios.post(
+        "http://localhost:8080/api/quit-plans", // Đảm bảo URL này chính xác
+        planData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Kế hoạch đã được lưu thành công:", response.data);
+      alert("Kế hoạch của bạn đã bắt đầu và được lưu thành công!");
+      navigate('/dashboard'); // Redirect to dashboard after successful plan creation
+    } catch (error) {
+      console.error("Lỗi khi lưu kế hoạch:", error.response ? error.response.data : error.message);
+
+      if (error.response) {
+        alert(`Lỗi: ${error.response.status} - ${error.response.data.message || 'Có lỗi xảy ra từ máy chủ.'}`);
+      } else if (error.request) {
+        alert("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng hoặc CORS.");
+      } else {
+        alert("Có lỗi không xác định xảy ra khi gửi kế hoạch. Vui lòng thử lại.");
+      }
+    }
   };
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải kế hoạch...</p>
-        </div>
-      </div>
-    );
-  }
+
+  const lightGreen = "#49b08b";
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Kế hoạch cai thuốc
-          </h1>
-          <p className="text-lg text-gray-600">
-            Lập kế hoạch và theo dõi hành trình cai thuốc của bạn
-          </p>
-        </div>
-        {/* Current Plan */}
-        {currentPlan ? (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Kế hoạch hiện tại
-              </h2>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  currentPlan.status === "ACTIVE"
-                    ? "bg-green-100 text-green-800"
-                    : currentPlan.status === "PLANNING"
-                    ? "bg-blue-100 text-blue-800"
-                    : currentPlan.status === "COMPLETED"
-                    ? "bg-purple-100 text-purple-800"
-                    : currentPlan.status === "PAUSED"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {currentPlan.status === "ACTIVE"
-                  ? "Đang thực hiện"
-                  : currentPlan.status === "PLANNING"
-                  ? "Đang lập kế hoạch"
-                  : currentPlan.status === "COMPLETED"
-                  ? "Hoàn thành"
-                  : currentPlan.status === "PAUSED"
-                  ? "Tạm dừng"
-                  : "Thất bại"}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-semibold text-gray-900">Ngày bắt đầu</h3>
-                <p className="text-2xl font-bold text-blue-600 mt-2">
-                  {new Date(currentPlan.startDate).toLocaleDateString("vi-VN")}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <h3 className="font-semibold text-gray-900">Ngày dự kiến</h3>
-                <p className="text-2xl font-bold text-green-600 mt-2">
-                  {new Date(currentPlan.targetQuitDate).toLocaleDateString(
-                    "vi-VN"
-                  )}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <h3 className="font-semibold text-gray-900">Còn lại</h3>
-                <p className="text-2xl font-bold text-purple-600 mt-2">
-                  {calculateDaysLeft(currentPlan.targetQuitDate)} ngày
-                </p>
-              </div>
-            </div>
-            {/* Progress Bar */}
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Tiến độ
-                </span>
-                <span className="text-sm text-gray-500">
-                  {Math.round(calculateProgress(currentPlan))}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${calculateProgress(currentPlan)}%` }}
-                ></div>
-              </div>
-            </div>
-            {/* Plan Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Lý do cai thuốc
-                </h3>
-                <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">
-                  {currentPlan.reason}
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  Phương pháp
-                </h3>
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <span className="font-medium">
-                    {planTypes.find((t) => t.id === currentPlan.planType)?.name}
-                  </span>
-                  {currentPlan.dailyReductionGoal && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      Mục tiêu giảm: {currentPlan.dailyReductionGoal} điếu/ngày
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* Action Buttons */}
-            <div className="flex space-x-4 mt-6">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Theo dõi tiến độ
-              </button>
-              <button className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                Chỉnh sửa kế hoạch
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-100 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* First Section - Choose Start Date */}
+        <div className="mb-8 bg-white rounded-lg overflow-hidden shadow">
+          {/* Sử dụng inline style cho màu nền */}
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
+            <h2 className="text-xl font-bold">CHỌN NGÀY BẮT ĐẦU KẾ HOẠCH</h2>
           </div>
-        ) : (
-          /* No Current Plan */
-          <div className="bg-white rounded-lg shadow-sm p-8 mb-8 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Bạn chưa có kế hoạch cai thuốc
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Tạo kế hoạch cai thuốc để bắt đầu hành trình sống khỏe mạnh của
-              bạn
+          <div className="p-8 bg-gray-50">
+            <p className="mb-6 text-gray-800 text-lg">
+              Hãy chọn ngày vào khoảng mấy tuần tiếp theo để bạn có thời gian
+              chuẩn bị trước khi bước vào tuần kế hoạch, hoặc nếu bạn đã sẵn
+              sàng bạn có thể chọn các ngày dưới đây:
             </p>
-            <button
-              onClick={() => setShowCreatePlan(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Tạo kế hoạch mới
-            </button>
-          </div>
-        )}
-        {/* Smoking Status Warning */}
-        {!smokingStatus && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
-            <div className="flex">
-              <svg
-                className="w-5 h-5 text-yellow-400 mt-0.5 mr-3"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <div>
-                <p className="text-yellow-800 font-medium">
-                  Chưa có thông tin tình trạng hút thuốc
-                </p>
-                <p className="text-yellow-700 text-sm mt-1">
-                  Vui lòng ghi nhận tình trạng hút thuốc hiện tại để tạo kế
-                  hoạch phù hợp.
-                </p>
-                <Link
-                  to="/quit-status"
-                  className="text-yellow-800 underline text-sm mt-2 hover:text-yellow-900"
-                >
-                  Ghi nhận ngay →
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Create Plan Form */}
-        {showCreatePlan && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Tạo kế hoạch cai thuốc mới
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Lý do cai thuốc *
-                </label>
-                <textarea
-                  name="reason"
-                  value={formData.reason}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.reason ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Ví dụ: Vì sức khỏe, tiết kiệm tiền, gia đình..."
-                />
-                {errors.reason && (
-                  <p className="mt-1 text-sm text-red-600">{errors.reason}</p>
+            <div className="mt-4">
+              <p className="font-medium mb-3 text-gray-800">
+                Khi nào bạn thực hiện kế hoạch?
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="today"
+                    name="startDate"
+                    className="h-5 w-5 text-blue-600"
+                    checked={startDate === "today"}
+                    onChange={() => handleDateOptionChange("today")}
+                  />
+                  <label
+                    htmlFor="today"
+                    className="ml-2 text-gray-800 cursor-pointer"
+                  >
+                    Hôm nay
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="tomorrow"
+                    name="startDate"
+                    className="h-5 w-5 text-blue-600"
+                    checked={startDate === "tomorrow"}
+                    onChange={() => handleDateOptionChange("tomorrow")}
+                  />
+                  <label
+                    htmlFor="tomorrow"
+                    className="ml-2 text-gray-800 cursor-pointer"
+                  >
+                    Ngày mai
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="custom"
+                    name="startDate"
+                    className="h-5 w-5 text-blue-600"
+                    checked={startDate === "custom"}
+                    onChange={() => handleDateOptionChange("custom")}
+                  />
+                  <label
+                    htmlFor="custom"
+                    className="ml-2 text-gray-800 cursor-pointer"
+                  >
+                    Chọn ngày của tôi
+                  </label>
+                </div>
+                {showDatePicker && (
+                  <div className="ml-7 mt-2">
+                    <input
+                      type="date"
+                      className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                    />
+                  </div>
                 )}
               </div>
-              {/* Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ngày bắt đầu *
-                  </label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    min={new Date().toISOString().split("T")[0]}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.startDate ? "border-red-500" : "border-gray-300"
-                    }`}
+            </div>
+          </div>
+        </div>
+        {/* Second Section - Smoking Cost */}
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
+          {/* Sử dụng inline style cho màu nền */}
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
+            <h2 className="text-xl font-bold">
+              BẠN CHI TRẢ BAO NHIÊU CHO VIỆC HÚT THUỐC?
+            </h2>
+          </div>
+          <div className="p-8 bg-gray-50">
+            <p className="mb-6 text-gray-800 text-lg">
+              Nhập số lượng bạn hút trong một gói và số lượng gói bạn hút sẽ cho
+              bạn biết được số tiền bạn tiết kiệm được khi bắt đầu thực hiện kế
+              hoạch cai thuốc.
+            </p>
+            <div className="bg-white p-8 rounded-lg border border-gray-200">
+              <div className="flex items-center mb-6">
+                <div className="w-32 flex-shrink-0">
+                  <img
+                    src="https://readdy.ai/api/search-image?query=A%20simple%20calculator%20icon%20with%20basic%20buttons%20and%20display%20screen%2C%20minimalist%20design%2C%20clean%20lines%2C%20soft%20gray%20background%2C%20professional%20look%2C%20suitable%20for%20a%20quit%20smoking%20app%20interface&width=100&height=100&seq=1&orientation=squarish"
+                    alt="Calculator"
+                    className="w-full h-auto"
                   />
-                  {errors.startDate && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.startDate}
-                    </p>
-                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ngày dự kiến cai được thuốc *
-                  </label>
-                  <input
-                    type="date"
-                    name="targetQuitDate"
-                    value={formData.targetQuitDate}
-                    onChange={handleInputChange}
-                    min={
-                      formData.startDate ||
-                      new Date().toISOString().split("T")[0]
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.targetQuitDate
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  {errors.targetQuitDate && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.targetQuitDate}
-                    </p>
-                  )}
+                <div className="flex-grow ml-4">
+                  <div className="flex items-center mb-6">
+                    <span className="text-gray-800 mr-3 text-lg">
+                      Tôi hút khoảng
+                    </span>
+                    <input
+                      type="text"
+                      className="border border-gray-300 rounded-md px-4 py-2.5 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button text-lg"
+                      value={cigarettesPerDay}
+                      onChange={handleCigarettesChange}
+                      placeholder="0"
+                    />
+                    <span className="text-gray-800 ml-2">
+                      điếu thuốc một ngày.
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-800 mr-3 text-lg">
+                      Tôi dành khoảng
+                    </span>
+                    <input
+                      type="text"
+                      className="border border-gray-300 rounded-md px-4 py-2.5 w-36 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button text-lg"
+                      value={pricePerPack}
+                      onChange={handlePriceChange}
+                      placeholder="0.00"
+                    />
+                    <span className="text-gray-800 ml-2">
+                      cho một bao thuốc.
+                    </span>
+                  </div>
                 </div>
               </div>
-              {/* Plan Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Phương pháp cai thuốc *
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {planTypes.map((type) => (
-                    <label
-                      key={type.id}
-                      className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
-                        formData.planType === type.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 hover:border-gray-400"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="planType"
-                        value={type.id}
-                        checked={formData.planType === type.id}
-                        onChange={handleInputChange}
-                        className="sr-only"
-                      />
-                      <div className="text-center">
-                        <div className="text-2xl mb-2">{type.icon}</div>
-                        <h3 className="font-medium text-gray-900 mb-1">
-                          {type.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {type.description}
-                        </p>
-                        <p className="text-xs text-gray-500">{type.suitable}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              {/* Daily Reduction Goal (for Gradual plan) */}
-              {formData.planType === "GRADUAL" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mục tiêu giảm mỗi ngày (điếu) *
-                  </label>
-                  <input
-                    type="number"
-                    name="dailyReductionGoal"
-                    value={formData.dailyReductionGoal}
-                    onChange={handleInputChange}
-                    min="1"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.dailyReductionGoal
-                        ? "border-red-500"
-                        : "border-gray-300"
+            </div>
+          </div>
+        </div>
+        {/* Third Section - Reasons to Quit */}
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
+          {/* Sử dụng inline style cho màu nền */}
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
+            <h2 className="text-xl font-bold">TẠI SAO BẠN LẠI BỎ THUỐC?</h2>
+          </div>
+          <div className="p-8 bg-gray-50">
+            <p className="mb-6 text-gray-800 text-lg">
+              Biết được mục đích cai nghiện sẽ giúp bạn giữ vững động lực để
+              tiếp tục cai thuốc trong những tình huống khó khăn hay thèm
+              khát,...
+            </p>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-4">
+                Lý do tôi muốn bỏ thuốc:
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {allReasons.map((reason, index) => ( // Sử dụng allReasons đã định nghĩa
+                  <div
+                    key={index}
+                    onClick={() => handleReasonSelect(index)}
+                    className={`rounded-lg p-4 border transition-all cursor-pointer ${
+                      selectedReasons.includes(index)
+                        ? "border-green-600 bg-green-100 shadow-md"
+                        : "border-gray-200 hover:border-gray-300 bg-white shadow-sm"
                     }`}
-                    placeholder="Ví dụ: 2"
-                  />
-                  {errors.dailyReductionGoal && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.dailyReductionGoal}
-                    </p>
-                  )}
-                  <p className="mt-1 text-sm text-gray-500">
-                    Số điếu thuốc bạn sẽ cố gắng giảm mỗi ngày
-                  </p>
-                </div>
-              )}
-              {/* Milestones */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Các mốc quan trọng (tùy chọn)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addMilestone}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                   >
-                    + Thêm mốc
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {formData.milestones.map((milestone, index) => (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-lg p-4"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input
-                          type="date"
-                          placeholder="Ngày"
-                          value={milestone.date}
-                          onChange={(e) =>
-                            handleMilestoneChange(index, "date", e.target.value)
-                          }
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Mô tả mốc"
-                          value={milestone.description}
-                          onChange={(e) =>
-                            handleMilestoneChange(
-                              index,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <div className="flex space-x-2">
-                          <input
-                            type="number"
-                            placeholder="Mục tiêu (điếu)"
-                            value={milestone.targetCigarettes}
-                            onChange={(e) =>
-                              handleMilestoneChange(
-                                index,
-                                "targetCigarettes",
-                                e.target.value
-                              )
-                            }
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeMilestone(index)}
-                            className="px-3 py-2 text-red-600 hover:text-red-800"
-                          >
-                            🗑️
-                          </button>
+                    <div className="aspect-square rounded-full overflow-hidden mb-3 relative">
+                      <img
+                        src={reason.image}
+                        alt={reason.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {selectedReasons.includes(index) && (
+                        <div className="absolute top-1 right-1 bg-green-600 rounded-full p-1.5 flex items-center justify-center shadow-md">
+                          <i className="fas fa-check text-white text-xs"></i>
                         </div>
+                      )}
+                    </div>
+                    <p className="text-center text-sm font-medium text-gray-800">
+                      {reason.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fourth Section - Craving Triggers */}
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
+          {/* Sử dụng inline style cho màu nền */}
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
+            <h2 className="text-xl font-bold">
+              KHI NÀO BẠN LÊN CƠN THÈM KHÁT
+            </h2>
+          </div>
+          <div className="p-8 bg-gray-50">
+            <p className="mb-6 text-gray-800 text-lg">
+              Sau khi bạn cai thuốc, một số địa điểm, tình huống và cảm xúc
+              nhất định có thể khiến bạn khó duy trì việc cai thuốc. Sử dụng
+              danh sách này để tìm ra lý do khiến bạn muốn hút thuốc. Chúng
+              tôi sẽ cung cấp cho bạn các chiến lược giúp bạn kiểm soát được
+              việc hút thuốc.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-xl font-semibold mb-4">TÌNH HUỐNG</h3>
+                <div className="space-y-4">
+                  {allSituationTriggers.map((situation, index) => ( // Sử dụng allSituationTriggers
+                    <div
+                      key={`situation-${index}`}
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedTriggers.includes(`situation-${index}`)
+                          ? "bg-green-100 border-green-500"
+                          : "bg-white border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => handleTriggerSelect(index, "situation")}
+                    >
+                      <div
+                        className={`w-6 h-6 border-2 rounded mr-3 flex items-center justify-center ${
+                          selectedTriggers.includes(`situation-${index}`)
+                            ? "border-green-500 bg-green-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {selectedTriggers.includes(`situation-${index}`) && (
+                          <i className="fas fa-check text-white"></i>
+                        )}
                       </div>
+                      <span className="flex-grow">{situation}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              {/* Action Buttons */}
-              <div className="flex space-x-4">
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Tạo kế hoạch
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreatePlan(false)}
-                  className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-        {/* Tips Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mt-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            💡 Mẹo để có kế hoạch cai thuốc thành công
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Đặt mục tiêu thực tế và có thể đạt được
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Tìm hiểu những yếu tố kích thích bạn hút thuốc
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Chuẩn bị các hoạt động thay thế
-                </span>
+              <div>
+                <h3 className="text-xl font-semibold mb-4">CẢM XÚC</h3>
+                <div className="space-y-4">
+                  {allEmotionTriggers.map((emotion, index) => ( // Sử dụng allEmotionTriggers
+                    <div
+                      key={`emotion-${index}`}
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedTriggers.includes(`emotion-${index}`)
+                          ? "bg-green-100 border-green-500"
+                          : "bg-white border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => handleTriggerSelect(index, "emotion")}
+                    >
+                      <div
+                        className={`w-6 h-6 border-2 rounded mr-3 flex items-center justify-center ${
+                          selectedTriggers.includes(`emotion-${index}`)
+                            ? "border-green-500 bg-green-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {selectedTriggers.includes(`emotion-${index}`) && (
+                          <i className="fas fa-check text-white"></i>
+                        )}
+                      </div>
+                      <span className="flex-grow">{emotion}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Tìm kiếm sự hỗ trợ từ gia đình và bạn bè
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Ghi chép tiến trình và cảm xúc hàng ngày
-                </span>
-              </div>
-              <div className="flex items-start">
-                <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Thưởng cho bản thân khi đạt được mốc quan trọng
-                </span>
-              </div>
+          </div>
+        </div>
+
+        {/* Start Plan Button (Enhanced) */}
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
+          {/* Sử dụng inline style cho màu nền */}
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
+            <h2 className="text-xl font-bold">BẮT ĐẦU KẾ HOẠCH</h2>
+          </div>
+          <div className="p-8 bg-gray-50 flex flex-col items-center justify-center min-h-[200px]">
+            <p className="text-gray-800 text-xl font-semibold mb-6 text-center">
+              Bạn đã sẵn sàng để bắt đầu hành trình bỏ thuốc của mình?
+            </p>
+            <p className="text-gray-700 text-lg mb-8 text-center max-w-lg">
+              Nhấn vào nút bên dưới để khởi động kế hoạch và thay đổi cuộc sống của bạn ngay hôm nay!
+            </p>
+            <div className="flex items-center space-x-4">
+                <span className="text-green-600 text-5xl transform -rotate-12">➜</span>
+                <button
+                onClick={handleStartPlan}
+                className="bg-green-600 text-white font-bold py-4 px-10 rounded-lg text-2xl shadow-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-opacity-75"
+                >
+                Bắt đầu nào
+                </button>
+                <span className="text-green-600 text-5xl transform -rotate-165">➜</span>
             </div>
           </div>
         </div>
@@ -688,4 +488,5 @@ const PlanPage = () => {
     </div>
   );
 };
+
 export default PlanPage;
