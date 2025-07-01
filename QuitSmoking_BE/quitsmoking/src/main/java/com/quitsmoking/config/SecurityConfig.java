@@ -82,7 +82,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/membership/free-trial").hasAnyRole("GUEST")
                 // Endpoint upgrade yêu cầu các vai trò này
                 .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
-
+                // Endpoint ghi nhận tình trạng hút thuốc
+                .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                
                 // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
