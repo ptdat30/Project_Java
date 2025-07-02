@@ -20,18 +20,15 @@ const PlanPage = () => {
   };
 
   const handleCigarettesChange = (e) => {
-    // Only allow integers
     const value = e.target.value.replace(/\D/g, "");
     setCigarettesPerDay(value);
   };
 
   const handlePriceChange = (e) => {
-    // Allow decimal numbers
     const value = e.target.value.replace(/[^0-9.]/g, "");
     setPricePerPack(value);
   };
 
-  // Hàm xử lý chọn/bỏ chọn lý do bỏ thuốc
   const handleReasonSelect = (index) => {
     if (selectedReasons.includes(index)) {
       setSelectedReasons(selectedReasons.filter((id) => id !== index));
@@ -40,9 +37,8 @@ const PlanPage = () => {
     }
   };
 
-  // Hàm xử lý chọn/bỏ chọn trigger
   const handleTriggerSelect = (trigger, type) => {
-    const triggerId = `${type}-${trigger}`; // Tạo ID duy nhất cho mỗi trigger (ví dụ: "situation-0", "emotion-1")
+    const triggerId = `${type}-${trigger}`;
     if (selectedTriggers.includes(triggerId)) {
       setSelectedTriggers(selectedTriggers.filter((id) => id !== triggerId));
     } else {
@@ -50,23 +46,37 @@ const PlanPage = () => {
     }
   };
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
+  // Lưu cả startDate (giá trị gốc) và realStartDate (dạng YYYY-MM-DD)
   const handleStartPlan = () => {
-  const planData = {
-    startDate: startDate === "custom" ? customDate : startDate,
-    cigarettesPerDay,
-    pricePerPack,
-    selectedReasons,
-    selectedTriggers,
-    createdAt: new Date().toISOString()
+    let realStartDate = startDate;
+    let saveDate = startDate;
+    if (startDate === "today") {
+      const today = new Date();
+      realStartDate = today.toISOString().slice(0, 10);
+    } else if (startDate === "tomorrow") {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      realStartDate = tomorrow.toISOString().slice(0, 10);
+    } else if (startDate === "custom") {
+      realStartDate = customDate;
+      saveDate = customDate;
+    }
+    const planData = {
+      startDate: saveDate,
+      realStartDate,
+      cigarettesPerDay,
+      pricePerPack,
+      selectedReasons,
+      selectedTriggers,
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem("quitPlan", JSON.stringify(planData));
+    alert("Kế hoạch của bạn đã bắt đầu!");
+    navigate("/dashboard");
   };
-  localStorage.setItem("quitPlan", JSON.stringify(planData)); // CHỈ ở đây!
-  alert("Kế hoạch của bạn đã bắt đầu!");
-  navigate("/dashboard");
-};
 
-  // Định nghĩa màu xanh nhạt mới
   const lightGreen = "#49b08b";
 
   return (
@@ -74,7 +84,6 @@ const PlanPage = () => {
       <div className="max-w-6xl mx-auto">
         {/* First Section - Choose Start Date */}
         <div className="mb-8 bg-white rounded-lg overflow-hidden shadow">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">CHỌN NGÀY BẮT ĐẦU KẾ HOẠCH</h2>
           </div>
@@ -153,7 +162,6 @@ const PlanPage = () => {
         </div>
         {/* Second Section - Smoking Cost */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">
               BẠN CHI TRẢ BAO NHIÊU CHO VIỆC HÚT THUỐC?
@@ -212,7 +220,6 @@ const PlanPage = () => {
         </div>
         {/* Third Section - Reasons to Quit */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">TẠI SAO BẠN LẠI BỎ THUỐC?</h2>
           </div>
@@ -275,14 +282,13 @@ const PlanPage = () => {
                   },
                   {
                     title: "Cho thú cưng",
-                    // Đã cập nhật lại liên kết hình ảnh tại đây
                     image:
                       "/images/chothucung.png",
                   },
                 ].map((reason, index) => (
                   <div
                     key={index}
-                    onClick={() => handleReasonSelect(index)} // Sử dụng hàm handleReasonSelect
+                    onClick={() => handleReasonSelect(index)}
                     className={`rounded-lg p-4 border transition-all cursor-pointer ${
                       selectedReasons.includes(index)
                         ? "border-green-600 bg-green-100 shadow-md"
@@ -313,7 +319,6 @@ const PlanPage = () => {
 
         {/* Fourth Section - Craving Triggers */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">
               KHI NÀO BẠN LÊN CƠN THÈM KHÁT
@@ -346,7 +351,7 @@ const PlanPage = () => {
                           ? "bg-green-100 border-green-500"
                           : "bg-white border-gray-200 hover:border-gray-300"
                       }`}
-                      onClick={() => handleTriggerSelect(index, "situation")} // Sử dụng hàm handleTriggerSelect
+                      onClick={() => handleTriggerSelect(index, "situation")}
                     >
                       <div
                         className={`w-6 h-6 border-2 rounded mr-3 flex items-center justify-center ${
@@ -382,7 +387,7 @@ const PlanPage = () => {
                           ? "bg-green-100 border-green-500"
                           : "bg-white border-gray-200 hover:border-gray-300"
                       }`}
-                      onClick={() => handleTriggerSelect(index, "emotion")} // Sử dụng hàm handleTriggerSelect
+                      onClick={() => handleTriggerSelect(index, "emotion")}
                     >
                       <div
                         className={`w-6 h-6 border-2 rounded mr-3 flex items-center justify-center ${
@@ -404,9 +409,8 @@ const PlanPage = () => {
           </div>
         </div>
 
-        {/* Start Plan Button (Enhanced) */}
+        {/* Start Plan Button */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">BẮT ĐẦU KẾ HOẠCH</h2>
           </div>

@@ -14,7 +14,7 @@ const Dashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [progressInput, setProgressInput] = useState({
     mood: 7,
-    cravings: 0, // Giá trị mặc định ban đầu là 0
+    cravings: 0,
     exercise: false,
     water: 0,
     sleep: 7,
@@ -25,11 +25,11 @@ const Dashboard = () => {
   });
   const [successMsg, setSuccessMsg] = useState("");
 
-  // Định nghĩa các giai đoạn ở đây để có thể truy cập toàn cục
+  // Định nghĩa các giai đoạn
   const phases = [
     {
       name: "Giai đoạn 1: Chuẩn bị và Giảm dần",
-      duration: 7, // ngày
+      duration: 7,
       startDayOffset: 0,
       objective: "Nhận diện thói quen, giảm số điếu thuốc từ 5 xuống 2–3 điếu/ngày.",
       achievement: "Làm chủ hành vi, tăng khả năng kiểm soát cơn thèm thuốc.",
@@ -42,12 +42,12 @@ const Dashboard = () => {
         "Loại bỏ toàn bộ bật lửa, gạt tàn, thuốc dư thừa trong nhà.",
         "Giảm xuống 2 điếu. Chuẩn bị cho 'Ngày bỏ hoàn toàn'."
       ],
-      icon: "🧘" // Icon cho giai đoạn 1
+      icon: "🧘"
     },
     {
       name: "Giai đoạn 2: Cai hoàn toàn",
       duration: 7,
-      startDayOffset: 7, // Bắt đầu từ ngày thứ 8 (0-index)
+      startDayOffset: 7,
       objective: "Không hút bất kỳ điếu nào.",
       achievement: "Trải qua cơn nghiện thể chất (nikotin) – bước đột phá quan trọng.",
       tasks: [
@@ -59,7 +59,7 @@ const Dashboard = () => {
         "Tự thưởng (một món nhỏ) vì đã không hút thuốc 5 ngày.",
         "Đánh dấu “7 ngày sạch thuốc đầu tiên” – bạn đã thắng bước đầu."
       ],
-      icon: "🚀" // Icon cho giai đoạn 2
+      icon: "🚀"
     },
     {
       name: "Giai đoạn 3: Ổn định – Vượt qua cơn thèm tâm lý",
@@ -79,7 +79,7 @@ const Dashboard = () => {
         "Thiền hoặc nghe nhạc thư giãn khi buồn/căng thẳng.",
         "Ghi nhận 3 lợi ích bạn thấy rõ sau gần 3 tuần bỏ thuốc."
       ],
-      icon: "🧠" // Icon cho giai đoạn 3
+      icon: "🧠"
     },
     {
       name: "Giai đoạn 4: Tăng cường sức khỏe – Thay đổi lối sống",
@@ -100,7 +100,7 @@ const Dashboard = () => {
         "Lập danh sách 5 điều bạn thấy tốt lên từ khi bỏ thuốc.",
         "Tổ chức buổi 'ăn mừng sạch thuốc 1 tháng' cùng người thân."
       ],
-      icon: "💪" // Icon cho giai đoạn 4
+      icon: "💪"
     },
     {
       name: "Giai đoạn 5: Củng cố và Phòng tái nghiện",
@@ -121,18 +121,16 @@ const Dashboard = () => {
         "Ôn lại toàn bộ quá trình – ước tính bạn đã tiết kiệm bao nhiêu?",
         "Viết một bức thư gửi cho “bạn của 6 tháng sau” – giữ vững cam kết."
       ],
-      icon: "🏆" // Icon cho giai đoạn 5
+      icon: "🏆"
     }
   ];
 
-  // Lấy index ngày hôm nay trong tuần (0: T2, ..., 6: CN)
   const getTodayIndex = () => {
     const d = new Date();
     let idx = d.getDay();
     return idx === 0 ? 6 : idx - 1;
   };
 
-  // Khởi tạo weeklyProgress: lấy dữ liệu đã lưu cho cả ngày hôm nay
   const getInitialWeeklyProgress = () => {
     let planStr = localStorage.getItem("quitPlan");
     let oldProgress = [];
@@ -148,7 +146,6 @@ const Dashboard = () => {
     });
   };
 
-  // Tính tổng số điếu đã hút thực tế trong các ngày đã có dữ liệu
   const getTotalCigarettesSmoked = (weeklyProgress) => {
     let total = 0;
     weeklyProgress.forEach((day) => {
@@ -160,7 +157,6 @@ const Dashboard = () => {
     return total;
   };
 
-  // Tính tổng số tiền đã tiêu mua thuốc thực tế trong tuần
   const getTotalMoneySpent = (weeklyProgress) => {
     let total = 0;
     weeklyProgress.forEach((day) => {
@@ -173,59 +169,53 @@ const Dashboard = () => {
   };
 
   // Hàm tính toán và trả về thông tin giai đoạn hiện tại và nhiệm vụ
-  const getPhaseInfo = (daysWithoutSmoking, startDateStr, dailyCost) => {
-    const startDate = new Date(startDateStr);
+  const getPhaseInfo = (daysWithoutSmoking, quitDateStr, dailyCost) => {
+    const startDate = new Date(quitDateStr);
     startDate.setHours(0, 0, 0, 0);
 
     let currentPhase = null;
-    let cumulativeSavedMoney = 0; // Tiền tiết kiệm lũy kế đến cuối giai đoạn trước
+    let cumulativeSavedMoney = 0;
 
     for (let i = 0; i < phases.length; i++) {
       const phase = phases[i];
       const phaseStartDayAbsolute = phase.startDayOffset;
       const phaseEndDayAbsolute = phase.startDayOffset + phase.duration - 1;
 
-      // Tính ngày bắt đầu và kết thúc của giai đoạn
       const currentPhaseStartDate = new Date(startDate);
       currentPhaseStartDate.setDate(startDate.getDate() + phaseStartDayAbsolute);
       const currentPhaseEndDate = new Date(startDate);
       currentPhaseEndDate.setDate(startDate.getDate() + phaseEndDayAbsolute);
 
-      // daysWithoutSmoking là 1-indexed (ngày 1, ngày 2, ...)
-      // phaseStartDayAbsolute là 0-indexed offset từ ngày bắt đầu kế hoạch
-      // Điều kiện để chọn phase: daysWithoutSmoking nằm trong khoảng [phaseStartDayAbsolute + 1, phaseEndDayAbsolute + 1]
-      if (daysWithoutSmoking >= (phaseStartDayAbsolute + 1) && daysWithoutSmoking <= (phaseEndDayAbsolute + 1)) {
+      if (daysWithoutSmoking >= phaseStartDayAbsolute && daysWithoutSmoking <= phaseEndDayAbsolute) {
         currentPhase = {
           ...phase,
           startDate: currentPhaseStartDate.toLocaleDateString('vi-VN'),
           endDate: currentPhaseEndDate.toLocaleDateString('vi-VN'),
-          currentDayInPhase: daysWithoutSmoking - phaseStartDayAbsolute // Fix: Đảm bảo 1-indexed ngày trong phase
+          currentDayInPhase: daysWithoutSmoking - phaseStartDayAbsolute
         };
         break;
       }
-      cumulativeSavedMoney += phase.duration * dailyCost; // Cộng dồn tiền tiết kiệm của các giai đoạn đã qua
+      cumulativeSavedMoney += phase.duration * dailyCost;
     }
 
     // Nếu đã hoàn thành tất cả các giai đoạn
-    if (!currentPhase && daysWithoutSmoking > (phases[phases.length - 1].startDayOffset + phases[phases.length - 1].duration)) { // Check for day after last phase ends
-        currentPhase = {
-            name: "Bạn đã hoàn thành Lộ trình Cai Nghiện!",
-            objective: "Duy trì cuộc sống không thuốc lá vĩnh viễn và sống khỏe mạnh.",
-            achievement: "Trở thành một người hoàn toàn không hút thuốc.",
-            tasks: [],
-            isCompleted: true,
-            totalDaysCompleted: daysWithoutSmoking -1 // Total days completed (0-indexed days passed)
-        };
-        cumulativeSavedMoney = phases.reduce((sum, p) => sum + p.duration * dailyCost, 0); // Tổng tiền tất cả các giai đoạn
+    if (!currentPhase && daysWithoutSmoking > (phases[phases.length - 1].startDayOffset + phases[phases.length - 1].duration - 1)) {
+      currentPhase = {
+        name: "Bạn đã hoàn thành Lộ trình Cai Nghiện!",
+        objective: "Duy trì cuộc sống không thuốc lá vĩnh viễn và sống khỏe mạnh.",
+        achievement: "Trở thành một người hoàn toàn không hút thuốc.",
+        tasks: [],
+        isCompleted: true,
+        totalDaysCompleted: daysWithoutSmoking
+      };
+      cumulativeSavedMoney = phases.reduce((sum, p) => sum + p.duration * dailyCost, 0);
     }
 
-
-    // Tính tiền tiết kiệm cuối mỗi giai đoạn (ước tính)
     let phaseSavedMoney = 0;
     if (currentPhase && !currentPhase.isCompleted) {
-        phaseSavedMoney = cumulativeSavedMoney + (currentPhase.currentDayInPhase * dailyCost);
+      phaseSavedMoney = cumulativeSavedMoney + (currentPhase.currentDayInPhase * dailyCost);
     } else if (currentPhase && currentPhase.isCompleted) {
-        phaseSavedMoney = cumulativeSavedMoney; // Nếu hoàn thành, tiền là tổng của tất cả
+      phaseSavedMoney = cumulativeSavedMoney;
     }
 
     return { currentPhase, phaseSavedMoney };
@@ -237,7 +227,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Lấy dữ liệu kế hoạch từ localStorage
     const planStr = localStorage.getItem("quitPlan");
     if (!planStr) {
       setStats(null);
@@ -245,35 +234,22 @@ const Dashboard = () => {
       return;
     }
     const plan = JSON.parse(planStr);
-    console.log("Plan from localStorage:", plan); // LOG 1: Xem dữ liệu kế hoạch đã lưu
 
-    // Xác định ngày bắt đầu
-    let quitDate;
-    if (plan.startDate === "today") {
-      quitDate = new Date();
-      quitDate.setHours(0, 0, 0, 0);
-    } else if (plan.startDate === "tomorrow") {
-      quitDate = new Date();
-      quitDate.setDate(quitDate.getDate() + 1);
-      quitDate.setHours(0, 0, 0, 0);
-    } else {
-      quitDate = new Date(plan.startDate); // Assuming plan.startDate is a date string like 'YYYY-MM-DD'
-      quitDate.setHours(0, 0, 0, 0);
-    }
-    console.log("Calculated quitDate (normalized):", quitDate.toLocaleDateString('en-US')); // LOG 2: Ngày bắt đầu kế hoạch
+    // Lấy ngày bắt đầu thực tế từ realStartDate (chuẩn nhất)
+    let quitDate = new Date(plan.realStartDate);
+    quitDate.setHours(0, 0, 0, 0);
+    const quitDateStr = quitDate.toISOString().slice(0, 10);
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    console.log("Current date (normalized):", now.toLocaleDateString('en-US')); // LOG 3: Ngày hiện tại
 
+    // Ngày đầu tiên là ngày bạn chọn
     let daysWithoutSmoking = Math.max(1, Math.floor((now - quitDate) / (1000 * 60 * 60 * 24)) + 1);
-    console.log("Calculated daysWithoutSmoking (1-indexed):", daysWithoutSmoking); // LOG 4: Số ngày kể từ khi bắt đầu kế hoạch
 
-    // Lấy weeklyProgress và todayStatus từ localStorage nếu có
     let weeklyProgress = getInitialWeeklyProgress();
     let todayStatus = plan.todayStatus || {
       mood: 7,
-      cravings: 0, // Giá trị mặc định ban đầu là 0
+      cravings: 0,
       exercise: false,
       water: 0,
       sleep: 7,
@@ -283,48 +259,41 @@ const Dashboard = () => {
       moneySpentToday: ""
     };
 
-    // Lấy thông tin từ plan
     const cigarettesPerDay = parseInt(plan.cigarettesPerDay) || 0;
     const pricePerPack = parseFloat(plan.pricePerPack) || 0;
     const pricePerCigarette = pricePerPack / 20;
-    const dailyCostOfSmoking = cigarettesPerDay * pricePerCigarette; // Chi phí ước tính mỗi ngày nếu hút
+    const dailyCostOfSmoking = cigarettesPerDay * pricePerCigarette;
 
-    // Tính tổng số điếu đã hút thực tế trong tuần (dùng để tính totalCigarettesSmoked và moneySaved của dashboard)
     const totalCigarettesSmoked = getTotalCigarettesSmoked(weeklyProgress);
 
-    // Tính tổng số điếu lẽ ra sẽ hút nếu không bỏ (tổng số ngày * số điếu/ngày)
-    // daysWithoutSmoking đã là 1-indexed số ngày
-    const theoreticalCigarettesAvoided = daysWithoutSmoking * cigarettesPerDay; // Fix here
-    const theoreticalMoneySaved = theoreticalCigarettesAvoided * pricePerCigarette; // Fix here
+    const theoreticalCigarettesAvoided = daysWithoutSmoking * cigarettesPerDay;
+    const theoreticalMoneySaved = theoreticalCigarettesAvoided * pricePerCigarette;
 
-    // Lấy thông tin giai đoạn và nhiệm vụ
-    const { currentPhase, phaseSavedMoney } = getPhaseInfo(daysWithoutSmoking, plan.startDate, dailyCostOfSmoking);
-    console.log("Current Phase Info (from getPhaseInfo):", currentPhase); // LOG 5: Thông tin giai đoạn hiện tại
-
+    // Sử dụng quitDateStr cho mọi tính toán phase
+    const { currentPhase, phaseSavedMoney } = getPhaseInfo(daysWithoutSmoking, quitDateStr, dailyCostOfSmoking);
 
     setStats({
-      quitDate: quitDate.toISOString().slice(0, 10),
-      daysWithoutSmoking: daysWithoutSmoking, // Hiển thị số ngày hiện tại
-      moneySaved: theoreticalMoneySaved, // Số tiền tiết kiệm theo lý thuyết
-      cigarettesNotSmoked: theoreticalCigarettesAvoided, // Số điếu tránh được theo lý thuyết
+      quitDate: quitDateStr,
+      daysWithoutSmoking: daysWithoutSmoking,
+      moneySaved: theoreticalMoneySaved,
+      cigarettesNotSmoked: theoreticalCigarettesAvoided,
       healthImprovements: [
         { milestone: "20 phút", description: "Nhịp tim và huyết áp trở về bình thường", achieved: daysWithoutSmoking >= 1 },
         { milestone: "12 giờ", description: "Nồng độ CO trong máu giảm về mức bình thường", achieved: daysWithoutSmoking >= 1 },
-        { milestone: "2 tuần", description: "Tuần hoàn máu cải thiện và phổi hoạt động tốt hơn", achieved: daysWithoutSmoking >= 14 }, // Fix: >= 14
-        { milestone: "1 tháng", description: "Cơn ho và khó thở giảm đáng kể", achieved: daysWithoutSmoking >= 30 }, // Fix: >= 30
-        { milestone: "1 năm", description: "Nguy cơ bệnh tim giảm 50%", achieved: daysWithoutSmoking >= 365 }, // Fix: >= 365
-        { milestone: "5 năm", description: "Nguy cơ đột quỵ giảm về mức như người không hút thuốc", achieved: daysWithoutSmoking >= 1825 } // Fix: >= 1825
+        { milestone: "2 tuần", description: "Tuần hoàn máu cải thiện và phổi hoạt động tốt hơn", achieved: daysWithoutSmoking >= 14 },
+        { milestone: "1 tháng", description: "Cơn ho và khó thở giảm đáng kể", achieved: daysWithoutSmoking >= 30 },
+        { milestone: "1 năm", description: "Nguy cơ bệnh tim giảm 50%", achieved: daysWithoutSmoking >= 365 },
+        { milestone: "5 năm", description: "Nguy cơ đột quỵ giảm về mức như người không hút thuốc", achieved: daysWithoutSmoking >= 1825 }
       ],
       weeklyProgress: weeklyProgress,
       recentAchievements: plan.recentAchievements || [],
       todayStatus,
-      currentPhaseInfo: currentPhase, // Thêm thông tin giai đoạn vào stats
-      phaseSavedMoney: phaseSavedMoney // Tiền tiết kiệm ước tính theo giai đoạn
+      currentPhaseInfo: currentPhase,
+      phaseSavedMoney: phaseSavedMoney
     });
     setLoading(false);
   }, [isAuthenticated, navigate]);
 
-  // Lưu tiến trình hôm nay vào localStorage và cập nhật state
   const handleSaveProgress = () => {
     const planStr = localStorage.getItem("quitPlan");
     let plan = planStr ? JSON.parse(planStr) : {};
@@ -352,6 +321,15 @@ const Dashboard = () => {
     }).format(amount);
   };
 
+  // --- Logic hiển thị ngày của nhiệm vụ trong giai đoạn ---
+  const getTaskDisplayDate = (quitDateStr, phaseStartOffset, taskIndex) => {
+    const startDate = new Date(quitDateStr);
+    startDate.setHours(0, 0, 0, 0);
+    const taskDate = new Date(startDate);
+    taskDate.setDate(startDate.getDate() + phaseStartOffset + taskIndex);
+    return taskDate.toLocaleDateString('vi-VN');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
@@ -372,17 +350,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
-  // --- Logic hiển thị ngày của nhiệm vụ trong giai đoạn ---
-  const getTaskDisplayDate = (quitDateStr, phaseStartOffset, taskIndex) => {
-    const startDate = new Date(quitDateStr);
-    startDate.setHours(0, 0, 0, 0);
-    const taskDayAbsolute = phaseStartOffset + taskIndex;
-    const taskDate = new Date(startDate);
-    taskDate.setDate(startDate.getDate() + taskDayAbsolute);
-    return taskDate.toLocaleDateString('vi-VN');
-  };
-  // --- Hết Logic hiển thị ngày của nhiệm vụ ---
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
@@ -437,29 +404,28 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* NEW: Lộ trình Cai Nghiện của Bạn (Đã di chuyển ra ngoài grid để chiếm full width) */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8"> {/* Thêm mb-8 để tạo khoảng cách với phần dưới */}
+        {/* Lộ trình Cai Nghiện của Bạn */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">🌱 Lộ trình Cai Nghiện của Bạn</h2>
           {stats.currentPhaseInfo && stats.currentPhaseInfo.isCompleted ? (
-              <div className={`p-4 rounded-lg border-l-4 bg-green-100 border-green-600`}>
-                  <h3 className="text-xl font-bold text-green-800 mb-2">
-                      {stats.currentPhaseInfo.name}
-                  </h3>
-                  <p className="text-gray-700 mb-1">
-                      Xin chúc mừng! Bạn đã hoàn thành toàn bộ lộ trình cai nghiện!
-                  </p>
-                  <p className="text-gray-700 mb-1">
-                      Tổng số ngày không hút thuốc: <span className="font-semibold">{stats.currentPhaseInfo.totalDaysCompleted} ngày</span>
-                  </p>
-                   <p className="text-gray-700">
-                      Tổng số tiền tiết kiệm được: <span className="font-semibold">{formatCurrency(stats.phaseSavedMoney)}</span>
-                  </p>
-                   <p className="text-green-700 font-bold mt-2">
-                      Bạn đã chiến thắng! Hãy duy trì lối sống này!
-                  </p>
-              </div>
+            <div className={`p-4 rounded-lg border-l-4 bg-green-100 border-green-600`}>
+              <h3 className="text-xl font-bold text-green-800 mb-2">
+                {stats.currentPhaseInfo.name}
+              </h3>
+              <p className="text-gray-700 mb-1">
+                Xin chúc mừng! Bạn đã hoàn thành toàn bộ lộ trình cai nghiện!
+              </p>
+              <p className="text-gray-700 mb-1">
+                Tổng số ngày không hút thuốc: <span className="font-semibold">{stats.currentPhaseInfo.totalDaysCompleted} ngày</span>
+              </p>
+              <p className="text-gray-700">
+                Tổng số tiền tiết kiệm được: <span className="font-semibold">{formatCurrency(stats.phaseSavedMoney)}</span>
+              </p>
+              <p className="text-green-700 font-bold mt-2">
+                Bạn đã chiến thắng! Hãy duy trì lối sống này!
+              </p>
+            </div>
           ) : (
-            // Thay đổi ở đây: flex container với overflow-x-auto và không giới hạn chiều rộng mỗi item ban đầu
             <div className="flex overflow-x-auto pb-4 space-x-6 scrollbar-hide">
               {phases.map((phase, phaseIndex) => {
                 const isCurrentPhase = stats.currentPhaseInfo && phase.name === stats.currentPhaseInfo.name;
@@ -469,13 +435,12 @@ const Dashboard = () => {
                 phaseEndDate.setDate(phaseEndDate.getDate() + phase.startDayOffset + phase.duration - 1);
 
                 return (
-                  // Mỗi giai đoạn là một thẻ với chiều rộng tự động, nhưng có minWidth
                   <div
                     key={phaseIndex}
                     className={`flex-none bg-white rounded-lg shadow-lg border p-5 flex flex-col justify-between text-center transition-all duration-300 transform
                       ${isCurrentPhase ? 'bg-blue-50 border-blue-500 shadow-xl scale-105 ring-4 ring-blue-200' : 'bg-gray-50 border-gray-300 hover:shadow-md hover:scale-102'}
                       hover:cursor-pointer`}
-                    style={{ minWidth: '320px' }} // Vẫn giữ minWidth để đảm bảo nội dung không bị quá hẹp
+                    style={{ minWidth: '320px' }}
                   >
                     <div className="text-5xl mb-3" role="img" aria-label={phase.name}>
                       {phase.icon}
@@ -495,20 +460,18 @@ const Dashboard = () => {
                     <h4 className="font-bold text-lg text-gray-800 mt-auto mb-2">Nhiệm vụ:</h4>
                     <ul className="list-disc pl-5 space-y-1 text-left text-sm">
                       {phase.tasks.map((task, taskIndex) => {
-                        // Calculate the absolute date for this specific task
-                        const taskAbsDate = new Date(new Date(stats.quitDate).setDate(new Date(stats.quitDate).getDate() + phase.startDayOffset + taskIndex));
-                        taskAbsDate.setHours(0,0,0,0); // Normalize to start of day
-
-                        // Normalize today's date for comparison
+                        // Clone ngày bắt đầu, cộng offset đúng cách
+                        const baseDate = new Date(stats.quitDate);
+                        baseDate.setHours(0,0,0,0);
+                        const taskAbsDate = new Date(baseDate);
+                        taskAbsDate.setDate(baseDate.getDate() + phase.startDayOffset + taskIndex);
                         const todayNormalized = new Date();
                         todayNormalized.setHours(0,0,0,0);
-
-                        // Check if this task's date is today
-                        const isTodayTask = taskAbsDate.toDateString() === todayNormalized.toDateString();
+                        const isTodayTask = isCurrentPhase && taskAbsDate.toDateString() === todayNormalized.toDateString();
 
                         return (
                           <li key={taskIndex} className={`text-gray-600 ${
-                            isCurrentPhase && isTodayTask ? 'font-bold text-blue-700 flash-black' : ''
+                            isTodayTask ? 'font-bold text-blue-700 flash-black' : ''
                           }`}>
                             Ngày {getTaskDisplayDate(stats.quitDate, phase.startDayOffset, taskIndex)}: {task}
                           </li>
@@ -521,7 +484,6 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content (Health Progress & Weekly Progress Table) */}
@@ -631,14 +593,13 @@ const Dashboard = () => {
                   <div className="flex items-center space-x-1">
                     {[...Array(6)].map((_, i) => (
                       <button
-                            key={i}
-                            type="button"
-                            className={`w-3 h-3 rounded-full ${
-                              i < stats.todayStatus.cravings ? 'bg-red-500' : 'bg-gray-200'
-                            }`}
-
-                          >
-                          </button>
+                        key={i}
+                        type="button"
+                        className={`w-3 h-3 rounded-full ${
+                          i < stats.todayStatus.cravings ? 'bg-red-500' : 'bg-gray-200'
+                        }`}
+                      >
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -704,8 +665,8 @@ const Dashboard = () => {
                     {/* Bắt đầu phần thay đổi cho "Mức thèm thuốc" */}
                     <div>
                       <label className="block text-gray-700 mb-1 font-medium">Mức thèm thuốc (0-5):</label>
-                      <div className="flex flex-wrap gap-x-2 gap-y-2"> {/* Thêm gap-x và gap-y để đảm bảo khoảng cách đều */}
-                        {[0, 1, 2, 3, 4, 5].map((value) => ( // Rõ ràng định nghĩa các giá trị từ 0 đến 5
+                      <div className="flex flex-wrap gap-x-2 gap-y-2">
+                        {[0, 1, 2, 3, 4, 5].map((value) => (
                           <button
                             key={value}
                             type="button"
