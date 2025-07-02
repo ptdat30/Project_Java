@@ -1,94 +1,44 @@
 package com.quitsmoking.services;
-
-import com.quitsmoking.dto.CommunityPostDto;
-import com.quitsmoking.model.CommunityComment;
 import com.quitsmoking.model.CommunityPost;
 import com.quitsmoking.model.User;
-import com.quitsmoking.reponsitories.CommunityCommentRepository;
 import com.quitsmoking.reponsitories.CommunityPostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Import Transactional
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
 @Service
 public class CommunityService {
     @Autowired
     private CommunityPostRepository communityPostRepository;
-    @Autowired
-    private CommunityCommentRepository communityCommentRepository;
-
-    public boolean createPost(CommunityPostDto postDto, User user) {
-        CommunityPost.PostType postType = postDto.getPostType();
-        try {
-            CommunityPost post = new CommunityPost();
-            post.setTitle(postDto.getTitle());
-            post.setContent(postDto.getContent());
-            post.setCreatedAt(LocalDateTime.now());
-            post.setPostType(postType);
-            post.setUser(user);
-            communityPostRepository.save(post);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+    public CommunityPost createPost(User user, String title, String content, 
+                                   CommunityPost.PostType postType, String achievementId) {
+        CommunityPost post = new CommunityPost(user, title, content, postType);
+        // Nếu có achievementId, set achievement (implement sau)
+        return communityPostRepository.save(post);
     }
-
-    // Đảm bảo rằng phương thức này chạy trong một giao dịch
-    @Transactional(readOnly = true)
-    public List<CommunityPostDto> getAllPostsAndUserDetails() {
-        List<CommunityPost> posts = communityPostRepository.findAll();
-
-        return posts.stream().map(post -> {
-            User user = post.getUser();
-            String userId = (user != null) ? user.getId() : null;
-            String username = (user != null) ? user.getUsername() : null;
-            String firstName = (user != null) ? user.getFirstName() : null;
-            String lastName = (user != null) ? user.getLastName() : null;
-            // Nếu bạn muốn hiển thị avatar, bạn cần thêm getAvatarUrl() vào lớp User.
-            // String avatarUrl = (user != null) ? user.getAvatarUrl() : null;
-
-            return new CommunityPostDto(
-                    post,
-                    userId,
-                    username,
-                    firstName,
-                    lastName,
-                    null // Truyền null cho avatarUrl nếu không có trong User model
-            );
-        }).collect(Collectors.toList());
+    public Page<CommunityPost> getAllPosts(Pageable pageable) {
+        return communityPostRepository.findAllByOrderByCreatedAtDesc(pageable);
     }
-
-    // Đảm bảo rằng phương thức này chạy trong một giao dịch
-    @Transactional(readOnly = true)
-    public Page<CommunityPostDto> getAllPosts(Pageable pageable) {
-        Page<CommunityPost> postsPage = communityPostRepository.findAll(pageable);
-        return postsPage.map(post -> {
-            User user = post.getUser();
-            String userId = (user != null) ? user.getId() : null;
-            String username = (user != null) ? user.getUsername() : null;
-            String firstName = (user != null) ? user.getFirstName() : null;
-            String lastName = (user != null) ? user.getLastName() : null;
-            // Nếu bạn muốn hiển thị avatar, bạn cần thêm getAvatarUrl() vào lớp User.
-            // String avatarUrl = (user != null) ? user.getAvatarUrl() : null;
-
-            return new CommunityPostDto(
-                    post,
-                    userId,
-                    username,
-                    firstName,
-                    lastName,
-                    null // Truyền null cho avatarUrl nếu không có trong User model
-            );
-        });
+    public Page<CommunityPost> getPostsByType(CommunityPost.PostType postType, Pageable pageable) {
+        return communityPostRepository.findByPostTypeOrderByCreatedAtDesc(postType, pageable);
     }
-
+    public List<CommunityPost> getUserPosts(User user) {
+        return communityPostRepository.findByUserOrderByCreatedAtDesc(user);
+    }
+    public List<CommunityPost> getFeaturedPosts() {
+        return communityPostRepository.findByIsFeaturedTrueOrderByCreatedAtDesc();
+    }
+    public Page<CommunityPost> searchPosts(String keyword, Pageable pageable) {
+        return communityPostRepository.searchPosts(keyword, pageable);
+    }
+    public Page<CommunityPost> getMostPopularPosts(Pageable pageable) {
+        return communityPostRepository.findMostPopularPosts(pageable);
+    }
+    public Optional<CommunityPost> getPostById(String postId) {
+        return communityPostRepository.findById(postId);
+    }
     public CommunityPost likePost(String postId) {
         Optional<CommunityPost> postOpt = communityPostRepository.findById(postId);
         if (postOpt.isPresent()) {
@@ -98,7 +48,6 @@ public class CommunityService {
         }
         throw new RuntimeException("Post not found");
     }
-
     public CommunityPost updatePost(String postId, String title, String content) {
         Optional<CommunityPost> postOpt = communityPostRepository.findById(postId);
         if (postOpt.isPresent()) {
@@ -109,11 +58,9 @@ public class CommunityService {
         }
         throw new RuntimeException("Post not found");
     }
-
     public void deletePost(String postId) {
         communityPostRepository.deleteById(postId);
     }
-
     public CommunityPost setFeatured(String postId, boolean featured) {
         Optional<CommunityPost> postOpt = communityPostRepository.findById(postId);
         if (postOpt.isPresent()) {
@@ -122,9 +69,5 @@ public class CommunityService {
             return communityPostRepository.save(post);
         }
         throw new RuntimeException("Post not found");
-    }
-
-    public List<CommunityComment> getAllComments(){
-        return communityCommentRepository.findAll();
     }
 }
