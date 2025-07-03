@@ -1,204 +1,227 @@
+// Community.jsx
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // Thêm useNavigate
 // import AuthService from "../../services/authService.js"; // Removed due to resolution error
-import { Link } from 'react-router-dom';
-
-const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const user = { firstName: "Mock", lastName: "Mock", username: "mockuser" };
-  return { isAuthenticated, loading, user };
-};
+// Thay thế mock useAuth bằng import từ AuthContext
+import { useAuth } from "../../context/AuthContext"; //
 
 
 const Community = () => {
-  const { isAuthenticated, user } = useAuth();
-  const [activeTab, setActiveTab] = useState('posts');
-  const [posts, setPosts] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [newPost, setNewPost] = useState('');
-  const [newTitle, setNewTitle] = useState('');
-  const [selectedPostType, setSelectedPostType] = useState('');
-  const [postTypes, setPostTypes] = useState([]);
-  // const Username = AuthService.getCurrentUser()?.username;
+  const navigate = useNavigate(); //
+  const { isAuthenticated, user, checkAuthSync, loading: authLoading } = useAuth(); // // Lấy thêm authLoading và checkAuthSync
+  const [activeTab, setActiveTab] = useState('posts'); //
+  const [posts, setPosts] = useState([]); //
+  const [leaderboard, setLeaderboard] = useState([]); //
+  const [newPost, setNewPost] = useState(''); //
+  const [newTitle, setNewTitle] = useState(''); //
+  const [selectedPostType, setSelectedPostType] = useState(''); //
+  const [postTypes, setPostTypes] = useState([]); //
 
-  // States cho loading/error của posts và leaderboard (mock data nên có thể giữ false)
-  const [loadingPosts, setLoadingPosts] = useState(false);
-  const [errorPosts, setErrorPosts] = useState(null);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
-  const [errorLeaderboard, setErrorLeaderboard] = useState(null);
+  const [loadingPosts, setLoadingPosts] = useState(false); //
+  const [errorPosts, setErrorPosts] = useState(null); //
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false); //
+  const [errorLeaderboard, setErrorLeaderboard] = useState(null); //
 
-  // Thêm states cho loading/error của postTypes
-  const [loadingPostTypes, setLoadingPostTypes] = useState(true); // Ban đầu là true vì sẽ fetch
-  const [errorPostTypes, setErrorPostTypes] = useState(null);
-  const [selectedFilter, setSelectedFilter] = useState('ALL');
+  const [loadingPostTypes, setLoadingPostTypes] = useState(true); //
+  const [errorPostTypes, setErrorPostTypes] = useState(null); //
+  const [selectedFilter, setSelectedFilter] = useState('ALL'); //
 
-  // useEffect để fetch post types và khởi tạo dữ liệu mock
+  // Thêm state mới để quản lý thông báo truy cập bị từ chối
+  const [accessDeniedForGuest, setAccessDeniedForGuest] = useState(false); //
+
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true; //
 
-    // Mock data for leaderboard
-    setLeaderboard([
-      { id: 1, name: "Nguyễn Văn An", days: 365, savings: 18250000, avatar: "/images/1.png", badge: "🥇" },
-      { id: 2, name: "Trần Thị Mai", days: 298, savings: 14900000, avatar: "/images/20.png", badge: "🥈" },
-      { id: 3, name: "Lê Hoàng Nam", days: 256, savings: 12800000, avatar: "/images/22.png", badge: "🥉" },
-      { id: 4, name: "Phạm Thị Lan", days: 189, savings: 9450000, avatar: "/images/hinh1.png", badge: "🏆" },
-      { id: 5, name: "Võ Minh Khoa", days: 156, savings: 7800000, avatar: "/images/hinh2.png", badge: "⭐" },
-      { id: 6, name: "Đặng Thị Hoa", days: 134, savings: 6700000, avatar: "/images/hinh3.png", badge: "💪" },
-      { id: 7, name: "Bùi Văn Đức", days: 112, savings: 5600000, avatar: "/images/hinh4.png", badge: "🌟" },
-      { id: 8, name: "Hoàng Thị Kim", days: 89, savings: 4450000, avatar: "/images/bvlq2.png", badge: "✨" }
-    ]);
+    setLeaderboard([ //
+      { id: 1, name: "Nguyễn Văn An", days: 365, savings: 18250000, avatar: "/images/1.png", badge: "🥇" }, //
+      { id: 2, name: "Trần Thị Mai", days: 298, savings: 14900000, avatar: "/images/20.png", badge: "🥈" }, //
+      { id: 3, name: "Lê Hoàng Nam", days: 256, savings: 12800000, avatar: "/images/22.png", badge: "🥉" }, //
+      { id: 4, name: "Phạm Thị Lan", days: 189, savings: 9450000, avatar: "/images/hinh1.png", badge: "🏆" }, //
+      { id: 5, name: "Võ Minh Khoa", days: 156, savings: 7800000, avatar: "/images/hinh2.png", badge: "⭐" }, //
+      { id: 6, name: "Đặng Thị Hoa", days: 134, savings: 6700000, avatar: "/images/hinh3.png", badge: "💪" }, //
+      { id: 7, name: "Bùi Văn Đức", days: 112, savings: 5600000, avatar: "/images/hinh4.png", badge: "🌟" }, //
+      { id: 8, name: "Hoàng Thị Kim", days: 89, savings: 4450000, avatar: "/images/bvlq2.png", badge: "✨" } //
+    ]); //
 
 
-    // Thay đổi logic fetchPostTypes
-    const initializePostTypes = () => {
-      // Dựa trên các button lọc có sẵn, đây là các PostType mà bạn có thể muốn hiển thị
-      const availablePostTypes = ['ACHIEVEMENT_SHARE', 'MOTIVATION', 'QUESTION', 'ADVICE'];
-      setPostTypes(availablePostTypes);
-      if (availablePostTypes.length > 0) {
-        setSelectedPostType(availablePostTypes[0]); // Đặt giá trị mặc định
-      }
-      setLoadingPostTypes(false);
-    };
+    const initializePostTypes = () => { //
+      const availablePostTypes = ['ACHIEVEMENT_SHARE', 'MOTIVATION', 'QUESTION', 'ADVICE']; //
+      setPostTypes(availablePostTypes); //
+      if (availablePostTypes.length > 0) { //
+        setSelectedPostType(availablePostTypes[0]); //
+      } //
+      setLoadingPostTypes(false); //
+    }; //
 
     const fetchPostData = async () => {
       try {
-        setLoadingPosts(true);
-        setErrorPosts(null);
+        setLoadingPosts(true); //
+        setErrorPosts(null); //
+        setAccessDeniedForGuest(false); // Reset trạng thái khi fetch lại
 
-        const token = localStorage.getItem('jwt_token');
-        const headers = {
-          'Content-Type': 'application/json',
-        };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
+        // Cần ensure user data is available before making requests,
+        // especially for role-based checks.
+        if (authLoading) return; // Wait until auth context is loaded
 
-        const response = await fetch('http://localhost:8080/api/community/posts', {
-          headers: headers,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`HTTP Error: ${response.status} - ${errorData.error || response.statusText}`);
-        }
-
-        // Check if the response has content before parsing as JSON
-        const text = await response.text(); // Read as text first
-        if (!text) {
-          throw new Error('Server returned an empty response.');
-        }
-
-        const jsonData = JSON.parse(text); // Parse as JSON only if content exists
-        console.log(jsonData);
-
-        const mappedJson = jsonData.content.map(post => ({
-          id: post.id,
-          commentsCount: post.commentsCount,
-          content: post.content,
-          createdAt: new Date(post.createdAt).toLocaleDateString(),
-          likesCount: post.likesCount,
-          postType: post.postType,
-          title: post.title,
-          pictureUrl: post.pictureUrl,
-          username: post.username,
-        }));
-
-        if (isMounted) {
-          setPosts(mappedJson);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setErrorPosts('Không thể tải bài viết: ' + error.message);
-          console.error('Error fetching posts:', error);
-        }
-      } finally {
-        if (isMounted) {
+        // Check if user is a GUEST or has no membership before making API call
+        if (user && user.role === 'GUEST' && user.membership?.id === 'FREE_TRIAL_PLAN') { // Assuming GUEST with FREE_TRIAL_PLAN is limited
+          // If user is a GUEST and has no active paid membership, deny access
+          setAccessDeniedForGuest(true);
           setLoadingPosts(false);
+          return; // Stop the fetch if access is clearly denied by client-side logic
         }
+
+        const token = localStorage.getItem('jwt_token'); //
+        const headers = { //
+          'Content-Type': 'application/json', //
+        }; //
+        if (token) { //
+          headers['Authorization'] = `Bearer ${token}`; //
+        } //
+
+        const response = await fetch('http://localhost:8080/api/community/posts', { //
+          headers: headers, //
+        }); //
+
+        if (response.status === 403) { // Xử lý lỗi 403 từ backend
+          if (isMounted) {
+            setAccessDeniedForGuest(true);
+            setErrorPosts('Bạn không có quyền truy cập chức năng này. Vui lòng nâng cấp gói thành viên.');
+          }
+          return; // Dừng xử lý tiếp
+        }
+
+        if (!response.ok) { //
+          const errorData = await response.json(); //
+          throw new Error(`HTTP Error: ${response.status} - ${errorData.error || response.statusText}`); //
+        } //
+
+        const text = await response.text(); //
+        if (!text) { //
+          throw new Error('Server returned an empty response.'); //
+        } //
+
+        const jsonData = JSON.parse(text); //
+        console.log(jsonData); //
+
+        const mappedJson = jsonData.content.map(post => ({ //
+          id: post.id, //
+          commentsCount: post.commentsCount, //
+          content: post.content, //
+          createdAt: new Date(post.createdAt).toLocaleDateString(), //
+          likesCount: post.likesCount, //
+          postType: post.postType, //
+          title: post.title, //
+          pictureUrl: post.pictureUrl, //
+          username: post.username, //
+        })); //
+
+        if (isMounted) { //
+          setPosts(mappedJson); //
+        } //
+      } catch (error) { //
+        if (isMounted) { //
+          setErrorPosts('Không thể tải bài viết: ' + error.message); //
+          console.error('Error fetching posts:', error); //
+        } //
+      } finally { //
+        if (isMounted) { //
+          setLoadingPosts(false); //
+        } //
       }
     };
 
-    fetchPostData().then(() => setLoadingPosts(false));
-    initializePostTypes(); // Gọi hàm khởi tạo loại bài viết thay vì fetch API
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const getFilteredPosts = () => {
-    if (selectedFilter === 'ALL') return posts;
-    return posts.filter(post => post.postType === selectedFilter);
-  };
-
-  const filterPosts = getFilteredPosts();
-
-  // Hàm format tiền tệ
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
-
-  // Hàm xử lý khi gửi bài viết mới
-  const handleSubmitPost = async () => {
-    if (!newPost.trim() || !selectedPostType || !newTitle.trim()) return;
-    const now = new Date();
-    try {
-      const token = localStorage.getItem('jwt_token'); // Lấy token từ localStorage
-      if (!token) {
-        throw new Error('User not authenticated');
-      }
-      const newPostData = {
-        content: newPost,
-        postType: selectedPostType,
-        title: newTitle,
-        // Bạn có thể không cần gửi createdAt từ frontend nếu backend tự tạo
-        // createdAt: `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
-      };
-      const response = await fetch('http://localhost:8080/api/community/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newPostData),
-      });
-
-      const responseData = await response.json(); // Server giờ trả về JSON
-
-      if (response.ok) {
-        console.log(responseData.message); // Truy cập thuộc tính 'message' từ JSON
-        // Tạo đối tượng bài viết mới với cấu trúc tương tự như khi fetch
-        // Đảm bảo các trường như 'id', 'commentsCount', 'likesCount', 'createdAt', 'username', 'pictureUrl'
-        // được cung cấp bởi server hoặc mock cho mục đích hiển thị ngay lập tức.
-        // Ở đây, tôi đang giả định server trả về đối tượng bài viết hoàn chỉnh.
-        const createdPost = {
-          id: responseData.id, // Giả sử server trả về id của bài viết mới
-          commentsCount: 0, // Mặc định là 0 khi mới tạo
-          content: newPost,
-          createdAt: new Date().toLocaleDateString(), // Ngày tạo hiện tại
-          likesCount: 0, // Mặc định là 0 khi mới tạo
-          postType: selectedPostType,
-          title: newTitle,
-          pictureUrl: user.pictureUrl || "/images/default-avatar.png", // Sử dụng avatar của user hoặc default
-          username: user.username, // Sử dụng username từ useAuth hook
-        };
-
-        setPosts(prevPosts => [createdPost, ...prevPosts]); // Thêm bài viết mới vào đầu danh sách
-        setNewPost('');
-        setNewTitle('');
-        setSelectedPostType(''); // Reset loại bài viết đã chọn sau khi đăng
+    // Chỉ fetch dữ liệu nếu AuthContext đã tải xong và người dùng không phải GUEST hoặc có gói trả phí
+    if (!authLoading) {
+      // Logic kiểm tra quyền truy cập ở đây trước khi gọi fetchPostData
+      // Nếu user.role là GUEST và user.membership không phải là gói trả phí, setAccessDeniedForGuest(true)
+      // Otherwise, call fetchPostData().
+      if (user && user.role === 'GUEST' && (!user.membership || user.membership.id === 'FREE_TRIAL_PLAN')) {
+        setAccessDeniedForGuest(true);
+        setLoadingPosts(false);
       } else {
-        // Log thông báo lỗi từ thuộc tính 'error' của JSON
-        console.error('Failed to create post:', responseData.error);
-        throw new Error('Failed to create post: ' + responseData.error);
+        fetchPostData();
       }
-    } catch (e) {
-      console.error("Error creating post", e);
     }
-  };
+
+    initializePostTypes(); //
+
+    return () => { //
+      isMounted = false; //
+    };
+  }, [user, authLoading]); // Thêm user và authLoading vào dependencies để useEffect chạy lại khi chúng thay đổi.
+
+  const getFilteredPosts = () => { //
+    if (selectedFilter === 'ALL') return posts; //
+    return posts.filter(post => post.postType === selectedFilter); //
+  }; //
+
+  const filterPosts = getFilteredPosts(); //
+
+  const formatCurrency = (amount) => { //
+    return new Intl.NumberFormat('vi-VN', { //
+      style: 'currency', //
+      currency: 'VND' //
+    }).format(amount); //
+  }; //
+
+  const handleSubmitPost = async () => { //
+    // Kiểm tra quyền ở đây trước khi gửi bài viết
+    if (!isAuthenticated || (user && user.role === 'GUEST' && (!user.membership || user.membership.id === 'FREE_TRIAL_PLAN'))) {
+      alert("Bạn không có quyền đăng bài. Vui lòng nâng cấp gói thành viên.");
+      navigate('/membership'); // Điều hướng đến trang gói thành viên
+      return;
+    }
+
+    if (!newPost.trim() || !selectedPostType || !newTitle.trim()) return; //
+    const now = new Date(); //
+    try { //
+      const token = localStorage.getItem('jwt_token'); //
+      if (!token) { //
+        throw new Error('User not authenticated'); //
+      } //
+      const newPostData = { //
+        content: newPost, //
+        postType: selectedPostType, //
+        title: newTitle, //
+      }; //
+      const response = await fetch('http://localhost:8080/api/community/posts', { //
+        method: 'POST', //
+        headers: { //
+          'Content-Type': 'application/json', //
+          'Authorization': `Bearer ${token}` //
+        }, //
+        body: JSON.stringify(newPostData), //
+      }); //
+
+      const responseData = await response.json(); //
+
+      if (response.ok) { //
+        console.log(responseData.message); //
+        const createdPost = { //
+          id: responseData.id, //
+          commentsCount: 0, //
+          content: newPost, //
+          createdAt: new Date().toLocaleDateString(), //
+          likesCount: 0, //
+          postType: selectedPostType, //
+          title: newTitle, //
+          pictureUrl: user.pictureUrl || "/images/default-avatar.png", //
+          username: user.username, //
+        }; //
+
+        setPosts(prevPosts => [createdPost, ...prevPosts]); //
+        setNewPost(''); //
+        setNewTitle(''); //
+        setSelectedPostType(''); //
+      } else { //
+        console.error('Failed to create post:', responseData.error); //
+        throw new Error('Failed to create post: ' + responseData.error); //
+      } //
+    } catch (e) { //
+      console.error("Error creating post", e); //
+    } //
+  }; //
 
   return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
@@ -244,7 +267,8 @@ const Community = () => {
                 {/* Main Content */}
                 <div className="lg:col-span-3 space-y-8">
                   {/* Create Post */}
-                  {isAuthenticated && (
+                  {/* Điều kiện hiển thị phần tạo bài viết */}
+                  {isAuthenticated && user && user.role !== 'GUEST' && (
                       <div className="bg-white rounded-xl shadow-lg p-6">
                         <h3 className="text-lg font-bold text-gray-800 mb-4">
                           ✍️ Chia sẻ với cộng đồng
@@ -261,15 +285,15 @@ const Community = () => {
                           {loadingPostTypes && <p className="text-gray-500">Đang tải loại bài viết...</p>}
                           {errorPostTypes && <p className="text-red-500">Lỗi tải loại bài viết.</p>}
                           {!loadingPostTypes && !errorPostTypes && postTypes.length > 0 && (
-                              <div className="flex flex-wrap gap-2"> {/* Changed from select to div with buttons */}
+                              <div className="flex flex-wrap gap-2">
                                 {postTypes.map(type => (
                                     <button
                                         key={type}
                                         onClick={() => setSelectedPostType(type)}
                                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                                             selectedPostType === type
-                                                ? 'bg-green-600 text-white' // Highlight selected
-                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200' // Default style
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                     >
                                       {type}
@@ -280,7 +304,7 @@ const Community = () => {
 
                           <button
                               onClick={handleSubmitPost}
-                              disabled={!newPost.trim() || !selectedPostType || !newTitle.trim()} // Disable if title is empty
+                              disabled={!newPost.trim() || !selectedPostType || !newTitle.trim()}
                               className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Đăng bài
@@ -289,73 +313,94 @@ const Community = () => {
                       </div>
                   )}
 
+                  {/* Hiển thị thông báo khi truy cập bị từ chối */}
+                  {accessDeniedForGuest && (
+                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center" role="alert">
+                        <strong className="font-bold">Truy cập bị từ chối!</strong>
+                        <span className="block sm:inline ml-2">Chức năng này không dành cho khách.</span>
+                        <p className="mt-2">Vui lòng nâng cấp gói thành viên để truy cập toàn bộ tính năng cộng đồng.</p>
+                        <button
+                            onClick={() => navigate('/membership')}
+                            className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition duration-300"
+                        >
+                          Nâng Cấp Ngay
+                        </button>
+                      </div>
+                  )}
+
+
                   {/* Phần lọc bài viết */}
-                  <div className="flex flex-wrap gap-2 my-4">
-                    <button
-                        onClick={() => setSelectedFilter('ALL')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            selectedFilter === 'ALL'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                      ALL
-                    </button>
-                    <button
-                        onClick={() => setSelectedFilter('ACHIEVEMENT_SHARE')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            selectedFilter === 'ACHIEVEMENT_SHARE'
-                                ? 'bg-yellow-500 text-white'
-                                : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                        }`}
-                    >
-                      ACHIEVEMENT_SHARE
-                    </button>
-                    <button
-                        onClick={() => setSelectedFilter('MOTIVATION')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            selectedFilter === 'MOTIVATION'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                        }`}
-                    >
-                      MOTIVATION
-                    </button>
-                    <button
-                        onClick={() => setSelectedFilter('QUESTION')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            selectedFilter === 'QUESTION'
-                                ? 'bg-purple-500 text-white'
-                                : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                        }`}
-                    >
-                      QUESTION
-                    </button>
-                    <button
-                        onClick={() => setSelectedFilter('ADVICE')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                            selectedFilter === 'ADVICE'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                    >
-                      ADVICE
-                    </button>
-                  </div>
+                  {/* Ẩn phần lọc nếu access bị từ chối */}
+                  {!accessDeniedForGuest && (
+                      <div className="flex flex-wrap gap-2 my-4">
+                        <button
+                            onClick={() => setSelectedFilter('ALL')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                selectedFilter === 'ALL'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          ALL
+                        </button>
+                        <button
+                            onClick={() => setSelectedFilter('ACHIEVEMENT_SHARE')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                selectedFilter === 'ACHIEVEMENT_SHARE'
+                                    ? 'bg-yellow-500 text-white'
+                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            }`}
+                        >
+                          ACHIEVEMENT_SHARE
+                        </button>
+                        <button
+                            onClick={() => setSelectedFilter('MOTIVATION')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                selectedFilter === 'MOTIVATION'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            }`}
+                        >
+                          MOTIVATION
+                        </button>
+                        <button
+                            onClick={() => setSelectedFilter('QUESTION')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                selectedFilter === 'QUESTION'
+                                    ? 'bg-purple-500 text-white'
+                                    : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                            }`}
+                        >
+                          QUESTION
+                        </button>
+                        <button
+                            onClick={() => setSelectedFilter('ADVICE')}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                selectedFilter === 'ADVICE'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                        >
+                          ADVICE
+                        </button>
+                      </div>
+                  )}
+
 
                   {/* Posts */}
                   <div className="space-y-6">
                     {loadingPosts && <div className="text-center text-gray-500">Đang tải bài viết...</div>}
                     {errorPosts && <div className="text-center text-red-500">{errorPosts}</div>}
-                    {!loadingPosts && !errorPosts && filterPosts.length === 0 && (
+                    {!loadingPosts && !errorPosts && filterPosts.length === 0 && !accessDeniedForGuest && (
                         <div className="text-center text-gray-500">Chưa có bài viết nào trong danh mục này.</div>
                     )}
-                    {!loadingPosts && !errorPosts && filterPosts.length > 0 && filterPosts.map(post => (
+                    {/* Chỉ hiển thị bài viết nếu không bị từ chối truy cập */}
+                    {!loadingPosts && !errorPosts && filterPosts.length > 0 && !accessDeniedForGuest && filterPosts.map(post => (
                         <div key={post.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition duration-300">
                           {/* Post Header */}
                           <div className="flex items-start space-x-4 mb-4">
                             <img
-                                src={post.pictureUrl || "/images/default-avatar.png"} // Fallback for pictureUrl
+                                src={post.pictureUrl || "/images/default-avatar.png"}
                                 alt={post.username}
                                 className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
                             />
@@ -534,7 +579,7 @@ const Community = () => {
                             </div>
                             <div className="ml-4 text-2xl">{member.badge}</div>
                           </div>
-                      ))}\
+                      ))}
                     </div>
                   </div>
                 </div>
