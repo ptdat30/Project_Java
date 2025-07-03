@@ -5,11 +5,11 @@
 @keyframes flash-black {
   0%, 100% {
     background-color: transparent; /* Hoặc màu nền gốc của list item */
-    color: green; /* Hoặc màu chữ gốc của list item */
+    color: green !important; /* Hoặc màu chữ gốc của list item */
   }
   50% {
     background-color: rgba(2, 12, 3, 0.1); /* Một chút đen nhạt */
-    color: green;
+    color: green !important;
   }
 }
 

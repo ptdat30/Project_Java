@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import apiService from "../../services/apiService";
 
 const daysOfWeek = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
@@ -24,6 +25,9 @@ const Dashboard = () => {
     moneySpentToday: ""
   });
   const [successMsg, setSuccessMsg] = useState("");
+
+  // --- State cho weeklyProgress ---
+  const [weeklyProgress, setWeeklyProgress] = useState([]);
 
   // Định nghĩa các giai đoạn
   const phases = [
@@ -57,7 +61,7 @@ const Dashboard = () => {
         "Khi căng thẳng → hít thở sâu 10 lần. Tránh cà phê, bia rượu.",
         "Tránh người hay hút thuốc. Không nhận thuốc khi được mời.",
         "Tự thưởng (một món nhỏ) vì đã không hút thuốc 5 ngày.",
-        "Đánh dấu “7 ngày sạch thuốc đầu tiên” – bạn đã thắng bước đầu."
+        "Đánh dấu '7 ngày sạch thuốc đầu tiên' – bạn đã thắng bước đầu."
       ],
       icon: "🚀"
     },
@@ -71,7 +75,7 @@ const Dashboard = () => {
         "Tập thể dục nhẹ 15–30 phút để tăng sản xuất endorphin.",
         "Tạo chuỗi thói quen buổi sáng – không có thuốc.",
         "Tránh các cuộc nhậu hoặc bạn bè hút thuốc.",
-        "Viết nhật ký: “Hôm nay tôi đã vượt qua cơn thèm thuốc như thế nào”.",
+        'Viết nhật ký: "Hôm nay tôi đã vượt qua cơn thèm thuốc như thế nào".',
         "Học cách từ chối khi người khác mời thuốc.",
         "Dùng số tiền tiết kiệm được mua quà cho người thân.",
         "Tưởng tượng lá phổi bạn đang tự làm sạch – giúp duy trì quyết tâm.",
@@ -110,16 +114,16 @@ const Dashboard = () => {
       achievement: "Trở thành một người không hút thuốc vững vàng.",
       tasks: [
         "Học lại các kỹ năng từ chối – luyện nói trước gương.",
-        "Tự hỏi: “Nếu hút lại 1 điếu, tôi sẽ mất những gì?”",
+        'Tự hỏi: "Nếu hút lại 1 điếu, tôi sẽ mất những gì?"',
         "Viết ra kế hoạch 6 tháng tiếp theo để giữ sạch thuốc.",
         "Tham gia nhóm hoặc diễn đàn bỏ thuốc để duy trì động lực.",
         "Đặt mục tiêu thể chất mới: chạy bộ, đạp xe, gym…",
         "Nếu buồn, stress → gọi người thân thay vì nghĩ đến hút thuốc.",
-        "Cập nhật lại nhật ký “người không hút thuốc” mỗi tuần 1 lần.",
+        'Cập nhật lại nhật ký "người không hút thuốc" mỗi tuần 1 lần.',
         "Ghi nhận một thành tựu trong công việc hay học tập sau khi bỏ thuốc.",
         "Làm điều gì đó cho người thân – như lời cảm ơn đã ủng hộ.",
         "Ôn lại toàn bộ quá trình – ước tính bạn đã tiết kiệm bao nhiêu?",
-        "Viết một bức thư gửi cho “bạn của 6 tháng sau” – giữ vững cam kết."
+        'Viết một bức thư gửi cho "bạn của 6 tháng sau" – giữ vững cam kết.'
       ],
       icon: "🏆"
     }
@@ -168,7 +172,6 @@ const Dashboard = () => {
     return total;
   };
 
-  // Hàm tính toán và trả về thông tin giai đoạn hiện tại và nhiệm vụ
   const getPhaseInfo = (daysWithoutSmoking, quitDateStr, dailyCost) => {
     const startDate = new Date(quitDateStr);
     startDate.setHours(0, 0, 0, 0);
@@ -198,7 +201,6 @@ const Dashboard = () => {
       cumulativeSavedMoney += phase.duration * dailyCost;
     }
 
-    // Nếu đã hoàn thành tất cả các giai đoạn
     if (!currentPhase && daysWithoutSmoking > (phases[phases.length - 1].startDayOffset + phases[phases.length - 1].duration - 1)) {
       currentPhase = {
         name: "Bạn đã hoàn thành Lộ trình Cai Nghiện!",
@@ -221,96 +223,95 @@ const Dashboard = () => {
     return { currentPhase, phaseSavedMoney };
   };
 
+  // Lấy tiến trình tuần từ backend
+  const fetchWeeklyProgress = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getWeeklyProgress();
+      setWeeklyProgress(data);
+    } catch (e) {
+      setWeeklyProgress([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lấy tiến trình tuần khi vào dashboard
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
+    fetchWeeklyProgress();
+    // eslint-disable-next-line
+  }, [isAuthenticated]);
 
-    const planStr = localStorage.getItem("quitPlan");
-    if (!planStr) {
-      setStats(null);
-      setLoading(false);
-      return;
-    }
-    const plan = JSON.parse(planStr);
-
-    // Lấy ngày bắt đầu thực tế từ realStartDate (chuẩn nhất)
-    let quitDate = new Date(plan.realStartDate);
-    quitDate.setHours(0, 0, 0, 0);
-    const quitDateStr = quitDate.toISOString().slice(0, 10);
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    // Ngày đầu tiên là ngày bạn chọn
-    let daysWithoutSmoking = Math.max(1, Math.floor((now - quitDate) / (1000 * 60 * 60 * 24)) + 1);
-
-    let weeklyProgress = getInitialWeeklyProgress();
-    let todayStatus = plan.todayStatus || {
-      mood: 7,
-      cravings: 0,
-      exercise: false,
-      water: 0,
-      sleep: 7,
-      note: "",
-      smokedToday: false,
-      cigarettesToday: "",
-      moneySpentToday: ""
+  // Khi weeklyProgress thay đổi, tính lại stats
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchStats = async () => {
+      try {
+        const plans = await apiService.getQuitPlans();
+        if (plans && plans.length > 0) {
+          const plan = plans[0];
+          // Tính số ngày không hút thuốc
+          const quitDate = new Date(plan.targetQuitDate);
+          const today = new Date();
+          const daysWithoutSmoking = Math.max(0, Math.floor((today - quitDate) / (1000 * 60 * 60 * 24)));
+          // Tính tiền tiết kiệm (giả sử mỗi ngày không hút 1 gói)
+          const moneySaved = daysWithoutSmoking * (plan.pricePerPack || 0);
+          // Tính số điếu không hút (giả sử 1 gói = 20 điếu)
+          const cigarettesNotSmoked = daysWithoutSmoking * 20;
+          // Lấy trạng thái hôm nay từ weeklyProgress (nếu có)
+          const todayIdx = (new Date().getDay() + 6) % 7; // 0: T2, ..., 6: CN
+          const todayStatus = weeklyProgress[todayIdx] || {
+            mood: 7,
+            cravings: 0,
+            exercise: false,
+            water: 0,
+            sleep: 7,
+            note: "",
+            smokedToday: false,
+            cigarettesToday: "",
+            moneySpentToday: ""
+          };
+          setStats({
+            daysWithoutSmoking,
+            moneySaved,
+            cigarettesNotSmoked,
+            todayStatus,
+            healthImprovements: [],
+            recentAchievements: [],
+            quitDate: plan.targetQuitDate,
+            currentPhaseInfo: null,
+            phaseSavedMoney: moneySaved,
+          });
+        } else {
+          setStats(null);
+        }
+      } catch (e) {
+        setStats(null);
+      }
     };
+    fetchStats();
+    // eslint-disable-next-line
+  }, [weeklyProgress, isAuthenticated]);
 
-    const cigarettesPerDay = parseInt(plan.cigarettesPerDay) || 0;
-    const pricePerPack = parseFloat(plan.pricePerPack) || 0;
-    const pricePerCigarette = pricePerPack / 20;
-    const dailyCostOfSmoking = cigarettesPerDay * pricePerCigarette;
-
-    const totalCigarettesSmoked = getTotalCigarettesSmoked(weeklyProgress);
-
-    const theoreticalCigarettesAvoided = daysWithoutSmoking * cigarettesPerDay;
-    const theoreticalMoneySaved = theoreticalCigarettesAvoided * pricePerCigarette;
-
-    // Sử dụng quitDateStr cho mọi tính toán phase
-    const { currentPhase, phaseSavedMoney } = getPhaseInfo(daysWithoutSmoking, quitDateStr, dailyCostOfSmoking);
-
-    setStats({
-      quitDate: quitDateStr,
-      daysWithoutSmoking: daysWithoutSmoking,
-      moneySaved: theoreticalMoneySaved,
-      cigarettesNotSmoked: theoreticalCigarettesAvoided,
-      healthImprovements: [
-        { milestone: "20 phút", description: "Nhịp tim và huyết áp trở về bình thường", achieved: daysWithoutSmoking >= 1 },
-        { milestone: "12 giờ", description: "Nồng độ CO trong máu giảm về mức bình thường", achieved: daysWithoutSmoking >= 1 },
-        { milestone: "2 tuần", description: "Tuần hoàn máu cải thiện và phổi hoạt động tốt hơn", achieved: daysWithoutSmoking >= 14 },
-        { milestone: "1 tháng", description: "Cơn ho và khó thở giảm đáng kể", achieved: daysWithoutSmoking >= 30 },
-        { milestone: "1 năm", description: "Nguy cơ bệnh tim giảm 50%", achieved: daysWithoutSmoking >= 365 },
-        { milestone: "5 năm", description: "Nguy cơ đột quỵ giảm về mức như người không hút thuốc", achieved: daysWithoutSmoking >= 1825 }
-      ],
-      weeklyProgress: weeklyProgress,
-      recentAchievements: plan.recentAchievements || [],
-      todayStatus,
-      currentPhaseInfo: currentPhase,
-      phaseSavedMoney: phaseSavedMoney
-    });
-    setLoading(false);
-  }, [isAuthenticated, navigate]);
-
-  const handleSaveProgress = () => {
-    const planStr = localStorage.getItem("quitPlan");
-    let plan = planStr ? JSON.parse(planStr) : {};
-    let weeklyProgress = getInitialWeeklyProgress();
-    const idx = getTodayIndex();
-    weeklyProgress[idx] = { ...progressInput, day: daysOfWeek[idx] };
-    plan.weeklyProgress = weeklyProgress;
-    plan.todayStatus = progressInput;
-    localStorage.setItem("quitPlan", JSON.stringify(plan));
-    setStats((prev) => ({
-      ...prev,
-      weeklyProgress: [...weeklyProgress],
-      todayStatus: { ...progressInput }
-    }));
-    setShowModal(false);
-    setSuccessMsg("Đã cập nhật tiến trình hôm nay!");
-    setTimeout(() => setSuccessMsg(""), 2000);
+  // Lưu tiến trình ngày
+  const handleSaveProgress = async () => {
+    try {
+      await apiService.saveDailyProgress({
+        ...progressInput,
+        userId: user.id,
+        date: new Date().toISOString().slice(0, 10)
+      });
+      setShowModal(false);
+      setSuccessMsg("Đã cập nhật tiến trình hôm nay!");
+      fetchWeeklyProgress(); // Reload lại bảng tuần
+      setTimeout(() => setSuccessMsg(""), 2000);
+    } catch (e) {
+      setSuccessMsg("Có lỗi khi lưu tiến trình!");
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -460,20 +461,29 @@ const Dashboard = () => {
                     <h4 className="font-bold text-lg text-gray-800 mt-auto mb-2">Nhiệm vụ:</h4>
                     <ul className="list-disc pl-5 space-y-1 text-left text-sm">
                       {phase.tasks.map((task, taskIndex) => {
-                        // Clone ngày bắt đầu, cộng offset đúng cách
                         const baseDate = new Date(stats.quitDate);
                         baseDate.setHours(0,0,0,0);
                         const taskAbsDate = new Date(baseDate);
                         taskAbsDate.setDate(baseDate.getDate() + phase.startDayOffset + taskIndex);
                         const todayNormalized = new Date();
                         todayNormalized.setHours(0,0,0,0);
-                        const isTodayTask = isCurrentPhase && taskAbsDate.toDateString() === todayNormalized.toDateString();
+                        const isTodayTask = (
+                          taskAbsDate.getFullYear() === todayNormalized.getFullYear() &&
+                          taskAbsDate.getMonth() === todayNormalized.getMonth() &&
+                          taskAbsDate.getDate() === todayNormalized.getDate()
+                        );
 
                         return (
-                          <li key={taskIndex} className={`text-gray-600 ${
-                            isTodayTask ? 'font-bold text-blue-700 flash-black' : ''
-                          }`}>
-                            Ngày {getTaskDisplayDate(stats.quitDate, phase.startDayOffset, taskIndex)}: {task}
+                          <li key={taskIndex} className={isTodayTask ? '' : 'text-gray-600'}>
+                            {isTodayTask ? (
+                              <span className="flash-black font-bold text-green-600 bg-green-50 inline-block">
+                                Ngày {getTaskDisplayDate(stats.quitDate, phase.startDayOffset, taskIndex)}: {task}
+                              </span>
+                            ) : (
+                              <>
+                                Ngày {getTaskDisplayDate(stats.quitDate, phase.startDayOffset, taskIndex)}: {task}
+                              </>
+                            )}
                           </li>
                         );
                       })}
@@ -530,7 +540,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.weeklyProgress.map((day, idx) => (
+                    {weeklyProgress.map((day, idx) => (
                       <tr key={idx} className={getTodayIndex() === idx ? "bg-green-50 font-bold" : ""}>
                         <td className="py-2 px-2 border-b">{daysOfWeek[idx]}</td>
                         {day ? (
@@ -662,7 +672,6 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </div>
-                    {/* Bắt đầu phần thay đổi cho "Mức thèm thuốc" */}
                     <div>
                       <label className="block text-gray-700 mb-1 font-medium">Mức thèm thuốc (0-5):</label>
                       <div className="flex flex-wrap gap-x-2 gap-y-2">
@@ -679,190 +688,60 @@ const Dashboard = () => {
                         ))}
                       </div>
                     </div>
-                    {/* Kết thúc phần thay đổi cho "Mức thèm thuốc" */}
                     <div>
                       <label className="block text-gray-700 mb-1 font-medium">Tập thể dục:</label>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center space-x-2">
                         <button
                           type="button"
-                          className={`px-4 py-2 rounded-lg font-medium border-2 ${progressInput.exercise ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                          onClick={() => setProgressInput({ ...progressInput, exercise: true })}
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.exercise ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                          onClick={() => setProgressInput({ ...progressInput, exercise: !progressInput.exercise })}
                         >
-                          Đã tập
-                        </button>
-                        <button
-                          type="button"
-                          className={`px-4 py-2 rounded-lg font-medium border-2 ${!progressInput.exercise ? "bg-red-400 text-white border-red-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                          onClick={() => setProgressInput({ ...progressInput, exercise: false })}
-                        >
-                          Chưa
+                          {progressInput.exercise ? "✅" : "❌"}
                         </button>
                       </div>
                     </div>
                     <div>
                       <label className="block text-gray-700 mb-1 font-medium">Nước uống (ly):</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={8}
-                        value={progressInput.water}
-                        onChange={e => setProgressInput({ ...progressInput, water: Number(e.target.value) })}
-                        className="w-full border rounded px-2 py-1"
-                      />
-                    </div>
-                    {/* Bổ sung hai trường mới */}
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Hôm nay có hút thuốc không?</label>
-                      <div className="flex items-center gap-6">
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            name="smokedToday"
-                            checked={progressInput.smokedToday === true}
-                            onChange={() => setProgressInput({ ...progressInput, smokedToday: true })}
-                            className="mr-2"
-                          />
-                          Có
-                        </label>
-                        <label className="flex items-center">
-                          <input
-                            type="radio"
-                            name="smokedToday"
-                            checked={progressInput.smokedToday === false}
-                            onChange={() => setProgressInput({ ...progressInput, smokedToday: false, cigarettesToday: "", moneySpentToday: "" })}
-                            className="mr-2"
-                          />
-                          Không
-                        </label>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.water === 8 ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                          onClick={() => setProgressInput({ ...progressInput, water: progressInput.water === 8 ? 0 : 8 })}
+                        >
+                          {progressInput.water === 8 ? "8" : "0"}
+                        </button>
                       </div>
                     </div>
-                    {progressInput.smokedToday === true && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-gray-700 mb-1 font-medium">Số điếu đã hút hôm nay:</label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={progressInput.cigarettesToday}
-                            onChange={e => setProgressInput({ ...progressInput, cigarettesToday: e.target.value.replace(/\D/, "") })}
-                            className="w-full border rounded px-2 py-1"
-                            placeholder="Nhập số điếu"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-gray-700 mb-1 font-medium">Lượng tiền mua số thuốc đó (VNĐ):</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={progressInput.moneySpentToday}
-                            onChange={e => setProgressInput({ ...progressInput, moneySpentToday: e.target.value })}
-                            className="w-full border rounded px-2 py-1"
-                            placeholder="Nhập số tiền"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {/* Hết bổ sung */}
                     <div>
-                      <label className="block text-gray-700 mb-1 font-medium flex items-center">
-                        Chất lượng ngủ (1-10):
-                        <span className="relative group ml-2 cursor-pointer">
-                          <i className="fas fa-question-circle text-blue-400"></i>
-                          <span className="absolute left-6 top-1/2 -translate-y-1/2 w-64 bg-white text-gray-700 text-xs rounded shadow-lg px-3 py-2 z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
-                            Đánh giá chất lượng giấc ngủ của bạn hôm nay từ 1 (rất tệ) đến 10 (rất tốt). Hãy nhập số phù hợp với cảm nhận của bạn.
-                          </span>
-                        </span>
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={progressInput.sleep}
-                        onChange={e => setProgressInput({ ...progressInput, sleep: Number(e.target.value) })}
-                        className="w-full border rounded px-2 py-1"
-                      />
+                      <label className="block text-gray-700 mb-1 font-medium">Chất lượng ngủ:</label>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.sleep === 10 ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                          onClick={() => setProgressInput({ ...progressInput, sleep: progressInput.sleep === 10 ? 0 : 10 })}
+                        >
+                          {progressInput.sleep === 10 ? "10" : "0"}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-gray-700 mb-1 font-medium">Ghi chú:</label>
                       <textarea
-                        rows={2}
                         value={progressInput.note}
-                        onChange={e => setProgressInput({ ...progressInput, note: e.target.value })}
-                        className="w-full border rounded px-2 py-1 resize-none"
-                        placeholder="Bạn muốn ghi chú gì cho hôm nay?"
-                      />
+                        onChange={(e) => setProgressInput({ ...progressInput, note: e.target.value })}
+                        className="w-full h-20 p-2 border border-gray-300 rounded-md"
+                      ></textarea>
                     </div>
                   </div>
-                  <div className="flex justify-end space-x-2 mt-6">
-                    <button
-                      onClick={() => setShowModal(false)}
-                      className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-                    >
-                      Hủy
-                    </button>
-                    <button
-                      onClick={handleSaveProgress}
-                      className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 font-semibold"
-                    >
-                      Lưu tiến trình
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleSaveProgress}
+                    className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-300 text-center block"
+                  >
+                    Lưu tiến trình
+                  </button>
                 </div>
               </div>
             )}
-
-            {/* Recent Achievements */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">🏆 Thành tích gần đây</h3>
-              <div className="space-y-3">
-                {stats.recentAchievements.map((achievement, index) => (
-                  <div key={index} className={`p-3 rounded-lg ${achievement.color}`}>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{achievement.icon}</span>
-                      <div>
-                        <h4 className="font-semibold">{achievement.title}</h4>
-                        <p className="text-sm opacity-75">{achievement.date}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Link
-                to="/achievements"
-                className="w-full mt-4 bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 transition duration-300 text-center block"
-              >
-                Xem tất cả
-              </Link>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">⚡ Hành động nhanh</h3>
-              <div className="space-y-3">
-                <Link
-                  to="/plan"
-                  className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition duration-300"
-                >
-                  <span className="text-2xl mr-3">📋</span>
-                  <span className="font-medium text-blue-700">Xem kế hoạch</span>
-                </Link>
-                <Link
-                  to="/community"
-                  className="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition duration-300"
-                >
-                  <span className="text-2xl mr-3">👥</span>
-                  <span className="font-medium text-green-700">Cộng đồng</span>
-                </Link>
-                <Link
-                  to="/coach-consultation"
-                  className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition duration-300"
-                >
-                  <span className="text-2xl mr-3">👨‍⚕️</span>
-                  <span className="font-medium text-purple-700">Tư vấn coach</span>
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
       </div>

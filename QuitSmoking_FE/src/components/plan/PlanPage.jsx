@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import apiService from "../../services/apiService";
 
 const PlanPage = () => {
   const navigate = useNavigate(); // Khởi tạo useNavigate
@@ -15,6 +16,7 @@ const PlanPage = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Define the full list of reasons to quit with their titles and images
+  // Dữ liệu này phải được định nghĩa ở đây để có thể truy cập trong handleStartPlan
   const allReasons = [
     { title: "Cải thiện sức khoẻ", image: "/images/suckhoe.png" },
     { title: "Cho gia đình, bạn bè", image: "/images/giadinh.png" },
@@ -66,7 +68,7 @@ const PlanPage = () => {
 
   // Handler for price per pack input
   const handlePriceChange = (e) => {
-    let value = e.target.value.replace(/[^0-9.]/g, ""); // Allow digits and a single dot
+    const value = e.target.value.replace(/[^0-9.]/g, ""); // Allow digits and a single dot
     // Ensure only one decimal point
     if (value.split('.').length > 2) {
       return;
@@ -84,8 +86,8 @@ const PlanPage = () => {
   };
 
   // Handler for selecting/deselecting craving triggers
-  const handleTriggerSelect = (index, type) => {
-    const triggerId = `${type}-${index}`;
+  const handleTriggerSelect = (trigger, type) => {
+    const triggerId = `${type}-${trigger}`;
     if (selectedTriggers.includes(triggerId)) {
       setSelectedTriggers(selectedTriggers.filter((id) => id !== triggerId));
     } else {
@@ -117,15 +119,16 @@ const PlanPage = () => {
       ? reasonTitles.join(', ') // Nối các tên lý do
       : "Không có lý do cụ thể"; // Giá trị mặc định nếu không chọn gì
 
+
     // --- Xử lý selectedTriggers để tạo JSON string cho 'selectedTriggersJson' ---
     const actualSelectedTriggers = selectedTriggers.map(triggerId => {
-      const [type, index] = triggerId.split('-');
-      if (type === 'situation') {
-        return allSituationTriggers[parseInt(index)];
-      } else if (type === 'emotion') {
-        return allEmotionTriggers[parseInt(index)];
-      }
-      return '';
+        const [type, index] = triggerId.split('-');
+        if (type === 'situation') {
+            return allSituationTriggers[parseInt(index)];
+        } else if (type === 'emotion') {
+            return allEmotionTriggers[parseInt(index)];
+        }
+        return '';
     }).filter(Boolean); // Filter out any empty strings if an invalid type appears
     const selectedTriggersJsonString = JSON.stringify(actualSelectedTriggers);
 
@@ -134,7 +137,7 @@ const PlanPage = () => {
       startDate: actualStartDate,
       cigarettesPerDay: parseInt(cigarettesPerDay, 10),
       pricePerPack: parseFloat(pricePerPack),
-
+      
       reason: reasonStringForBackend, // Gán chuỗi tên lý do đã xử lý
 
       selectedReasonsJson: selectedReasonsJsonString, // Gán chuỗi JSON của mảng index
@@ -148,51 +151,9 @@ const PlanPage = () => {
     console.log("Dữ liệu kế hoạch gửi đi:", planData);
 
     try {
-      const token = localStorage.getItem("jwt_token");
-
-      if (!token) {
-        alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để tạo kế hoạch.");
-        console.warn("Không tìm thấy JWT token trong localStorage. Yêu cầu gửi bị hủy.");
-        navigate('/login'); // Redirect to login page
-        return;
-      }
-
-      console.log("Đang gửi request Axios đến backend...");
-
-      const response = await axios.post(
-        "http://localhost:8080/api/quit-plans", // Đảm bảo URL này chính xác
-        planData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("Kế hoạch đã được lưu thành công:", response.data);
+      await apiService.createQuitPlan(planData);
       alert("Kế hoạch của bạn đã bắt đầu và được lưu thành công!");
-
-      // Lưu kế hoạch vào localStorage để Dashboard đọc được
-      localStorage.setItem("quitPlan", JSON.stringify({
-        ...planData,
-        realStartDate: actualStartDate,
-        recentAchievements: [],
-        weeklyProgress: [],
-        todayStatus: {
-          mood: 7,
-          cravings: 0,
-          exercise: false,
-          water: 0,
-          sleep: 7,
-          note: "",
-          smokedToday: false,
-          cigarettesToday: "",
-          moneySpentToday: ""
-        }
-      }));
-
-      navigate('/dashboard'); // Redirect to dashboard after successful plan creation
+      navigate('/dashboard');
     } catch (error) {
       console.error("Lỗi khi lưu kế hoạch:", error.response ? error.response.data : error.message);
 
@@ -363,7 +324,58 @@ const PlanPage = () => {
                 Lý do tôi muốn bỏ thuốc:
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {allReasons.map((reason, index) => (
+                {[
+                  {
+                    title: "Cải thiện sức khoẻ",
+                    image:
+                      "/images/suckhoe.png",
+                  },
+                  {
+                    title: "Cho gia đình, bạn bè",
+                    image:
+                      "/images/giadinh.png",
+                  },
+                  {
+                    title: "Yêu cầu của bác sĩ",
+                    image:
+                      "/images/yeucaubacsi.png",
+                  },
+                  {
+                    title: "Tiết kiệm tiền",
+                    image:
+                      "/images/tietkiemtien.png",
+                  },
+                  {
+                    title: "Bảo vệ môi trường",
+                    image:
+                      "/images/baovemoitruong.png",
+                  },
+                  {
+                    title: "Cải thiện mùi, ngoại hình",
+                    image:
+                      "/images/caithienmui.png",
+                  },
+                  {
+                    title: "Cho em bé",
+                    image:
+                      "/images/choembe.png",
+                  },
+                  {
+                    title: "Kiểm soát bản thân",
+                    image:
+                      "https://readdy.ai/api/search-image?query=Person%20looking%20in%20mirror%20with%20determined%20expression%2C%20self%20improvement%20concept&width=200&height=200&seq=9&orientation=squarish",
+                  },
+                  {
+                    title: "Tương lai tốt hơn",
+                    image:
+                      "/images/tuonglaitothon.png",
+                  },
+                  {
+                    title: "Cho thú cưng",
+                    image:
+                      "/images/chothucung.png",
+                  },
+                ].map((reason, index) => (
                   <div
                     key={index}
                     onClick={() => handleReasonSelect(index)}
@@ -414,7 +426,7 @@ const PlanPage = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">TÌNH HUỐNG</h3>
                 <div className="space-y-4">
-                  {allSituationTriggers.map((situation, index) => (
+                  {allSituationTriggers.map((situation, index) => ( // Sử dụng allSituationTriggers
                     <div
                       key={`situation-${index}`}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -443,7 +455,7 @@ const PlanPage = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">CẢM XÚC</h3>
                 <div className="space-y-4">
-                  {allEmotionTriggers.map((emotion, index) => (
+                  {allEmotionTriggers.map((emotion, index) => ( // Sử dụng allEmotionTriggers
                     <div
                       key={`emotion-${index}`}
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${

@@ -20,6 +20,7 @@ import GhiNhanTinhTrang from "./components/ghinhantinhtrang";
 import Feedback from "./components/feedback/feedback";
 import AiChatWidget from "./components/AiChatBox/AiChatWidget";
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import apiService from "./services/apiService";
 
 // --- Components để bảo vệ Routes ---
 
@@ -72,46 +73,93 @@ const AppContent = () => {
     location.pathname
   );
 
-  // --- Lưu trạng thái ghi nhận tình trạng ---
+  // --- Trạng thái kiểm tra backend ---
   const [hasRecordedStatus, setHasRecordedStatus] = useState(false);
+  const [hasPlan, setHasPlan] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
 
   useEffect(() => {
-    if (user && user.id) {
-      const savedStatus = localStorage.getItem(`hasRecordedStatus_${user.id}`);
-      setHasRecordedStatus(savedStatus === 'true');
-    }
+    const fetchStatus = async () => {
+      if (user && user.id) {
+        setCheckingStatus(true);
+        try {
+          // Kiểm tra ghi nhận tình trạng
+          const statuses = await apiService.getSmokingStatus(user.id);
+          console.log("Smoking status API result:", statuses);
+          setHasRecordedStatus(Array.isArray(statuses) && statuses.length > 0);
+          // Kiểm tra kế hoạch
+          const plans = await apiService.getQuitPlans();
+          console.log("Quit plans API result:", plans);
+          if (Array.isArray(plans)) {
+            setHasPlan(plans.length > 0);
+          } else if (plans && typeof plans === 'object') {
+            setHasPlan(true); // Có 1 object kế hoạch
+          } else {
+            setHasPlan(false);
+          }
+        } catch (e) {
+          setHasRecordedStatus(false);
+          setHasPlan(false);
+        } finally {
+          setCheckingStatus(false);
+        }
+      } else {
+        setHasRecordedStatus(false);
+        setHasPlan(false);
+        setCheckingStatus(false);
+      }
+    };
+    fetchStatus();
   }, [user]);
 
-  // Khi hoàn thành ghi nhận tình trạng, lưu trạng thái theo user và chuyển sang PlanPage
-  const handleStatusRecorded = () => {
+  // Khi hoàn thành ghi nhận tình trạng, kiểm tra lại trạng thái từ backend và chuyển sang PlanPage
+  const handleStatusRecorded = async () => {
     if (user && user.id) {
-      localStorage.setItem(`hasRecordedStatus_${user.id}`, 'true');
-      setHasRecordedStatus(true);
-      navigate('/plan', { replace: true });
+      setCheckingStatus(true);
+      try {
+        const statuses = await apiService.getSmokingStatus(user.id);
+        setHasRecordedStatus(Array.isArray(statuses) && statuses.length > 0);
+      } catch (e) {
+        setHasRecordedStatus(true); // fallback
+      } finally {
+        setCheckingStatus(false);
+        navigate('/plan', { replace: true });
+      }
     }
   };
 
-  // Hàm kiểm tra đã có kế hoạch chưa
-  const hasPlan = () => {
-  const planStr = localStorage.getItem("quitPlan");
-  try {
-    const plan = JSON.parse(planStr);
-    // Phải có startDate và không rỗng
-    return !!plan && !!plan.startDate && plan.startDate !== "";
-  } catch {
-    return false;
-  }
-};
+  // Khi hoàn thành lập kế hoạch, kiểm tra lại trạng thái từ backend và chuyển sang dashboard
+  const handlePlanCreated = async () => {
+    setCheckingStatus(true);
+    try {
+      const plans = await apiService.getQuitPlans();
+      if (Array.isArray(plans)) {
+        setHasPlan(plans.length > 0);
+      } else if (plans && typeof plans === 'object') {
+        setHasPlan(true); // Có 1 object kế hoạch
+      } else {
+        setHasPlan(false);
+      }
+    } catch (e) {
+      setHasPlan(true); // fallback
+    } finally {
+      setCheckingStatus(false);
+      navigate('/dashboard', { replace: true });
+    }
+  };
 
   // --- Route /plan logic ---
   const renderPlanRoute = () => {
+    if (checkingStatus) {
+      return <div>Đang kiểm tra trạng thái ghi nhận...</div>;
+    }
     if (!hasRecordedStatus) {
       // Chưa ghi nhận tình trạng
       return <GhiNhanTinhTrang onComplete={handleStatusRecorded} />;
     }
-    if (!hasPlan()) {
+    if (!hasPlan) {
       // Đã ghi nhận tình trạng nhưng chưa lập kế hoạch
-      return <PlanPage />;
+      return <PlanPage onComplete={handlePlanCreated} />;
     }
     // Đã có kế hoạch
     return <Navigate to="/dashboard" replace />;
