@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import apiService from "../../services/apiService";
 
 const PlanPage = () => {
   const navigate = useNavigate(); // Khởi tạo useNavigate
@@ -85,8 +86,8 @@ const PlanPage = () => {
   };
 
   // Handler for selecting/deselecting craving triggers
-  const handleTriggerSelect = (index, type) => {
-    const triggerId = `${type}-${index}`;
+  const handleTriggerSelect = (trigger, type) => {
+    const triggerId = `${type}-${trigger}`;
     if (selectedTriggers.includes(triggerId)) {
       setSelectedTriggers(selectedTriggers.filter((id) => id !== triggerId));
     } else {
@@ -150,31 +151,9 @@ const PlanPage = () => {
     console.log("Dữ liệu kế hoạch gửi đi:", planData);
 
     try {
-      const token = localStorage.getItem("jwt_token");
-
-      if (!token) {
-        alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để tạo kế hoạch.");
-        console.warn("Không tìm thấy JWT token trong localStorage. Yêu cầu gửi bị hủy.");
-        navigate('/login'); // Redirect to login page
-        return;
-      }
-
-      console.log("Đang gửi request Axios đến backend...");
-
-      const response = await axios.post(
-        "http://localhost:8080/api/quit-plans", // Đảm bảo URL này chính xác
-        planData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      console.log("Kế hoạch đã được lưu thành công:", response.data);
+      await apiService.createQuitPlan(planData);
       alert("Kế hoạch của bạn đã bắt đầu và được lưu thành công!");
-      navigate('/dashboard'); // Redirect to dashboard after successful plan creation
+      navigate('/dashboard');
     } catch (error) {
       console.error("Lỗi khi lưu kế hoạch:", error.response ? error.response.data : error.message);
 
@@ -195,7 +174,6 @@ const PlanPage = () => {
       <div className="max-w-6xl mx-auto">
         {/* First Section - Choose Start Date */}
         <div className="mb-8 bg-white rounded-lg overflow-hidden shadow">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">CHỌN NGÀY BẮT ĐẦU KẾ HOẠCH</h2>
           </div>
@@ -274,7 +252,6 @@ const PlanPage = () => {
         </div>
         {/* Second Section - Smoking Cost */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">
               BẠN CHI TRẢ BAO NHIÊU CHO VIỆC HÚT THUỐC?
@@ -333,7 +310,6 @@ const PlanPage = () => {
         </div>
         {/* Third Section - Reasons to Quit */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">TẠI SAO BẠN LẠI BỎ THUỐC?</h2>
           </div>
@@ -348,7 +324,58 @@ const PlanPage = () => {
                 Lý do tôi muốn bỏ thuốc:
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {allReasons.map((reason, index) => ( // Sử dụng allReasons đã định nghĩa
+                {[
+                  {
+                    title: "Cải thiện sức khoẻ",
+                    image:
+                      "/images/suckhoe.png",
+                  },
+                  {
+                    title: "Cho gia đình, bạn bè",
+                    image:
+                      "/images/giadinh.png",
+                  },
+                  {
+                    title: "Yêu cầu của bác sĩ",
+                    image:
+                      "/images/yeucaubacsi.png",
+                  },
+                  {
+                    title: "Tiết kiệm tiền",
+                    image:
+                      "/images/tietkiemtien.png",
+                  },
+                  {
+                    title: "Bảo vệ môi trường",
+                    image:
+                      "/images/baovemoitruong.png",
+                  },
+                  {
+                    title: "Cải thiện mùi, ngoại hình",
+                    image:
+                      "/images/caithienmui.png",
+                  },
+                  {
+                    title: "Cho em bé",
+                    image:
+                      "/images/choembe.png",
+                  },
+                  {
+                    title: "Kiểm soát bản thân",
+                    image:
+                      "https://readdy.ai/api/search-image?query=Person%20looking%20in%20mirror%20with%20determined%20expression%2C%20self%20improvement%20concept&width=200&height=200&seq=9&orientation=squarish",
+                  },
+                  {
+                    title: "Tương lai tốt hơn",
+                    image:
+                      "/images/tuonglaitothon.png",
+                  },
+                  {
+                    title: "Cho thú cưng",
+                    image:
+                      "/images/chothucung.png",
+                  },
+                ].map((reason, index) => (
                   <div
                     key={index}
                     onClick={() => handleReasonSelect(index)}
@@ -382,7 +409,6 @@ const PlanPage = () => {
 
         {/* Fourth Section - Craving Triggers */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">
               KHI NÀO BẠN LÊN CƠN THÈM KHÁT
@@ -459,9 +485,8 @@ const PlanPage = () => {
           </div>
         </div>
 
-        {/* Start Plan Button (Enhanced) */}
+        {/* Start Plan Button */}
         <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          {/* Sử dụng inline style cho màu nền */}
           <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
             <h2 className="text-xl font-bold">BẮT ĐẦU KẾ HOẠCH</h2>
           </div>
