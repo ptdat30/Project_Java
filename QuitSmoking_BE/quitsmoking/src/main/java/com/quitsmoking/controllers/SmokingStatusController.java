@@ -36,14 +36,26 @@ public class SmokingStatusController {
         }
     }
 
-    // Endpoint để lấy tất cả tình trạng hút thuốc của một người dùng
-    @GetMapping
-    public ResponseEntity<List<SmokingStatus>> getSmokingStatusesByUser(@PathVariable String userId) {
+    // Endpoint để lấy tất cả tình trạng hút thuốc của một người dùng (chuẩn REST, dùng cho frontend kiểm tra đã ghi nhận chưa)
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<SmokingStatusResponse>> getSmokingStatusesByUser(@PathVariable String userId) {
         try {
             List<SmokingStatus> statuses = smokingStatusService.getAllSmokingStatusesByUser(userId);
-            return ResponseEntity.ok(statuses);
+            List<SmokingStatusResponse> response = statuses.stream().map(status -> new SmokingStatusResponse(
+                status.getId(),
+                status.getUser().getId(),
+                status.getTobaccoType(),
+                status.getTobaccoBrand(),
+                status.getNumberOfCigarettes(),
+                status.getUnit(),
+                status.getCostPerPack(),
+                status.getSmokingDurationYears(),
+                status.getHealthIssue(),
+                status.getRecordDate(),
+                status.getRecordUpdate()
+            )).toList();
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            // Xử lý nếu User không tồn tại
             return ResponseEntity.notFound().build();
         }
     }

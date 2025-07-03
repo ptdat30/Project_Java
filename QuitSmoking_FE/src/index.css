@@ -2,3 +2,17 @@
 /* @tailwind base;
 @tailwind components;
 @tailwind utilities; */
+@keyframes flash-black {
+  0%, 100% {
+    background-color: transparent; /* Hoặc màu nền gốc của list item */
+    color: inherit; /* Hoặc màu chữ gốc của list item */
+  }
+  50% {
+    background-color: rgba(0, 0, 0, 0.1); /* Một chút đen nhạt */
+    color: black;
+  }
+}
+
+.flash-black {
+  animation: flash-black 1.5s ease-in-out infinite;
+}

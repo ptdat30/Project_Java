@@ -58,7 +58,7 @@ public class DailyProgressService {
         progress.setMoodRating(moodRating);
         progress.setStressLevel(stressLevel);
         progress.setCravingsIntensity(cravingsIntensity);
-        progress.setNotes(notes);
+        progress.setNote(notes);
         
         // Tính toán tiền tiết kiệm (giả sử mỗi điếu giá 1000 VND)
         BigDecimal costPerCigarette = new BigDecimal("1000");
@@ -118,5 +118,23 @@ public class DailyProgressService {
         public Double getTotalMoneySaved() { return totalMoneySaved; }
         public Long getTotalCigarettesSmoked() { return totalCigarettesSmoked; }
         public int getCurrentStreak() { return currentStreak; }
+    }
+    public DailyProgress createOrUpdateProgress(User user, com.quitsmoking.dto.request.DailyProgressRequest req) {
+        java.time.LocalDate date = req.getDate() != null ? req.getDate() : java.time.LocalDate.now();
+        Optional<DailyProgress> existing = getProgressByDate(user, date);
+        DailyProgress progress = existing.orElse(new DailyProgress(user, date));
+
+        progress.setMoodRating(req.getMood() != null ? req.getMood() : 0);
+        progress.setCravingsIntensity(req.getCravings() != null ? req.getCravings() : 0);
+        progress.setExercise(req.getExercise());
+        progress.setWater(req.getWater());
+        progress.setSleep(req.getSleep());
+        progress.setNote(req.getNote());
+        progress.setSmokedToday(req.getSmokedToday());
+        progress.setCigarettesToday(req.getCigarettesToday());
+        progress.setMoneySpentToday(req.getMoneySpentToday());
+
+        // Có thể thêm logic tính moneySaved, healthImprovements nếu cần
+        return saveProgress(progress);
     }
 }

@@ -3,6 +3,7 @@ import com.quitsmoking.model.DailyProgress;
 import com.quitsmoking.model.User;
 import com.quitsmoking.services.DailyProgressService;
 import com.quitsmoking.services.UserService;
+import com.quitsmoking.dto.response.DailyProgressResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +13,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 @RestController
-@RequestMapping("/api/progress")
-@CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/api/daily-progress")
+@CrossOrigin(origins = {"http://localhost:4173", "http://localhost:3000", "http://localhost:5173"})
 public class DailyProgressController {
     @Autowired
     private DailyProgressService dailyProgressService;
@@ -99,6 +100,38 @@ public class DailyProgressController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
         }
+    }
+    @PostMapping("")
+    public ResponseEntity<?> saveOrUpdateProgress(
+            @RequestBody com.quitsmoking.dto.request.DailyProgressRequest request,
+            Authentication authentication) {
+        try {
+            User user = userService.findByUsername(authentication.getName());
+            DailyProgress progress = dailyProgressService.createOrUpdateProgress(user, request);
+            return ResponseEntity.ok(DailyProgressResponse.fromEntity(progress));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
+        }
+    }
+    @GetMapping("/week")
+    public ResponseEntity<?> getWeeklyProgress(Authentication authentication) {
+        User user = userService.findByUsername(authentication.getName());
+        java.time.LocalDate today = java.time.LocalDate.now();
+        // Tìm ngày Thứ 2 của tuần hiện tại
+        java.time.DayOfWeek dow = today.getDayOfWeek();
+        int daysFromMonday = (dow.getValue() + 6) % 7; // Monday=0, Sunday=6
+        java.time.LocalDate monday = today.minusDays(daysFromMonday);
+        java.time.LocalDate sunday = monday.plusDays(6);
+        java.util.List<DailyProgress> progressList = dailyProgressService.getProgressInDateRange(user, monday, sunday);
+        java.util.Map<java.time.LocalDate, DailyProgress> progressMap = progressList.stream()
+            .collect(java.util.stream.Collectors.toMap(DailyProgress::getDate, dp -> dp));
+        java.util.List<DailyProgressResponse> weekData = new java.util.ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            java.time.LocalDate date = monday.plusDays(i);
+            DailyProgress dp = progressMap.get(date);
+            weekData.add(dp != null ? DailyProgressResponse.fromEntity(dp) : null);
+        }
+        return ResponseEntity.ok(weekData);
     }
     // DTO class cho request
     public static class UpdateProgressRequest {

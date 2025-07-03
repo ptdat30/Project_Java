@@ -328,6 +328,18 @@ const apiService = {
     const response = await apiClient.get(`/api/coach-consultations?userId=${userId}&coachId=${coachId}`);
     return response.data;
   },
+
+  // Lấy tiến trình tuần này cho user
+  getWeeklyProgress: async () => {
+    const response = await apiClient.get(`${config.endpoints.dailyProgress}/week`);
+    return response.data;
+  },
+
+  // Lưu tiến trình hôm nay (tạo mới hoặc cập nhật)
+  saveDailyProgress: async (progressData) => {
+    const response = await apiClient.post("/api/daily-progress", progressData);
+    return response.data;
+  },
 };
 
 export default apiService;

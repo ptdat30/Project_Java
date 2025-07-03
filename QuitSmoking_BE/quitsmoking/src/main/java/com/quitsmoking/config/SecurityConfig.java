@@ -84,8 +84,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Endpoint ghi nhận tình trạng hút thuốc
                 .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/smoking-status/user/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+                // Cho phép truy cập endpoint lập kế hoạch cai thuốc
+                .requestMatchers(HttpMethod.POST, "/api/quit-plans").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/quit-plans").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                // Cho phép MEMBER, ADMIN, COACH truy cập tiến trình tuần
+                .requestMatchers(HttpMethod.POST, "/api/daily-progress").hasAnyRole("MEMBER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/daily-progress/**").hasAnyRole("MEMBER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 
-                // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực
+                // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực                
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )

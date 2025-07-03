@@ -34,8 +34,20 @@ public class DailyProgress {
     private int stressLevel; // 1-10
     @Column(name = "cravings_intensity")
     private int cravingsIntensity; // 1-10
-    @Column(columnDefinition = "TEXT")
-    private String notes;
+    @Column(name = "exercise")
+    private Boolean exercise;
+    @Column(name = "water")
+    private Integer water;
+    @Column(name = "sleep")
+    private Integer sleep;
+    @Column(name = "smoked_today")
+    private Boolean smokedToday;
+    @Column(name = "cigarettes_today")
+    private Integer cigarettesToday;
+    @Column(name = "money_spent_today", precision = 10, scale = 2)
+    private BigDecimal moneySpentToday;
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
     @Column(name = "money_saved", precision = 10, scale = 2)
     private BigDecimal moneySaved = BigDecimal.ZERO;
     @Column(name = "health_improvements", columnDefinition = "TEXT")
