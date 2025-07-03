@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import com.quitsmoking.dto.response.FeedbackResponse;
 /**
  * Controller cho các chức năng quản trị hệ thống
  * Chỉ cho phép ADMIN truy cập
@@ -211,11 +212,11 @@ public class AdminController {
      * Lấy phản hồi từ người dùng
      */
     @GetMapping("/feedbacks")
-    public ResponseEntity<List<Object>> getAllFeedbacks(
+    public ResponseEntity<List<FeedbackResponse>> getAllFeedbacks( // Đã thay đổi kiểu trả về tại đây
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
-        List<Object> feedbacks = adminService.getAllFeedbacks(page, size);
+        List<FeedbackResponse> feedbacks = adminService.getAllFeedbacks(page, size);
         return ResponseEntity.ok(feedbacks);
     }
     /**

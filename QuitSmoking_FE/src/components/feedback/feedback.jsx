@@ -19,31 +19,86 @@ const Feedback = () => {
 
   const getRatingLabel = (index) => {
     switch (index) {
-      case 0:
-        return 'Rất tệ';
       case 1:
-        return 'Chưa hài lòng';
+        return 'Rất tệ';
       case 2:
-        return 'Tạm ổn';
+        return 'Chưa hài lòng';
       case 3:
-        return 'Hài lòng';
+        return 'Tạm ổn';
       case 4:
+        return 'Hài lòng';
+      case 5:
         return 'Rất hài lòng';
       default:
         return '';
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Ý kiến đã được ghi nhận, xin cảm ơn bạn');
-    setRating(null);
-    setFeedback('');
+
+    if (rating === null) {
+      alert('Vui lòng chọn mức độ hài lòng của bạn!');
+      return;
+    }
+
+    const jwtToken = localStorage.getItem('jwt_token');
+
+    try {
+      const response = await fetch('http://localhost:8080/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jwtToken && { 'Authorization': `Bearer ${jwtToken}` })
+        },
+        body: JSON.stringify({
+          rating: rating, // Gửi đúng giá trị rating từ 1-5
+          feedbackContent: feedback
+        })
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        alert(responseData.message || 'Ý kiến đã được ghi nhận, xin cảm ơn bạn!');
+        setRating(null);
+        setFeedback('');
+        setHoverRating(null);
+      } else {
+        let errorBody;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          errorBody = await response.json();
+        } else {
+          errorBody = await response.text();
+        }
+
+        let errorMessage = `Gửi ý kiến thất bại: ${response.status} ${response.statusText}`;
+
+        if (errorBody) {
+          if (typeof errorBody === 'object' && errorBody.message) {
+            errorMessage = errorBody.message;
+            if (errorBody.fieldErrors) {
+              for (const field in errorBody.fieldErrors) {
+                errorMessage += `\n${field}: ${errorBody.fieldErrors[field]}`;
+              }
+            }
+          } else if (typeof errorBody === 'string') {
+            errorMessage += ` - Chi tiết: ${errorBody.substring(0, 100)}...`;
+          }
+        }
+        alert(errorMessage);
+        console.error("Backend Error Response:", errorBody);
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi feedback:", error);
+      alert('Đã xảy ra lỗi khi gửi ý kiến. Vui lòng kiểm tra kết nối.');
+    }
   };
 
-  // Kích thước và margin-top từng ngôi sao từ nhỏ đến lớn và thấp đến cao
-  const starSizes = ["text-3xl", "text-4xl", "text-5xl", "text-6xl", "text-7xl"];
-  const starMarginTops = ["mt-8", "mt-6", "mt-4", "mt-2", "mt-0"];
+  // SỬA ĐỔI Ở ĐÂY: Thêm phần tử dummy vào đầu mảng (index 0)
+  // để các phần tử từ index 1 đến 5 có giá trị mong muốn
+  const starSizes = ["", "text-3xl", "text-4xl", "text-5xl", "text-6xl", "text-7xl"];
+  const starMarginTops = ["", "mt-8", "mt-6", "mt-4", "mt-2", "mt-0"]; // Điều chỉnh margin nếu cần
 
   return (
     <div className="min-h-[calc(100vh-80px)] mt-20 bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -56,8 +111,9 @@ const Feedback = () => {
             TỔNG QUAN VỀ MỨC ĐỘ HÀI LÒNG CỦA BẠN
           </h2>
           <div className="flex justify-center space-x-8 mb-4 items-end">
-            {[0, 1, 2, 3, 4].map((index) => (
-              <div key={index} className={`flex flex-col items-center ${starMarginTops[index]}`}>
+            {/* Giữ nguyên vòng lặp từ 1 đến 5 */}
+            {[1, 2, 3, 4, 5].map((index) => (
+              <div key={index} className={`flex flex-col items-center ${starMarginTops[index]}`}> {/* Dùng index trực tiếp */}
                 <button
                   className="focus:outline-none transition-transform transform hover:scale-110 cursor-pointer"
                   onMouseEnter={() => handleMouseEnter(index)}
@@ -66,7 +122,7 @@ const Feedback = () => {
                   type="button"
                 >
                   <i
-                    className={`fas fa-star ${starSizes[index]} ${
+                    className={`fas fa-star ${starSizes[index]} ${ // Dùng index trực tiếp
                       hoverRating === index
                         ? 'text-yellow-300'
                         : rating === index

@@ -22,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,22 +32,19 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    // --- TIÊM CÁC THÀNH PHẦN CẦN THIẾT CHO OAUTH2 VÀ JWT ---
-    
+    @Autowired
+    private AuthService authService; // Autowire AuthService
+
+    @Autowired
+    private JwtUtil jwtUtil; // Autowire JwtUtil
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    @SuppressWarnings("deprecation")
-    public DaoAuthenticationProvider authenticationProvider(AuthService authService) {
+    public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(authService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -54,11 +52,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-        HttpSecurity http,
-        JwtRequestFilter jwtRequestFilter
-        
-    ) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Manually create JwtRequestFilter instance here
+        JwtRequestFilter jwtRequestFilter = new JwtRequestFilter(authService, jwtUtil);
+
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(org.springframework.security.config.Customizer.withDefaults())
@@ -86,14 +88,21 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/smoking-status/user/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint lập kế hoạch cai thuốc
-                .requestMatchers(HttpMethod.POST, "/api/quit-plans").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                .requestMatchers(HttpMethod.GET, "/api/quit-plans").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/quit-plans").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/quit-plans").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép MEMBER, ADMIN, COACH truy cập tiến trình tuần
                 .requestMatchers(HttpMethod.POST, "/api/daily-progress").hasAnyRole("MEMBER", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/daily-progress/**").hasAnyRole("MEMBER", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                
+                // Cho phép truy cập endpoint community
+                .requestMatchers(HttpMethod.POST, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/community/comments").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/community/posts/like/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+
                 // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực                
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
@@ -120,17 +129,17 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:5500",
-            "http://localhost:5500",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
                 "http://localhost:4173",
                 "http://localhost:5173"
 
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
-            "Authorization", "Content-Type", "Accept", "X-Requested-With"
+                "Authorization", "Content-Type", "Accept", "X-Requested-With"
         ));
         configuration.setMaxAge(3600L);
 
