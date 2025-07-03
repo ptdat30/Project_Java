@@ -1,6 +1,6 @@
-package com.quitsmoking.reponsitories;
+package com.quitsmoking.reponsitories; // Sử dụng package hiện có của bạn
 
-import com.quitsmoking.model.User;
+import com.quitsmoking.model.User; // Sử dụng import hiện có của bạn
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List; // Cần thêm import này cho List
 
 /**
  * Repository interface cho User entity
@@ -32,4 +33,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u FROM User u WHERE u.username = :userName")
     User getUserByUsername(String userName);
+
+    // THÊM PHƯƠNG THỨC NÀY VÀO ĐÂY
+    // Phương thức này sẽ tìm tất cả người dùng mà trường currentMembershipPlan không phải là NULL
+    List<User> findByCurrentMembershipPlanIsNotNull();
 }
