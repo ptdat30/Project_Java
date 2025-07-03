@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [loading, setLoading] = useState(false);
-  const user = { firstName: "Mock", lastName: "User", username: "mockuser" };
+  const user = { firstName: "Mock", lastName: "Mock", username: "mockuser" };
   return { isAuthenticated, loading, user };
 };
 
@@ -170,10 +170,26 @@ const Community = () => {
 
       if (response.ok) {
         console.log(responseData.message); // Truy cập thuộc tính 'message' từ JSON
-        // Tùy chọn: fetch lại danh sách bài viết để cập nhật UI
-        // await fetchPostData();
+        // Tạo đối tượng bài viết mới với cấu trúc tương tự như khi fetch
+        // Đảm bảo các trường như 'id', 'commentsCount', 'likesCount', 'createdAt', 'username', 'pictureUrl'
+        // được cung cấp bởi server hoặc mock cho mục đích hiển thị ngay lập tức.
+        // Ở đây, tôi đang giả định server trả về đối tượng bài viết hoàn chỉnh.
+        const createdPost = {
+          id: responseData.id, // Giả sử server trả về id của bài viết mới
+          commentsCount: 0, // Mặc định là 0 khi mới tạo
+          content: newPost,
+          createdAt: new Date().toLocaleDateString(), // Ngày tạo hiện tại
+          likesCount: 0, // Mặc định là 0 khi mới tạo
+          postType: selectedPostType,
+          title: newTitle,
+          pictureUrl: user.pictureUrl || "/images/default-avatar.png", // Sử dụng avatar của user hoặc default
+          username: user.username, // Sử dụng username từ useAuth hook
+        };
+
+        setPosts(prevPosts => [createdPost, ...prevPosts]); // Thêm bài viết mới vào đầu danh sách
         setNewPost('');
         setNewTitle('');
+        setSelectedPostType(''); // Reset loại bài viết đã chọn sau khi đăng
       } else {
         // Log thông báo lỗi từ thuộc tính 'error' của JSON
         console.error('Failed to create post:', responseData.error);
