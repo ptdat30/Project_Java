@@ -3,7 +3,7 @@ import { Routes, Route, useLocation, Navigate, useNavigate } from "react-router-
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./auth/LoginPage";
 import RegisterPage from "./auth/RegisterPage";
-import HomePage from "./components/HomePage_New";
+import HomePage from "./components/HomePage.jsx";
 import RecoverPasswordProcess from "./components/laylaimatkhau/RecoverPasswordProcess";
 import Dashboard from "./components/dashboard/Dashboard";
 import Community from "./components/community/Community";

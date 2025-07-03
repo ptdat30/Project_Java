@@ -1,344 +1,473 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import Navigation from "./layout/Navigation";
-import axios from "axios";
-import config from "../config/config.js";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-
-console.log("HomePage: Đối tượng 'config' sau khi import:", config);
-// Thêm console log chi tiết hơn để kiểm tra cấu trúc của 'endpoints'
-console.log("HomePage: config.API_BASE_URL:", config?.API_BASE_URL);
-console.log("HomePage: config.endpoints:", config?.endpoints);
-console.log(
-  "HomePage: config.endpoints.userProfile:",
-  config?.endpoints?.userProfile
-);
-
-if (
-  !config ||
-  !config.API_BASE_URL ||
-  !config.endpoints ||
-  !config.endpoints.userProfile
-) {
-  console.error(
-    "LỖI CẤU HÌNH API: Đối tượng 'config' hoặc các thuộc tính cần thiết của nó đang bị thiếu/không hợp lệ!"
-  );
-  console.error(
-    "Vấn đề nằm ở việc tải file config.js hoặc nội dung của nó. Vui lòng xem hướng dẫn khắc phục bên dưới."
-  );
-}
+import SmokingStatsChart from "./settings/SmokingStatsChart.jsx"; // Import component biểu đồ
 
 const HomePage = () => {
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
-  const [userData, setUserData] = useState(null);
-  const [userLoading, setUserLoading] = useState(false);
-  const [userFetchError, setUserFetchError] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [stats, setStats] = useState({
+    totalUsers: 12547,
+    successRate: 78,
+    moneySaved: 2841950000,
+    daysSmokeFree: 89456,
+  });
 
+  // State cho animations
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [featuresVisible, setFeaturesVisible] = useState(false);
+
+  // Animation effects
   useEffect(() => {
-    document.getElementById("title").innerText = "HomePage";
+    const timer = setTimeout(() => setIsLoaded(true), 300);
+    const featuresTimer = setTimeout(() => setFeaturesVisible(true), 800);
 
-    if (token) {
-      setIsLoggedIn(true); // Đặt trạng thái đã đăng nhập nếu có token
-      // Bắt đầu fetch dữ liệu người dùng
-      const fetchUserProfile = async () => {
-        setUserLoading(true); // Bắt đầu loading
-        setUserFetchError(null);
-        try {
-          if (
-            !config ||
-            !config.API_BASE_URL ||
-            !config.endpoints ||
-            !config.endpoints.userProfile
-          ) {
-            const missingConfigPart = !config
-              ? "config object"
-              : !config.API_BASE_URL
-              ? "config.API_BASE_URL"
-              : !config.endpoints
-              ? "config.endpoints"
-              : "config.endpoints.userProfile";
-            throw new Error(
-              `Cấu hình API bị thiếu: ${missingConfigPart}. Vui lòng kiểm tra file config.js và đường dẫn import.`
-            );
-          }
-
-          const apiUrl = `${config.API_BASE_URL}${config.endpoints.userProfile}`;
-          console.log("HomePage: Đang gọi API User Profile với URL:", apiUrl);
-          console.log("HomePage: Sử dụng Token:", token);
-
-          const response = await axios.get(apiUrl, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          setUserData(response.data);
-          console.log("HomePage: Dữ liệu người dùng nhận được:", response.data);
-        } catch (err) {
-          console.error(
-            "HomePage: Lỗi khi lấy thông tin người dùng (chi tiết):",
-            err
-          );
-          const errorMessage =
-            err.message ||
-            err.response?.data?.message ||
-            "Không thể tải thông tin người dùng.";
-          setUserFetchError(errorMessage);
-
-          if (err.response) {
-            console.error("HomePage: Mã trạng thái HTTP:", err.response.status);
-            console.error("HomePage: Dữ liệu phản hồi lỗi:", err.response.data);
-          }
-
-          if (
-            err.response &&
-            (err.response.status === 401 || err.response.status === 403)
-          ) {
-            console.warn(
-              "HomePage: Token không hợp lệ hoặc đã hết hạn. Đang đăng xuất tự động."
-            );
-            logout();
-            setIsLoggedIn(false); // Đặt lại trạng thái đăng nhập
-            setUserData(null); // Xóa dữ liệu người dùng cũ
-            // Không navigate, chỉ cập nhật UI để hiển thị nút đăng nhập/đăng ký
-          }
-        } finally {
-          setUserLoading(false); // Kết thúc loading dù thành công hay thất bại
-        }
-      };
-
-      fetchUserProfile();
-    } else {
-      // Không có token, người dùng chưa đăng nhập
-      setIsLoggedIn(false); // Đảm bảo trạng thái là false
-      setUserLoading(false); // Không cần load dữ liệu nếu không có token
-      setUserData(null); // Đảm bảo userData là null
-    }
-
-    // Phần animation ranking bars (giữ nguyên)
-    const animateRankingBars = () => {
-      const bars = document.querySelectorAll(".bar");
-      const rankingSection = document.querySelector(".ranking-section");
-
-      if (rankingSection) {
-        const rect = rankingSection.getBoundingClientRect();
-        const isVisible =
-          rect.top < window.innerHeight - 100 && rect.bottom > 100;
-        bars.forEach((bar) => bar.classList.toggle("active", isVisible));
-      }
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(featuresTimer);
     };
+  }, []);
 
-    window.addEventListener("scroll", animateRankingBars);
-    animateRankingBars(); // Chạy lần đầu khi component mount
+  // Giữ lại newsArticles và smokingStats ở đây
+  const [newsArticles, setNewsArticles] = useState([
+    {
+      id: 1,
+      title: "Tác hại khôn lường của thuốc lá đến sức khỏe",
+      excerpt:
+          "Bài viết chi tiết về các bệnh tật mà thuốc lá gây ra như ung thư phổi, tim mạch...",
+      source: "Báo Sức Khỏe & Đời Sống",
+      date: "20/05/2025",
+      link: "https://suckhoedoisong.vn/tac-hai-khon-luong-cua-thuoc-la-den-suc-khoe.htm",
+      image: "/images/bvlq1.jpg",
+    },
+    {
+      id: 2,
+      title: "Hút thuốc lá thụ động: Nguy cơ tiềm ẩn cho người thân",
+      excerpt:
+          "Tìm hiểu về những ảnh hưởng nghiêm trọng của khói thuốc lá đến những người xung quanh...",
+      source: "VNExpress",
+      date: "10/05/2025",
+      link: "https://vnexpress.net/hut-thuoc-la-thu-dong-nguy-co-tiem-an-cho-nguoi-than-4000000.html",
+      image: "/images/bvlq2.png",
+    },
+    {
+      id: 3,
+      title: "Kinh tế Việt Nam thiệt hại hàng nghìn tỷ đồng vì thuốc lá",
+      excerpt:
+          "Phân tích về gánh nặng kinh tế do chi phí y tế và mất năng suất lao động vì thuốc lá...",
+      source: "Báo Lao Động",
+      date: "01/05/2025",
+      link: "https://laodong.vn/kinh-te/kinh-te-viet-nam-thiet-hai-hang-nghin-ty-dong-vi-thuoc-la-1000000.html",
+      image: "/images/bvlq3.webp",
+    },
+  ]);
 
-    return () => window.removeEventListener("scroll", animateRankingBars);
-  }, [token, logout]); // Add token and logout to dependencies
+  const [smokingStats, setSmokingStats] = useState({
+    deathsPerYearVietnam: "khoảng 40.000",
+    healthcareCostsVietnam: "hơn 23.000 tỷ VND/năm",
+    diseasesCaused: [
+      "Ung thư (phổi, vòm họng, thực quản, bàng quang...)",
+      "Bệnh tim mạch (đau tim, đột quỵ)",
+      "Bệnh phổi tắc nghẽn mãn tính (COPD)",
+      "Hen suyễn",
+      "Tiểu đường",
+      "Vô sinh",
+    ],
+  });
 
-  const handleLogout = () => {
-    logout();
-    setUserData(null);
-    setIsLoggedIn(false); // Cập nhật trạng thái đã đăng xuất
-    setUserFetchError(null); // Xóa lỗi nếu có
-    navigate("/"); // Chuyển hướng sau đăng xuất
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
   };
 
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat("vi-VN").format(num);
+  };
+
+  // --- BEGIN Footer Component (đã gộp vào đây) ---
+  const Footer = () => {
+    return (
+        <footer className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-gray-300 py-12">
+          <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Contact Information */}
+            <div className="flex flex-col space-y-4 transform hover:scale-105 transition-all duration-300">
+              <h3 className="text-2xl font-bold text-white mb-4 bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                Thông tin thêm:
+              </h3>
+              <div className="flex items-center hover:text-green-400 transition-colors duration-300">
+                <img
+                    src="/images/map_icon.png"
+                    alt="Location"
+                    className="w-6 h-6 mr-3 hover:scale-110 transition-transform duration-300"
+                />
+                <span>
+                70 Đ. Tô Ký, Tân Chánh Hiệp, Quận 12, Hồ Chí Minh (
+                <a
+                    href="https://www.google.com/maps/place/Tr%C6%B0%E1%BB%9Dng+%C4%90%E1%BA%A1i+H%E1%BB%8Dc+Giao+Th%C3%B4ng+V%E1%BA%ADn+T%E1%BA%A3i+Th%C3%A0nh+Ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh+(UTH)+-+C%C6%A1+s%E1%BB%9F+3/@10.8657455,106.615543,17z/data=!3m1!4b1!4m6!3m5!1s0x31752b2a11844fb9:0xbed3d5f0a6d6e0fe!8m2!3d10.8657455!4d106.6181179!16s%2Fg%2F11h5mfgrph?entry=ttu&g_ep=EgoyMDI1MDYxNy4wIKXMDSoASAFQAw%3D%3D"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-400 hover:text-emerald-400 hover:underline transition-colors duration-300"
+                >
+                  Vị Trí Trên Google Maps
+                </a>
+                )
+              </span>
+              </div>
+              <div className="flex items-center hover:text-green-400 transition-colors duration-300">
+                <img
+                    src="/images/phone_icon.png"
+                    alt="Phone"
+                    className="w-6 h-6 mr-3 hover:scale-110 transition-transform duration-300"
+                />
+                <span>09-123-45678</span>
+              </div>
+              <div className="flex items-center hover:text-green-400 transition-colors duration-300">
+                <img
+                    src="/images/email_icon.png"
+                    alt="Email"
+                    className="w-6 h-6 mr-3 hover:scale-110 transition-transform duration-300"
+                />
+                <span>QuitSmoking@gmail.com</span>
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="flex flex-col items-start lg:items-end">
+              <h3 className="text-2xl font-bold text-white mb-6 bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                Liên kết mạng xã hội:
+              </h3>
+              <div className="flex space-x-6">
+                <a
+                    href="https://www.facebook.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transform hover:scale-125 transition-all duration-300 hover:shadow-lg hover:shadow-green-400/50"
+                >
+                  <img
+                      src="/images/fb_icon.jpg"
+                      alt="Facebook"
+                      className="w-12 h-12 rounded-full border-2 border-transparent hover:border-green-400"
+                  />
+                </a>
+                <a
+                    href="https://www.youtube.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transform hover:scale-125 transition-all duration-300 hover:shadow-lg hover:shadow-green-400/50"
+                >
+                  <img
+                      src="/images/ytb_icon.jpg"
+                      alt="YouTube"
+                      className="w-12 h-12 rounded-full border-2 border-transparent hover:border-green-400"
+                  />
+                </a>
+                <a
+                    href="https://www.tiktok.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transform hover:scale-125 transition-all duration-300 hover:shadow-lg hover:shadow-green-400/50"
+                >
+                  <img
+                      src="/images/tiktok_icon.jpg"
+                      alt="TikTok"
+                      className="w-12 h-12 rounded-full border-2 border-transparent hover:border-green-400"
+                  />
+                </a>
+                <a
+                    href="https://www.linkedin.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transform hover:scale-125 transition-all duration-300 hover:shadow-lg hover:shadow-green-400/50"
+                >
+                  <img
+                      src="/images/linkedin_icon.jpg"
+                      alt="LinkedIn"
+                      className="w-12 h-12 rounded-full border-2 border-transparent hover:border-green-400"
+                  />
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="text-center text-gray-400 text-sm mt-8 border-t border-gray-700 pt-8">
+            <p className="hover:text-green-400 transition-colors duration-300">
+              © {new Date().getFullYear()} CaiNghienThuocLa. All rights reserved.
+            </p>
+          </div>
+        </footer>
+    );
+  };
+  // --- END Footer Component ---
+
   return (
-    <div className="min-h-screen bg-white">
-      <Navigation />
-      {/* Header */}
-      <header className="fixed top-0 left-0 w-full z-50 shadow-sm">
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3">
-          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-            {/* Phần bên trái: Luôn hiển thị thông báo "Đăng ký ngay..." */}
-            <span className="font-medium">
-              Đăng ký ngay để nhận tư vấn miễn phí từ chuyên gia
-            </span>
-
-            {/* Phần bên phải: Logic hiển thị dựa trên trạng thái đăng nhập */}
-            <div className="flex items-center gap-4">
-              {isLoggedIn ? ( // Nếu đã đăng nhập
-                <>
-                  {userLoading ? (
-                    <span className="font-medium">Đang tải thông tin...</span>
-                  ) : userFetchError ? (
-                    <span className="font-medium text-red-200">
-                      Lỗi tải thông tin: {userFetchError}
-                    </span>
-                  ) : userData ? (
-                    <span className="font-medium">
-                      Xin chào, {userData.username} ({userData.role})
-                    </span>
-                  ) : (
-                    // Trường hợp đã đăng nhập (có token) nhưng không lấy được userData (ví dụ: server lỗi)
-                    <span className="font-medium text-red-200">
-                      Không thể hiển thị thông tin người dùng.
-                    </span>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="px-6 py-1.5 rounded-full bg-white text-emerald-600 hover:bg-gray-100 transition-all font-medium"
-                  >
-                    Đăng xuất
-                  </button>
-                </>
-              ) : (
-                // Nếu chưa đăng nhập
-                <>
-                  <Link
-                    to="/login"
-                    className="px-6 py-1.5 rounded-full bg-white text-emerald-600 hover:bg-gray-100 transition-all font-medium"
-                  >
-                    Đăng nhập
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="px-6 py-1.5 rounded-full bg-emerald-600 border border-white text-white hover:bg-emerald-700 transition-all font-medium"
-                  >
-                    Đăng ký
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <nav className="bg-white">
-          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center py-4">
-            <div className="flex items-center gap-10">
-              <img
-                src="/images/icon.png"
-                alt="Logo"
-                className="w-16 h-16 object-contain transform scale-200 -ml-16"
-              />
-              <ul className="flex gap-8 ">
-                <li>
-                  <Link
-                    to="/"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
-                  >
-                    Trang chủ
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/tu-van" // Đặt đường dẫn thực tế cho "Tư vấn"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
-                  >
-                    Tư vấn
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/thong-ke" // Đặt đường dẫn thực tế cho "Thống kê"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
-                  >
-                    Thống kê
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/cong-dong" // Đặt đường dẫn thực tế cho "Cộng đồng"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
-                  >
-                    Cộng đồng
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/ho-tro" // Đặt đường dẫn thực tế cho "Hỗ trợ"
-                    className="text-gray-700 hover:text-emerald-600 transition-colors"
-                  >
-                    Hỗ trợ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div className="text-gray-700">
-              Hotline:{" "}
-              <span className="font-bold text-emerald-600">1800 1234</span>
-            </div>
-          </div>
-        </nav>
-      </header>
-
-      {/* Main Content */}
-      <main className="pt-32">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-6 leading-tight">
+            <div className={`transform transition-all duration-1000 ${isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Hỗ trợ cai nghiện thuốc lá vì một cuộc sống khỏe mạnh hơn.
               </h1>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
                 Chúng tôi hiểu rằng cai nghiện thuốc lá là một hành trình đầy
-                thách thức. Với đội ngũ chuyên gia giàu kinh nghiệm, chúng tôi
-                cam kết đồng hành cùng bạn trên con đường hướng tới một cuộc
-                sống không khói thuốc.
+                thách thức. Với đội ngũ chuyên gia giàu kinh nghiệm, chúng tôi cam
+                kết đồng hành cùng bạn trên con đường hướng tới một cuộc sống
+                không khói thuốc.
               </p>
-              <button className="bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-all font-medium shadow-lg hover:shadow-xl">
-                Nhận tư vấn miễn phí
-              </button>
+              <Link
+                  to="/membership"
+                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25"
+              >
+                <span className="flex items-center">
+                  ✨ Trải nghiệm tư vấn miễn phí 30 ngày
+                </span>
+              </Link>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid grid-cols-2 gap-4 transform transition-all duration-1000 delay-300 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
               {[1, 2, 3, 4].map((num) => (
-                <div
-                  key={num}
-                  className="overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all"
-                >
-                  <img
-                    src={`../../public/images/hinh${num}.png`}
-                    alt={`Hình minh họa ${num}`}
-                    className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
+                  <div
+                      key={num}
+                      className="overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-110 hover:rotate-1 group"
+                      style={{
+                        animationDelay: `${num * 200}ms`,
+                      }}
+                  >
+                    <img
+                        src={`/images/hinh${num}.png`}
+                        alt={`Hình minh họa ${num}`}
+                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Ranking Section */}
-        <section className="ranking-section bg-gray-50 py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            {/* Ranking content here */}
+        {/* Features Section */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
+                Tại Sao Chọn Chúng Tôi?
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Hệ thống hỗ trợ toàn diện với phương pháp khoa học và cộng đồng
+                nhiệt tình
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[
+                {
+                  icon: "/images/giadinh.png",
+                  title: "Kế Hoạch Cá Nhân",
+                  description:
+                      "Lập kế hoạch cai thuốc phù hợp với hoàn cảnh và mục tiêu cá nhân của bạn",
+                  gradient: "from-green-500 to-emerald-600",
+                },
+                {
+                  icon: "/images/baovemoitruong.png",
+                  title: "Theo Dõi Tiến Trình",
+                  description:
+                      "Ghi nhận và theo dõi tiến trình hàng ngày với thống kê chi tiết và động lực",
+                  gradient: "from-emerald-500 to-teal-600",
+                },
+                {
+                  icon: "/images/yeucaubacsi.png",
+                  title: "Tư Vấn Chuyên Gia",
+                  description:
+                      "Nhận hỗ trợ từ đội ngũ huấn luyện viên và chuyên gia y tế có kinh nghiệm",
+                  gradient: "from-teal-500 to-green-600",
+                },
+                {
+                  icon: "/images/choembe.png",
+                  title: "Cộng Đồng Hỗ Trợ",
+                  description:
+                      "Kết nối với cộng đồng những người cùng chí hướng và chia sẻ kinh nghiệm",
+                  gradient: "from-green-500 to-teal-600",
+                },
+                {
+                  icon: "/images/tietkiemtien.png",
+                  title: "Tiết Kiệm Chi Phí",
+                  description:
+                      "Theo dõi số tiền tiết kiệm được và lập kế hoạch sử dụng hiệu quả",
+                  gradient: "from-emerald-500 to-green-600",
+                },
+                {
+                  icon: "/images/caithienmui.png",
+                  title: "Cải Thiện Sức Khỏe",
+                  description:
+                      "Theo dõi sự cải thiện sức khỏe qua từng giai đoạn bỏ thuốc lá",
+                  gradient: "from-teal-500 to-emerald-600",
+                },
+              ].map((feature, index) => (
+                  <div
+                      key={index}
+                      className={`relative overflow-hidden bg-gradient-to-br ${feature.gradient} rounded-2xl p-8 hover:shadow-2xl transition-all duration-500 text-center group transform hover:scale-105 hover:-translate-y-2 ${
+                          featuresVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                      }`}
+                      style={{
+                        animationDelay: `${index * 150}ms`,
+                        transitionDelay: `${index * 150}ms`,
+                      }}
+                  >
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    <div className="relative z-10">
+                      <div className="mb-6">
+                        <img
+                            src={feature.icon}
+                            alt={feature.title}
+                            className="w-20 h-20 mx-auto group-hover:scale-125 transition-transform duration-500 filter drop-shadow-lg"
+                        />
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-4 group-hover:text-yellow-200 transition-colors duration-300">
+                        {feature.title}
+                      </h3>
+                      <p className="text-white/90 leading-relaxed group-hover:text-white transition-colors duration-300">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-900 text-white">
-          <div className="max-w-7xl mx-auto px-4 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div>
-                <h3 className="text-xl font-bold mb-4">Về chúng tôi</h3>
-                <p className="text-gray-400 leading-relaxed">
-                  Chúng tôi là đơn vị tiên phong trong việc hỗ trợ cai nghiện
-                  thuốc lá tại Việt Nam, với sứ mệnh mang lại cuộc sống khỏe
-                  mạnh cho cộng đồng.
+        {/* News and Statistics Section */}
+        <section className="py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
+                📊 Thống Kê Thực Tế
+              </h2>
+              <p className="text-xl text-gray-600">
+                Những con số báo động về tác hại của thuốc lá
+              </p>
+            </div>
+
+            {/* Sử dụng component biểu đồ tại đây */}
+            <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-8 mb-12 border border-green-100">
+              <SmokingStatsChart
+                  deathsPerYear={smokingStats.deathsPerYearVietnam}
+                  healthcareCosts={smokingStats.healthcareCostsVietnam}
+                  diseases={smokingStats.diseasesCaused}
+              />
+              <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-l-4 border-green-500">
+                <p className="text-sm text-gray-600 text-center">
+                  📋 <strong>Nguồn tham khảo:</strong> Báo Sức Khỏe & Đời Sống, VNExpress, Báo Lao Động.
+                  <br />
+                  <span className="text-xs text-gray-500">
+                    (Lưu ý: Các số liệu phụ trợ trong biểu đồ là giả định để minh họa sự so sánh)
+                  </span>
                 </p>
               </div>
-              <div>
-                <h3 className="text-xl font-bold mb-4">Liên hệ</h3>
-                <ul className="space-y-2 text-gray-400">
-                  <li>📍 Đường Tô Ký, Quận 12, TP.HCM</li>
-                  <li>📞 1800 1234</li>
-                  <li>📧 support@cainghienthuocla.vn</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-4">Kết nối</h3>
-                <div className="flex gap-4">
-                  {/* Add social media icons here */}
-                </div>
-              </div>
             </div>
-            <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-              <p>&copy; 2025 Cai Nghiện Thuốc Lá. All rights reserved.</p>
+
+            {/* News Articles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {newsArticles.map((article, index) => (
+                  <a
+                      key={article.id}
+                      href={article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 group block transform hover:scale-105 hover:-translate-y-2"
+                      style={{
+                        animationDelay: `${index * 200}ms`,
+                      }}
+                  >
+                    <div className="relative overflow-hidden">
+                      <img
+                          src={article.image}
+                          alt={article.title}
+                          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-green-600 transition-colors duration-300 line-clamp-2">
+                        {article.title}
+                      </h3>
+                      <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">
+                        {article.excerpt}
+                      </p>
+
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="font-medium group-hover:text-green-600 transition-colors duration-300">
+                            {article.source}
+                          </span>
+                        </div>
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                          {article.date}
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+              ))}
+            </div>
+
+            <div className="text-center mt-12">
+              <Link
+                  to="/membership"
+                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25"
+              >
+                <span className="flex items-center">
+                  🚀 Đăng Ký Thành Viên Ngay
+                </span>
+              </Link>
             </div>
           </div>
-        </footer>
-      </main>
-    </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-white/5 opacity-50"></div>
+
+          <div className="container mx-auto px-6 text-center relative z-10">
+            <h2 className="text-4xl font-bold mb-6">
+              ✨ Sẵn Sàng Bắt Đầu Hành Trình Mới?
+            </h2>
+            <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
+              Hãy để chúng tôi đồng hành cùng bạn trong việc xây dựng một cuộc
+              sống khỏe mạnh và hạnh phúc hơn.
+            </p>
+
+            {!isAuthenticated ? (
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                      to="/register"
+                      className="bg-white text-green-600 px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    🎯 Đăng Ký Miễn Phí
+                  </Link>
+                  <Link
+                      to="/membership"
+                      className="border-2 border-white text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105"
+                  >
+                    💎 Xem Gói Premium
+                  </Link>
+                </div>
+            ) : (
+                <Link
+                    to="/plan"
+                    className="bg-white text-green-600 px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl inline-block"
+                >
+                  📋 Lập Kế Hoạch Cai Thuốc
+                </Link>
+            )}
+          </div>
+        </section>
+
+        {/* Footer Section */}
+        <Footer />
+      </div>
   );
 };
 
