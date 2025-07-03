@@ -35,6 +35,11 @@ public class QuitPlanController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName(); // Lấy username của người dùng đang đăng nhập
 
+        // Nếu targetQuitDate null, tự động set bằng startDate
+        if (request.getTargetQuitDate() == null && request.getStartDate() != null) {
+            request.setTargetQuitDate(request.getStartDate());
+        }
+
         // Dựa vào cập nhật QuitPlanRequest, service sẽ nhận đầy đủ dữ liệu, bao gồm cả
         // pricePerPack, selectedReasonsJson và selectedTriggersJson.
         QuitPlanResponse response = quitPlanService.createQuitPlan(username, request);

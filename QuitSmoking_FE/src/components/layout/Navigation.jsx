@@ -40,7 +40,6 @@ const Navigation = () => {
   // Navigation items dành cho người dùng đã đăng nhập
   const authNavigationItems = [
     { name: "Trang chủ", href: "/", icon: "🏠" },
-    { name: "Dashboard", href: "/dashboard", icon: "📊" },
     { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
     { name: "Cộng đồng", href: "/community", icon: "👥" },
     // Nếu là COACH thì đổi tên và icon
@@ -182,7 +181,7 @@ if (isAuthenticated) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo và Brand */}
-          <div className="flex items-center">
+          <div className="flex items-center mr-16">
             <Link
               to="/"
               className="flex items-center hover:opacity-80 transition duration-300"
