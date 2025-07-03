@@ -1,6 +1,7 @@
 package com.quitsmoking.services; // Đảm bảo đúng package của bạn
 
 import com.quitsmoking.dto.request.SmokingStatusRequest;
+import com.quitsmoking.dto.response.SmokingStatusResponse;
 import com.quitsmoking.model.SmokingStatus;
 import com.quitsmoking.model.User; // Cần thiết để liên kết trạng thái với User
 import com.quitsmoking.reponsitories.SmokingStatusDAO;
@@ -23,19 +24,16 @@ public class SmokingStatusService {
     }
 
     // Thêm bản ghi tình trạng hút thuốc mới
-    public SmokingStatus addSmokingStatus(String userId, SmokingStatusRequest request) {
+    public SmokingStatusResponse addSmokingStatus(String userId, SmokingStatusRequest request) {
         // Tìm User theo ID
         User user = userDAO.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        // Kiểm tra xem đã có bản ghi cho ngày hôm nay chưa (tùy chọn, nếu bạn muốn chỉ có 1 bản ghi/ngày)
-        // Nếu muốn cho phép nhiều bản ghi trong một ngày, hãy bỏ qua phần kiểm tra này
-        Optional<SmokingStatus> existingStatus = smokingStatusDAO.findByUserAndRecordDate(user, request.getRecordDate());
-        if (existingStatus.isPresent()) {
-            // Bạn có thể chọn ném lỗi, hoặc cập nhật bản ghi hiện có
-            throw new RuntimeException("Smoking status already recorded for this user on this date. Consider updating instead.");
+        // Kiểm tra nếu user đã có bất kỳ bản ghi nào
+        List<SmokingStatus> existingStatuses = smokingStatusDAO.findByUser(user);
+        if (!existingStatuses.isEmpty()) {
+            throw new RuntimeException("Bạn chỉ được ghi nhận tình trạng hút thuốc 1 lần duy nhất.");
         }
-
 
         SmokingStatus newStatus = new SmokingStatus();
         newStatus.setUser(user);
@@ -50,7 +48,24 @@ public class SmokingStatusService {
         newStatus.setRecordDate(request.getRecordDate());
         newStatus.setRecordUpdate(LocalDate.now()); // Đặt ngày cập nhật khi tạo mới
 
-        return smokingStatusDAO.save(newStatus);
+        SmokingStatus saved = smokingStatusDAO.save(newStatus);
+        return toResponse(saved);
+    }
+
+    private SmokingStatusResponse toResponse(SmokingStatus status) {
+        return new SmokingStatusResponse(
+            status.getId(),
+            status.getUser() != null ? status.getUser().getId() : null,
+            status.getTobaccoType(),
+            status.getTobaccoBrand(),
+            status.getNumberOfCigarettes(),
+            status.getUnit(),
+            status.getCostPerPack(),
+            status.getSmokingDurationYears(),
+            status.getHealthIssue(),
+            status.getRecordDate(),
+            status.getRecordUpdate()
+        );
     }
 
     // Lấy tất cả bản ghi tình trạng hút thuốc của một người dùng

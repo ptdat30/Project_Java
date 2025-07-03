@@ -816,16 +816,89 @@ const AdminPanel = () => {
     </div>
   );
 
-  const FeedbackTab = () => (
-    <div className="bg-white rounded-lg shadow-sm">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Phản hồi từ người dùng</h3>
-      </div>
-      <div className="p-6">
-        <p className="text-gray-600">Tính năng quản lý phản hồi đang được phát triển...</p>
-      </div>
-    </div>
-  );
+  // ... (giữ nguyên tất cả các import, useState, useEffect và các hàm khác của AdminPanel)
+
+// ... (phần code của DashboardTab, UsersTab, CoachesTab, ReportsTab)
+
+const FeedbackTab = () => {
+    // feedbacks cần được định nghĩa ở đây, ví dụ từ useState và useEffect để fetch dữ liệu
+    // const [feedbacks, setFeedbacks] = useState([]);
+    // useEffect(() => {
+    //   // Gọi API để lấy dữ liệu feedbacks và set vào state
+    // }, []);
+
+    return (
+        <div className="bg-white rounded-lg shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Phản hồi từ người dùng</h3>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ID Người dùng
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Star
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nội dung phản hồi
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Thời gian gửi
+                            </th>
+                            {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Hành động
+                            </th> */}
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {/* Đảm bảo 'feedbacks' là một mảng và có dữ liệu */}
+                        {/* Nếu 'feedbacks' chưa được định nghĩa hoặc rỗng, đoạn này sẽ lỗi */}
+                        {feedbacks && feedbacks.length > 0 ? (
+                            feedbacks.map((feedback) => (
+                                <tr key={feedback.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {feedback.userId || "N/A"}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {/* SỬA ĐỔI 1: Dùng feedback.rating thay vì feedback.starRating */}
+                                        {feedback.rating !== null ? '⭐'.repeat(feedback.rating) : 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                                        {/* SỬA ĐỔI 2: Dùng feedback.feedbackContent thay vì feedback.message */}
+                                        {feedback.feedbackContent || "N/A"}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {/* SỬA ĐỔI 3: Dùng feedback.submissionTime thay vì feedback.createdAt */}
+                                        {feedback.submissionTime ? new Date(feedback.submissionTime).toLocaleString('vi-VN') : 'N/A'}
+                                    </td>
+                                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button
+                                            onClick={() => console.log("Xem chi tiết feedback:", feedback.id)}
+                                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200 mr-2"
+                                        >
+                                            Xem & Trả lời
+                                        </button>
+                                    </td> */}
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                    Không có phản hồi nào.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            {/* Có thể thêm phân trang ở đây nếu cần, tương tự như UsersTab */}
+        </div>
+    );
+};
+// ... (giữ nguyên phần export default AdminPanel)
 
   return (
     <div className="min-h-screen bg-gray-50">

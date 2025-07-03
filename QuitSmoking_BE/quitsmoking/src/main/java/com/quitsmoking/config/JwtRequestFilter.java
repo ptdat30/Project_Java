@@ -56,8 +56,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         if (requestURI.startsWith("/api/auth/login") ||
             requestURI.startsWith("/api/auth/register") ||
             requestURI.startsWith("/oauth2/authorization") ||
-            requestURI.startsWith("/oauth2/code") || // <-- SỬA TỪ "/oauth2/callback" THÀNH "/oauth2/code"
-            requestURI.startsWith("/login/oauth2") // <-- Đảm bảo bao gồm cả /login/oauth2/** (ví dụ: /login/oauth2/code/google)
+            requestURI.startsWith("/oauth2/code") ||
+            requestURI.startsWith("/login/oauth2")
             ) {
             chain.doFilter(request, response);
             return;
@@ -74,6 +74,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             jwt = authorizationHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(jwt);
+                logger.debug("extractUsername(jwt): {}", username);
             } catch (ExpiredJwtException e) {
                 logger.warn("JWT Token đã hết hạn cho URI {}: {}", requestURI, e.getMessage());
                 // Token hết hạn, đặt trạng thái phản hồi là 401 và dừng xử lý filter này
@@ -113,16 +114,24 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 // Nếu không thể tải thông tin chi tiết người dùng (ví dụ: không tìm thấy người dùng trong DB), coi như chưa được xác thực
             }
 
-
-            if (userDetails != null && jwtUtil.validateToken(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken
-                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-                logger.debug("Người dùng đã được JWT xác thực: {} và đã được đặt trong SecurityContext.", username);
+            // Thêm log chi tiết để debug
+            if (userDetails != null) {
+                logger.debug("Authorities của userDetails: {}", userDetails.getAuthorities());
+                logger.debug("JWT: {}", jwt);
+                boolean isValid = jwtUtil.validateToken(jwt, userDetails);
+                logger.debug("validateToken(jwt, userDetails): {}", isValid);
+                if (isValid) {
+                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    usernamePasswordAuthenticationToken
+                            .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                    logger.debug("Người dùng đã được JWT xác thực: {} và đã được đặt trong SecurityContext.", username);
+                } else {
+                    logger.warn("Xác thực JWT Token thất bại sau khi tải thông tin chi tiết người dùng cho người dùng: {}", username);
+                }
             } else {
-                logger.warn("Xác thực JWT Token thất bại sau khi tải thông tin chi tiết người dùng cho người dùng: {}", username);
+                logger.warn("userDetails null cho username: {}", username);
             }
         }
 

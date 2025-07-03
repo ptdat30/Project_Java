@@ -22,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,22 +32,19 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    // --- TIÊM CÁC THÀNH PHẦN CẦN THIẾT CHO OAUTH2 VÀ JWT ---
-    
+    @Autowired
+    private AuthService authService; // Autowire AuthService
+
+    @Autowired
+    private JwtUtil jwtUtil; // Autowire JwtUtil
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    @SuppressWarnings("deprecation")
-    public DaoAuthenticationProvider authenticationProvider(AuthService authService) {
+    public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(authService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -54,50 +52,43 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-        HttpSecurity http,
-        JwtRequestFilter jwtRequestFilter
-        
-    ) throws Exception {
-        http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(org.springframework.security.config.Customizer.withDefaults())
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Cho phép WebSocket endpoints
-                .requestMatchers("/ws/**").permitAll()
-                // Cho phép các endpoint xác thực cục bộ (đăng nhập, đăng ký)
-                .requestMatchers("/api/auth/**").permitAll()
-                // Cho phép truy cập các file trong thư mục uploads (PUBLIC)
-                .requestMatchers("/uploads/**").permitAll()
-                // Cho phép truy cập endpoint AI chatbox (Gemini proxy)
-                .requestMatchers("/api/ai/chat").permitAll()
-                // Cho phép truy cập endpoint coach-consultations
-                .requestMatchers("/api/coach-consultations", "/api/coach-consultations/**").hasAnyRole("COACH", "ADMIN", "MEMBER")
-                // Cho phép truy cập endpoint chat
-                .requestMatchers("/api/chat/messages", "/api/chat/messages/**").hasAnyRole("MEMBER", "COACH", "ADMIN")
-                // Cho phép truy cập endpoint profile
-                .requestMatchers("/api/user/profile").authenticated()
-                // Endpoint free-trial yêu cầu vai trò GUEST
-                .requestMatchers(HttpMethod.POST, "/api/membership/free-trial").hasAnyRole("GUEST")
-                // Endpoint upgrade yêu cầu các vai trò này
-                .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-                // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực
-                .requestMatchers("/api/**").authenticated()
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
-            )
-            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpStatus.OK.value()))
-                .permitAll()
-            );
-            
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Manually create JwtRequestFilter instance here
+        JwtRequestFilter jwtRequestFilter = new JwtRequestFilter(authService, jwtUtil);
+
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/community/posts").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/posts").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/comments").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/community/posts/like/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
+                        .requestMatchers("/ws/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> response.setStatus(HttpStatus.OK.value()))
+                        .permitAll()
+                );
+
 
         return http.build();
     }
@@ -109,17 +100,17 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:5500",
-            "http://localhost:5500",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
                 "http://localhost:4173",
                 "http://localhost:5173"
 
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
-            "Authorization", "Content-Type", "Accept", "X-Requested-With"
+                "Authorization", "Content-Type", "Accept", "X-Requested-With"
         ));
         configuration.setMaxAge(3600L);
 

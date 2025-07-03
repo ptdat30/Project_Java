@@ -1,6 +1,7 @@
 package com.quitsmoking.controllers;
 
 import com.quitsmoking.dto.request.SmokingStatusRequest;
+import com.quitsmoking.dto.response.SmokingStatusResponse;
 import com.quitsmoking.model.SmokingStatus;
 import com.quitsmoking.services.SmokingStatusService;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/smoking-status") // Base URL cho API này
+@CrossOrigin(origins = "*")
 public class SmokingStatusController {
 
     private final SmokingStatusService smokingStatusService;
@@ -25,7 +27,7 @@ public class SmokingStatusController {
     public ResponseEntity<?> addSmokingStatus(@PathVariable String userId,
                                               @RequestBody SmokingStatusRequest request) {
         try {
-            SmokingStatus newStatus = smokingStatusService.addSmokingStatus(userId, request);
+            SmokingStatusResponse newStatus = smokingStatusService.addSmokingStatus(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(newStatus);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -35,7 +37,7 @@ public class SmokingStatusController {
     }
 
     // Endpoint để lấy tất cả tình trạng hút thuốc của một người dùng
-    @GetMapping("/user/{userId}")
+    @GetMapping
     public ResponseEntity<List<SmokingStatus>> getSmokingStatusesByUser(@PathVariable String userId) {
         try {
             List<SmokingStatus> statuses = smokingStatusService.getAllSmokingStatusesByUser(userId);

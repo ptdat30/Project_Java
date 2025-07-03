@@ -1,20 +1,28 @@
 package com.quitsmoking.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest; // Thêm import này
+import org.springframework.data.domain.Pageable;   // Thêm import này
 
 import com.quitsmoking.dto.response.AdminStatsResponse;
 import com.quitsmoking.dto.response.UserAdminResponse;
+import com.quitsmoking.dto.response.FeedbackResponse; // <-- Đảm bảo import này
+
 import com.quitsmoking.model.Role;
 import com.quitsmoking.model.User;
 import com.quitsmoking.model.QuitPlan;
 import com.quitsmoking.model.DailyProgress;
 import com.quitsmoking.model.MembershipTransaction;
 import com.quitsmoking.model.MembershipPlan;
+import com.quitsmoking.model.Feedback; // <-- Đảm bảo import này cho Feedback entity
+
 import com.quitsmoking.reponsitories.UserDAO;
 import com.quitsmoking.reponsitories.QuitPlanDAO;
 import com.quitsmoking.reponsitories.DailyProgressRepository;
 import com.quitsmoking.reponsitories.MembershipTransactionRepository;
 import com.quitsmoking.reponsitories.MembershipPlanRepository;
+import com.quitsmoking.reponsitories.FeedbackRepository; // <-- Đảm bảo import này
+
 import com.quitsmoking.exceptions.ResourceNotFoundException;
 import com.quitsmoking.exceptions.BadRequestException;
 
@@ -27,25 +35,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.stream.Collectors; // <-- Đảm bảo import này cho Stream API
 
 @Service // Đánh dấu đây là một Spring Service
 public class AdminService {
 
     private final UserDAO userDAO;
-    private final AuthService authService; // Tiêm AuthService vào AdminService
-    private final UserService userService; // Tiêm UserService vào AdminService
+    private final AuthService authService;
+    private final UserService userService;
     private final QuitPlanDAO quitPlanDAO;
     private final DailyProgressRepository dailyProgressRepository;
     private final MembershipTransactionRepository membershipTransactionRepository;
     private final MembershipPlanRepository membershipPlanRepository;
     private final UserStatusService userStatusService;
+    private final FeedbackRepository feedbackRepository; // <-- Khai báo dependency mới
 
     // Constructor để tiêm các dependencies
     public AdminService(UserDAO userDAO, AuthService authService, UserService userService,
-                       QuitPlanDAO quitPlanDAO, DailyProgressRepository dailyProgressRepository,
-                       MembershipTransactionRepository membershipTransactionRepository,
-                       MembershipPlanRepository membershipPlanRepository,
-                       UserStatusService userStatusService) {
+                        QuitPlanDAO quitPlanDAO, DailyProgressRepository dailyProgressRepository,
+                        MembershipTransactionRepository membershipTransactionRepository,
+                        MembershipPlanRepository membershipPlanRepository,
+                        UserStatusService userStatusService,
+                        FeedbackRepository feedbackRepository) { // <-- Thêm vào constructor
         this.userDAO = userDAO;
         this.authService = authService;
         this.userService = userService;
@@ -54,6 +65,7 @@ public class AdminService {
         this.membershipTransactionRepository = membershipTransactionRepository;
         this.membershipPlanRepository = membershipPlanRepository;
         this.userStatusService = userStatusService;
+        this.feedbackRepository = feedbackRepository; // <-- Khởi tạo dependency
     }
 
     // Phương thức để Admin tạo tài khoản mới
@@ -260,11 +272,11 @@ public class AdminService {
             // Log thêm thông tin chi tiết
             System.out.println("User details:");
             allUsers.forEach(user -> {
-                System.out.println("  - ID: " + user.getId() + 
-                                 ", Username: " + user.getUsername() + 
-                                 ", Email: " + user.getEmail() + 
-                                 ", Role: " + user.getRole() + 
-                                 ", Created: " + user.getCreatedAt());
+                System.out.println("    - ID: " + user.getId() + 
+                                     ", Username: " + user.getUsername() + 
+                                     ", Email: " + user.getEmail() + 
+                                     ", Role: " + user.getRole() + 
+                                     ", Created: " + user.getCreatedAt());
             });
             
             return count;
@@ -297,7 +309,7 @@ public class AdminService {
             LocalDate startOfMonth = YearMonth.now().atDay(1);
             return userDAO.findAll().stream()
                     .filter(user -> user.getCreatedAt() != null && 
-                            user.getCreatedAt().toLocalDate().isAfter(startOfMonth.minusDays(1)))
+                                     user.getCreatedAt().toLocalDate().isAfter(startOfMonth.minusDays(1)))
                     .count();
         } catch (Exception e) {
             System.err.println("Error counting new users this month: " + e.getMessage());
@@ -443,13 +455,13 @@ public class AdminService {
             LocalDate startOfMonth = YearMonth.now().atDay(1);
             totalRevenue = membershipTransactionRepository.findAll().stream()
                     .filter(transaction -> transaction.getPaymentStatus() == MembershipTransaction.PaymentStatus.COMPLETED &&
-                            transaction.getCreatedAt().toLocalDate().isAfter(startOfMonth.minusDays(1)))
+                                           transaction.getCreatedAt().toLocalDate().isAfter(startOfMonth.minusDays(1)))
                     .map(MembershipTransaction::getFinalAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             transactionCount = membershipTransactionRepository.findAll().stream()
                     .filter(transaction -> transaction.getPaymentStatus() == MembershipTransaction.PaymentStatus.COMPLETED &&
-                            transaction.getCreatedAt().toLocalDate().isAfter(startOfMonth.minusDays(1)))
+                                           transaction.getCreatedAt().toLocalDate().isAfter(startOfMonth.minusDays(1)))
                     .count();
         } else {
             // Default to all time
@@ -481,7 +493,7 @@ public class AdminService {
             activeUsers = calculateMonthlyActiveUsers();
         } else {
             activeUsers = userDAO.findAll().stream()
-                    .filter(user -> user.isEnabled())
+                    .filter(User::isEnabled) // Changed from user -> user.isEnabled() for method reference
                     .count();
         }
         
@@ -496,9 +508,43 @@ public class AdminService {
         return report;
     }
 
-    public List<Object> getAllFeedbacks(int page, int size) {
-        // Implementation for feedback management
-        return new ArrayList<>();
+    /**
+     * Lấy danh sách các phản hồi từ người dùng dưới dạng DTO.
+     * @param page Số trang (bắt đầu từ 0).
+     * @param size Kích thước trang.
+     * @return Danh sách các đối tượng FeedbackResponse.
+     */
+    public List<FeedbackResponse> getAllFeedbacks(int page, int size) {
+        // Tạo đối tượng Pageable để hỗ trợ phân trang
+        Pageable pageable = PageRequest.of(page, size);
+        
+        // Truy vấn tất cả các Feedback từ database, có hỗ trợ phân trang
+        List<Feedback> feedbacks = feedbackRepository.findAll(pageable).getContent();
+
+        // Chuyển đổi List<Feedback> (entities) sang List<FeedbackResponse> (DTOs)
+        return feedbacks.stream().map(feedback -> {
+            // Lấy userId từ đối tượng User liên kết
+            // Kiểm tra null an toàn vì user có thể không tồn tại hoặc bị xóa
+            String userId = (feedback.getUser() != null) ? feedback.getUser().getId() : "N/A";
+
+            // Thêm các dòng System.out.println() này để kiểm tra dữ liệu
+            // Bạn có thể bỏ đi sau khi debug xong
+            System.out.println("DEBUG - Feedback ID: " + feedback.getId());
+            System.out.println("DEBUG - Rating: " + feedback.getRating());
+            System.out.println("DEBUG - Content from entity: " + feedback.getFeedbackContent()); // <-- Đã sửa
+            System.out.println("DEBUG - Submission Time from entity: " + feedback.getSubmissionTime()); // <-- Đã sửa
+            System.out.println("DEBUG - User ID from entity: " + userId);
+
+            // Tạo một đối tượng FeedbackResponse mới từ dữ liệu của Feedback entity
+            return new FeedbackResponse(
+                feedback.getId(),
+                feedback.getRating(),
+                feedback.getFeedbackContent(), // Giả định đây là getter đúng cho nội dung
+                feedback.getSubmissionTime(),  // Giả định đây là getter đúng cho thời gian
+                userId,
+                null // Hoặc "" - Không có thông báo cụ thể cho từng feedback khi liệt kê
+            );
+        }).collect(Collectors.toList()); // Thu thập các DTO vào một List
     }
 
     public Object replyToFeedback(String feedbackId, String message, String adminId) {

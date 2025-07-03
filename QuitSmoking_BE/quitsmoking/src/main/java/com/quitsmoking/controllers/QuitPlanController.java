@@ -15,6 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/quit-plans") // Base URL cho các API liên quan đến kế hoạch cai thuốc
+@CrossOrigin(origins = "*")
 public class QuitPlanController {
 
     private final QuitPlanService quitPlanService;
