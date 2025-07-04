@@ -3,6 +3,7 @@ import axios from "axios";
 import config from "../../config/config.js";
 import { useAuth } from "../../context/AuthContext";
 import websocketService from "../../services/websocketService";
+import AvatarFromName from '../common/AvatarFromName';
 
 const AdminPanel = () => {
   const { token, loading: authLoading, user } = useAuth();
@@ -667,12 +668,11 @@ const AdminPanel = () => {
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap border-r border-gray-200">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-sm font-semibold">
-                          {user.firstName?.charAt(0)}
-                          {user.lastName?.charAt(0)}
-                        </span>
-                      </div>
+                      <AvatarFromName 
+                        firstName={user.firstName}
+                        lastName={user.lastName}
+                        size={40}
+                      />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
                           {user.firstName} {user.lastName}
@@ -1152,10 +1152,10 @@ const FeedbackTab = () => {
             </div>
             
             {/* Avatar */}
-            {userDetail.pictureUrl && (
-              <div className="mt-6 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Ảnh đại diện</h3>
-                <div className="flex justify-center">
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Ảnh đại diện</h3>
+              <div className="flex justify-center">
+                {userDetail.pictureUrl ? (
                   <img 
                     src={userDetail.pictureUrl} 
                     alt="Avatar" 
@@ -1164,9 +1164,16 @@ const FeedbackTab = () => {
                       e.target.style.display = 'none';
                     }}
                   />
-                </div>
+                ) : (
+                  <AvatarFromName 
+                    firstName={userDetail.firstName} 
+                    lastName={userDetail.lastName} 
+                    size={96}
+                    className="border-4 border-gray-200"
+                  />
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}

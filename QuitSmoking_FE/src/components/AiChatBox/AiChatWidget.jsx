@@ -13,7 +13,8 @@ const AiChatWidget = () => {
     '/recover-password',
     '/forgot-password',
     '/reset-password',
-    '/coach-consultation'
+    '/coach-consultation',
+    '/admin'
   ];
 
   if (hideOnPaths.includes(location.pathname)) return null;
