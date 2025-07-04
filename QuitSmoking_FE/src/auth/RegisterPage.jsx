@@ -7,6 +7,7 @@ import config from "../config/config";
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -33,12 +34,17 @@ const RegisterPage = () => {
     setShowPassword(!showPassword);
   };
 
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   // Hàm validate từng trường và cập nhật state lỗi
   const validateField = (field, value) => {
     let error = "";
     switch (field) {
       case "username":
         if (!value.trim()) error = "Tên đăng nhập không được để trống.";
+        else if (value.trim().length < 4) error = "Tên đăng nhập phải có ít nhất 4 ký tự.";
         break;
       case "email":
         if (!value.trim()) error = "Email không được để trống.";
@@ -340,7 +346,7 @@ const RegisterPage = () => {
               </label>
               <div className="relative"> {/* Essential for positioning the eye icon */}
                 <input
-                    type={showPassword ? "text" : "password"}
+                    type={showConfirmPassword ? "text" : "password"}
                     id="confirmPassword"
                     value={confirmPassword}
                     onChange={handleInputChange(setConfirmPassword, setConfirmPasswordError, "confirmPassword")}
@@ -355,11 +361,11 @@ const RegisterPage = () => {
                 <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200" // Styled icon button
-                    onClick={togglePasswordVisibility}
+                    onClick={toggleConfirmPasswordVisibility}
                 >
                   <i
                       className={`fas ${
-                          showPassword ? "fa-eye-slash" : "fa-eye"
+                          showConfirmPassword ? "fa-eye-slash" : "fa-eye"
                       }`}
                   ></i>
                 </button>

@@ -349,9 +349,7 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                         {getTobaccoBrandOptions().map((brand, idx) => (
                             <motion.div
                                 key={brand}
-                                // Giữ whileHover của framer-motion cho hiệu ứng chuyển động mượt mà
-                                whileHover={{ backgroundColor: '#f0fdf4' }}
-                                // Sử dụng class hover của Tailwind trực tiếp
+                                // Đã loại bỏ whileHover để chỉ dùng Tailwind CSS cho hiệu ứng hover
                                 className="px-4 py-2 hover:bg-green-50 cursor-pointer text-sm text-green-800"
                                 onClick={() => {
                                   setSelectedTobaccoBrand(brand);
