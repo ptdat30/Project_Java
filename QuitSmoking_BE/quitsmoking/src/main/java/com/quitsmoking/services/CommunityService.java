@@ -51,8 +51,7 @@ public class CommunityService {
             String username = (user != null) ? user.getUsername() : null;
             String firstName = (user != null) ? user.getFirstName() : null;
             String lastName = (user != null) ? user.getLastName() : null;
-            // Nếu bạn muốn hiển thị avatar, bạn cần thêm getAvatarUrl() vào lớp User.
-            // String avatarUrl = (user != null) ? user.getAvatarUrl() : null;
+            String avatarUrl = (user != null) ? user.getPictureUrl() : null;
 
             return new CommunityPostDto(
                     post,
@@ -60,7 +59,7 @@ public class CommunityService {
                     username,
                     firstName,
                     lastName,
-                    null // Truyền null cho avatarUrl nếu không có trong User model
+                    avatarUrl
             );
         }).collect(Collectors.toList());
     }
@@ -75,8 +74,7 @@ public class CommunityService {
             String username = (user != null) ? user.getUsername() : null;
             String firstName = (user != null) ? user.getFirstName() : null;
             String lastName = (user != null) ? user.getLastName() : null;
-            // Nếu bạn muốn hiển thị avatar, bạn cần thêm getAvatarUrl() vào lớp User.
-            // String avatarUrl = (user != null) ? user.getAvatarUrl() : null;
+            String avatarUrl = (user != null) ? user.getPictureUrl() : null;
 
             return new CommunityPostDto(
                     post,
@@ -84,7 +82,7 @@ public class CommunityService {
                     username,
                     firstName,
                     lastName,
-                    null // Truyền null cho avatarUrl nếu không có trong User model
+                    avatarUrl
             );
         });
     }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import AvatarFromName from '../common/AvatarFromName';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -223,21 +224,19 @@ if (isAuthenticated) {
                   {user?.pictureUrl ? (
                     <img
                     src={
-                      user.pictureUrl
-                        ? user.pictureUrl.startsWith("http")
-                          ? user.pictureUrl
-                          : `http://localhost:8080${user.pictureUrl}`
-                        : "/images/default-avatar.png"
+                      user.pictureUrl.startsWith("http")
+                        ? user.pictureUrl
+                        : `http://localhost:8080${user.pictureUrl}`
                     }
                     alt="User Avatar"
                     className="h-8 w-8 rounded-full object-cover"
                   />
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-md">
-                      <span className="text-white font-bold text-sm">
-                        {getUserInitial()}
-                      </span>
-                    </div>
+                    <AvatarFromName 
+                      firstName={user?.firstName} 
+                      lastName={user?.lastName} 
+                      size={32}
+                    />
                   )}
                   <span className="ml-2 text-gray-700 font-medium">
                     {getUserDisplayName()}
@@ -368,21 +367,19 @@ if (isAuthenticated) {
                     {user?.pictureUrl ? (
                       <img
                       src={
-                        user.pictureUrl
-                          ? user.pictureUrl.startsWith("http")
-                            ? user.pictureUrl
-                            : `http://localhost:8080${user.pictureUrl}`
-                          : "/images/default-avatar.png"
+                        user.pictureUrl.startsWith("http")
+                          ? user.pictureUrl
+                          : `http://localhost:8080${user.pictureUrl}`
                       }
                       alt="User Avatar"
                       className="h-8 w-8 rounded-full object-cover"
                     />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-md">
-                        <span className="text-white font-bold text-sm">
-                          {getUserInitial()}
-                        </span>
-                      </div>
+                      <AvatarFromName 
+                        firstName={user?.firstName} 
+                        lastName={user?.lastName} 
+                        size={32}
+                      />
                     )}
                     <span className="ml-2 text-gray-700 font-medium">
                       {getUserDisplayName()}
