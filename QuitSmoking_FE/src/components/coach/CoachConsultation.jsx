@@ -3,6 +3,7 @@ import apiService from "../../services/apiService";
 import websocketService from "../../services/websocketService";
 import { useAuth } from "../../context/AuthContext";
 import config from "../../config/config";
+import AvatarFromName from '../common/AvatarFromName';
 
 // Thông tin mẫu cho coach theo email
 const defaultCoachInfoByEmail = {
@@ -254,7 +255,7 @@ const CoachConsultation = () => {
               >
                 ←
               </button>
-              <div className="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full flex items-center justify-center">
                 {isCoach && selectedSession.memberPictureUrl ? (
                   <img
                     src={getFullAvatarUrl(selectedSession.memberPictureUrl)}
@@ -262,15 +263,11 @@ const CoachConsultation = () => {
                     className="h-10 w-10 rounded-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-medium">
-                    {isCoach
-                      ? (selectedSession.memberFirstName
-                          ? selectedSession.memberFirstName.charAt(0)
-                          : selectedSession.memberUsername?.charAt(0))
-                      : (selectedSession.firstName
-                          ? selectedSession.firstName.charAt(0)
-                          : selectedSession.username.charAt(0))}
-                  </span>
+                  <AvatarFromName 
+                    firstName={isCoach ? selectedSession.memberFirstName : selectedSession.firstName}
+                    lastName={isCoach ? selectedSession.memberLastName : selectedSession.lastName}
+                    size={40}
+                  />
                 )}
               </div>
               <div className="ml-3">
@@ -398,22 +395,22 @@ const CoachConsultation = () => {
           {isCoach
             ? sessions.map((session) => (
                 <div key={session.id} className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="h-16 w-16 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
-                      {session.memberPictureUrl ? (
-                        <img
-                          src={getFullAvatarUrl(session.memberPictureUrl)}
-                          alt="Avatar"
-                          className="h-16 w-16 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-white text-xl font-medium">
-                          {session.memberFirstName
-                            ? session.memberFirstName.charAt(0)
-                            : session.memberUsername?.charAt(0)}
-                        </span>
-                      )}
-                    </div>
+                                      <div className="flex items-center mb-4">
+                      <div className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden">
+                        {session.memberPictureUrl ? (
+                          <img
+                            src={getFullAvatarUrl(session.memberPictureUrl)}
+                            alt="Avatar"
+                            className="h-16 w-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <AvatarFromName 
+                            firstName={session.memberFirstName}
+                            lastName={session.memberLastName}
+                            size={64}
+                          />
+                        )}
+                      </div>
                     <div className="ml-4">
                       <h3 className="text-lg font-semibold text-gray-900">
                         {session.memberFirstName
@@ -438,7 +435,7 @@ const CoachConsultation = () => {
                 return (
                   <div key={coach.id} className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center mb-4">
-                      <div className="h-16 w-16 rounded-full bg-green-600 flex items-center justify-center overflow-hidden">
+                      <div className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden">
                         {coach.pictureUrl ? (
                           <img
                             src={getFullAvatarUrl(coach.pictureUrl)}
@@ -446,11 +443,11 @@ const CoachConsultation = () => {
                             className="h-16 w-16 rounded-full object-cover"
                           />
                         ) : (
-                          <span className="text-white text-xl font-medium">
-                            {coach.firstName
-                              ? coach.firstName.charAt(0)
-                              : coach.username.charAt(0)}
-                          </span>
+                          <AvatarFromName 
+                            firstName={coach.firstName}
+                            lastName={coach.lastName}
+                            size={64}
+                          />
                         )}
                       </div>
                       <div className="ml-4">

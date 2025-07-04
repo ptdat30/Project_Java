@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
+import AvatarFromName from '../common/AvatarFromName';
 
 const Community = () => {
   const navigate = useNavigate();
@@ -26,9 +27,9 @@ const Community = () => {
     let isMounted = true;
 
     setLeaderboard([
-      { id: 1, name: "Nguyễn Văn An", days: 365, savings: 18250000, avatar: "/images/1.png", badge: "🥇" },
-      { id: 2, name: "Trần Thị Mai", days: 298, savings: 14900000, avatar: "/images/20.png", badge: "🥈" },
-      { id: 3, name: "Lê Hoàng Nam", days: 256, savings: 12800000, avatar: "/images/22.png", badge: "🥉" },
+      { id: 1, name: "Nguyễn Văn An", days: 365, savings: 18250000, avatar: "/images/bvlq1.jpg", badge: "🥇" },
+      { id: 2, name: "Trần Thị Mai", days: 298, savings: 14900000, avatar: "/images/bvlq2.png", badge: "🥈" },
+      { id: 3, name: "Lê Hoàng Nam", days: 256, savings: 12800000, avatar: "/images/bvlq3.webp", badge: "🥉" },
       { id: 4, name: "Phạm Thị Lan", days: 189, savings: 9450000, avatar: "/images/hinh1.png", badge: "🏆" },
       { id: 5, name: "Võ Minh Khoa", days: 156, savings: 7800000, avatar: "/images/hinh2.png", badge: "⭐" },
       { id: 6, name: "Đặng Thị Hoa", days: 134, savings: 6700000, avatar: "/images/hinh3.png", badge: "💪" },
@@ -100,8 +101,14 @@ const Community = () => {
           likesCount: post.likesCount,
           postType: post.postType,
           title: post.title,
-          pictureUrl: post.pictureUrl,
+          pictureUrl: post.avatarUrl 
+            ? (post.avatarUrl.startsWith("http") 
+                ? post.avatarUrl 
+                : `http://localhost:8080${post.avatarUrl}`)
+            : null,
           username: post.username,
+          firstName: post.firstName,
+          lastName: post.lastName,
         }));
 
         if (isMounted) {
@@ -189,8 +196,14 @@ const Community = () => {
           likesCount: 0,
           postType: selectedPostType,
           title: newTitle,
-          pictureUrl: user.pictureUrl || "/images/default-avatar.png",
+          pictureUrl: user.pictureUrl 
+            ? (user.pictureUrl.startsWith("http") 
+                ? user.pictureUrl 
+                : `http://localhost:8080${user.pictureUrl}`)
+            : null,
           username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
         };
 
         setPosts(prevPosts => [createdPost, ...prevPosts]);
@@ -429,12 +442,25 @@ const Community = () => {
                                 >
                                   {/* Post Header */}
                                   <div className="flex items-start space-x-4 mb-4">
-                                    <motion.img
-                                        whileHover={{ scale: 1.05 }}
-                                        src={post.pictureUrl || "/images/default-avatar.png"}
-                                        alt={post.username}
-                                        className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
-                                    />
+                                    {post.pictureUrl ? (
+                                      <motion.img
+                                          whileHover={{ scale: 1.05 }}
+                                          src={post.pictureUrl.startsWith("http") 
+                                              ? post.pictureUrl 
+                                              : `http://localhost:8080${post.pictureUrl}`}
+                                          alt={post.username}
+                                          className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
+                                      />
+                                    ) : (
+                                      <motion.div whileHover={{ scale: 1.05 }}>
+                                        <AvatarFromName 
+                                          firstName={post.firstName || post.username?.split(' ')[0]} 
+                                          lastName={post.lastName || post.username?.split(' ')[1] || ''} 
+                                          size={48} 
+                                          className="border-2 border-green-200"
+                                        />
+                                      </motion.div>
+                                    )}
                                     <div className="flex-1">
                                       <div className="flex items-center space-x-2">
                                         <h4 className="font-bold text-gray-800">{post.username}</h4>

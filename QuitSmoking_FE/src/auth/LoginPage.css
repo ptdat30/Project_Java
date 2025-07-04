@@ -160,3 +160,15 @@
         font-size: 20px;
     }
 }
+
+/* Ẩn icon hiện/ẩn mật khẩu mặc định của trình duyệt */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+input[type="password"]::-webkit-input-password-toggle-button {
+  display: none !important;
+}

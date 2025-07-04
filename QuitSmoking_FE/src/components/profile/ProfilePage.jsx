@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import config from "../../config/config.js";
 import authService from "../../services/authService";
+import AvatarFromName from '../common/AvatarFromName';
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, updateUser } = useAuth();
@@ -162,24 +163,23 @@ const ProfilePage = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="h-16 w-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <div className="h-16 w-16 rounded-full flex items-center justify-center">
                 {user?.pictureUrl ? (
                   <img
                   src={
-                    user.pictureUrl
-                      ? user.pictureUrl.startsWith("http")
-                        ? user.pictureUrl
-                        : `http://localhost:8080${user.pictureUrl}`
-                      : "/images/default-avatar.png"
+                    user.pictureUrl.startsWith("http")
+                      ? user.pictureUrl
+                      : `http://localhost:8080${user.pictureUrl}`
                   }
                   alt="Avatar"
                   className="h-16 w-16 rounded-full object-cover"
                 />
                 ) : (
-                  <span className="text-white text-xl font-semibold">
-                    {user?.firstName?.charAt(0)}
-                    {user?.lastName?.charAt(0)}
-                  </span>
+                  <AvatarFromName 
+                    firstName={user?.firstName} 
+                    lastName={user?.lastName} 
+                    size={64}
+                  />
                 )}
               </div>
               <div>
