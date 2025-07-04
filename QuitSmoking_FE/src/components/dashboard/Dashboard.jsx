@@ -646,101 +646,176 @@ const Dashboard = () => {
 
             {/* Modal cập nhật tiến trình */}
             {showModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-                <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative overflow-y-auto" style={{maxHeight: '95vh'}}>
-                  <button
-                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl"
-                    onClick={() => setShowModal(false)}
-                    aria-label="Đóng"
-                  >
-                    ×
-                  </button>
-                  <h3 className="text-xl font-bold mb-4 text-center text-green-700">Ghi nhận tiến trình hôm nay</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Tâm trạng:</label>
-                      <div className="flex flex-wrap gap-2">
-                        {[...Array(10)].map((_, i) => (
+                <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative overflow-y-auto" style={{maxHeight: '95vh'}}>
+                    <button
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl"
+                      onClick={() => setShowModal(false)}
+                      aria-label="Đóng"
+                    >
+                      ×
+                    </button>
+                    <h3 className="text-xl font-bold mb-4 text-center text-green-700">Ghi nhận tiến trình hôm nay</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium">Tâm trạng:</label>
+                        <div className="flex flex-wrap gap-2">
+                          {[...Array(10)].map((_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.mood === i + 1 ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                              onClick={() => setProgressInput({ ...progressInput, mood: i + 1 })}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium">Mức thèm thuốc (0-5):</label>
+                        <div className="flex flex-wrap gap-x-2 gap-y-2">
+                          {[0, 1, 2, 3, 4, 5].map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-bold transition-all duration-200
+                                ${progressInput.cravings === value ? "bg-red-500 text-white border-red-600 shadow-md" : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"}`}
+                              onClick={() => setProgressInput({ ...progressInput, cravings: value })}
+                            >
+                              {value}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium">Tập thể dục:</label>
+                        <div className="flex items-center gap-4">
                           <button
-                            key={i}
                             type="button"
-                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.mood === i + 1 ? "bg-blue-500 text-white border-blue-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                            onClick={() => setProgressInput({ ...progressInput, mood: i + 1 })}
+                            className={`px-4 py-2 rounded-lg font-medium border-2 ${progressInput.exercise ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                            onClick={() => setProgressInput({ ...progressInput, exercise: true })}
                           >
-                            {i + 1}
+                            Đã tập
                           </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Mức thèm thuốc (0-5):</label>
-                      <div className="flex flex-wrap gap-x-2 gap-y-2">
-                        {[0, 1, 2, 3, 4, 5].map((value) => (
                           <button
-                            key={value}
                             type="button"
-                            className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-bold transition-all duration-200
-                              ${progressInput.cravings === value ? "bg-red-500 text-white border-red-600 shadow-md" : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"}`}
-                            onClick={() => setProgressInput({ ...progressInput, cravings: value })}
+                            className={`px-4 py-2 rounded-lg font-medium border-2 ${!progressInput.exercise ? "bg-red-400 text-white border-red-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
+                            onClick={() => setProgressInput({ ...progressInput, exercise: false })}
                           >
-                            {value}
+                            Chưa
                           </button>
-                        ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium">Nước uống (ly):</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={8}
+                          value={progressInput.water}
+                          onChange={e => setProgressInput({ ...progressInput, water: Number(e.target.value) })}
+                          className="w-full border rounded px-2 py-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium">Hôm nay có hút thuốc không?</label>
+                        <div className="flex items-center gap-6">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="smokedToday"
+                              checked={progressInput.smokedToday === true}
+                              onChange={() => setProgressInput({ ...progressInput, smokedToday: true })}
+                              className="mr-2"
+                            />
+                            Có
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="smokedToday"
+                              checked={progressInput.smokedToday === false}
+                              onChange={() => setProgressInput({ ...progressInput, smokedToday: false, cigarettesToday: "", moneySpentToday: "" })}
+                              className="mr-2"
+                            />
+                            Không
+                          </label>
+                        </div>
+                      </div>
+                      {progressInput.smokedToday === true && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-gray-700 mb-1 font-medium">Số điếu đã hút hôm nay:</label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={progressInput.cigarettesToday}
+                              onChange={e => setProgressInput({ ...progressInput, cigarettesToday: e.target.value.replace(/\D/, "") })}
+                              className="w-full border rounded px-2 py-1"
+                              placeholder="Nhập số điếu"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-gray-700 mb-1 font-medium">Lượng tiền mua số thuốc đó (VNĐ):</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={progressInput.moneySpentToday}
+                              onChange={e => setProgressInput({ ...progressInput, moneySpentToday: e.target.value })}
+                              className="w-full border rounded px-2 py-1"
+                              placeholder="Nhập số tiền"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium flex items-center">
+                          Chất lượng ngủ (1-10):
+                          <span className="relative group ml-2 cursor-pointer">
+                            <i className="fas fa-question-circle text-blue-400"></i>
+                            <span className="absolute left-6 top-1/2 -translate-y-1/2 w-64 bg-white text-gray-700 text-xs rounded shadow-lg px-3 py-2 z-50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
+                              Đánh giá chất lượng giấc ngủ của bạn hôm nay từ 1 (rất tệ) đến 10 (rất tốt). Hãy nhập số phù hợp với cảm nhận của bạn.
+                            </span>
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={progressInput.sleep}
+                          onChange={e => setProgressInput({ ...progressInput, sleep: Number(e.target.value) })}
+                          className="w-full border rounded px-2 py-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 mb-1 font-medium">Ghi chú:</label>
+                        <textarea
+                          rows={2}
+                          value={progressInput.note}
+                          onChange={e => setProgressInput({ ...progressInput, note: e.target.value })}
+                          className="w-full border rounded px-2 py-1 resize-none"
+                          placeholder="Bạn muốn ghi chú gì cho hôm nay?"
+                        />
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Tập thể dục:</label>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.exercise ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                          onClick={() => setProgressInput({ ...progressInput, exercise: !progressInput.exercise })}
-                        >
-                          {progressInput.exercise ? "✅" : "❌"}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Nước uống (ly):</label>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.water === 8 ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                          onClick={() => setProgressInput({ ...progressInput, water: progressInput.water === 8 ? 0 : 8 })}
-                        >
-                          {progressInput.water === 8 ? "8" : "0"}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Chất lượng ngủ:</label>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          type="button"
-                          className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold ${progressInput.sleep === 10 ? "bg-green-500 text-white border-green-600" : "bg-gray-100 border-gray-300 text-gray-700"}`}
-                          onClick={() => setProgressInput({ ...progressInput, sleep: progressInput.sleep === 10 ? 0 : 10 })}
-                        >
-                          {progressInput.sleep === 10 ? "10" : "0"}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-gray-700 mb-1 font-medium">Ghi chú:</label>
-                      <textarea
-                        value={progressInput.note}
-                        onChange={(e) => setProgressInput({ ...progressInput, note: e.target.value })}
-                        className="w-full h-20 p-2 border border-gray-300 rounded-md"
-                      ></textarea>
+                    <div className="flex justify-end space-x-2 mt-6">
+                      <button
+                        onClick={() => setShowModal(false)}
+                        className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={handleSaveProgress}
+                        className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 font-semibold"
+                      >
+                        Lưu tiến trình
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={handleSaveProgress}
-                    className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-300 text-center block"
-                  >
-                    Lưu tiến trình
-                  </button>
                 </div>
-              </div>
             )}
           </div>
         </div>
