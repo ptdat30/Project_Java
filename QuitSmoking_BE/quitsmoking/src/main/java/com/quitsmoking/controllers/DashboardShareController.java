@@ -142,8 +142,12 @@ public class DashboardShareController {
             // Kiểm tra quyền truy cập
             boolean hasPermission = false;
             
+            // Nếu user là GUEST và đang xem dashboard của chính mình
+            if (currentUser.getRole() == com.quitsmoking.model.Role.GUEST && currentUser.getId().equals(memberId)) {
+                hasPermission = true;
+            }
             // Nếu user là MEMBER và đang xem dashboard của chính mình
-            if (currentUser.getRole() == com.quitsmoking.model.Role.MEMBER && currentUser.getId().equals(memberId)) {
+            else if (currentUser.getRole() == com.quitsmoking.model.Role.MEMBER && currentUser.getId().equals(memberId)) {
                 hasPermission = true;
             }
             // Nếu user là COACH và member đã chia sẻ dashboard với coach này

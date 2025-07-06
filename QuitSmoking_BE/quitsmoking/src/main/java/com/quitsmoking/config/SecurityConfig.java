@@ -104,8 +104,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint share dashboard
                 .requestMatchers("/api/dashboard/share", "/api/dashboard/shared-coaches").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                .requestMatchers("/api/dashboard/shared-members", "/api/dashboard/member/**").hasAnyRole("COACH", "ADMIN", "MEMBER")
-                
+                .requestMatchers("/api/dashboard/shared-members").hasAnyRole("COACH", "ADMIN", "MEMBER")
+                .requestMatchers("/api/dashboard/member/**").hasAnyRole("COACH", "ADMIN", "MEMBER","GUEST")
+
                 // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực                
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
