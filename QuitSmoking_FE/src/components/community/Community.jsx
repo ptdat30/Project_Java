@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
 import AvatarFromName from '../common/AvatarFromName';
+import CommentSection from '../community/CommentSection';
 
 const Community = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Community = () => {
   const [errorPostTypes, setErrorPostTypes] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState('ALL');
   const [accessDeniedForGuest, setAccessDeniedForGuest] = useState(false);
+  const [expandedPostId, setExpandedPostId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -101,11 +103,11 @@ const Community = () => {
           likesCount: post.likesCount,
           postType: post.postType,
           title: post.title,
-          pictureUrl: post.avatarUrl 
-            ? (post.avatarUrl.startsWith("http") 
-                ? post.avatarUrl 
-                : `http://localhost:8080${post.avatarUrl}`)
-            : null,
+          pictureUrl: post.avatarUrl
+              ? (post.avatarUrl.startsWith("http")
+                  ? post.avatarUrl
+                  : `http://localhost:8080${post.avatarUrl}`)
+              : null,
           username: post.username,
           firstName: post.firstName,
           lastName: post.lastName,
@@ -196,11 +198,11 @@ const Community = () => {
           likesCount: 0,
           postType: selectedPostType,
           title: newTitle,
-          pictureUrl: user.pictureUrl 
-            ? (user.pictureUrl.startsWith("http") 
-                ? user.pictureUrl 
-                : `http://localhost:8080${user.pictureUrl}`)
-            : null,
+          pictureUrl: user.pictureUrl
+              ? (user.pictureUrl.startsWith("http")
+                  ? user.pictureUrl
+                  : `http://localhost:8080${user.pictureUrl}`)
+              : null,
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -443,45 +445,45 @@ const Community = () => {
                                   {/* Post Header */}
                                   <div className="flex items-start space-x-4 mb-4">
                                     {post.pictureUrl ? (
-                                      <motion.img
-                                          whileHover={{ scale: 1.05 }}
-                                          src={post.pictureUrl.startsWith("http") 
-                                              ? post.pictureUrl 
-                                              : `http://localhost:8080${post.pictureUrl}`}
-                                          alt={post.username}
-                                          className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
-                                      />
-                                    ) : (
-                                      <motion.div whileHover={{ scale: 1.05 }}>
-                                        <AvatarFromName 
-                                          firstName={post.firstName || post.username?.split(' ')[0]} 
-                                          lastName={post.lastName || post.username?.split(' ')[1] || ''} 
-                                          size={48} 
-                                          className="border-2 border-green-200"
+                                        <motion.img
+                                            whileHover={{ scale: 1.05 }}
+                                            src={post.pictureUrl.startsWith("http")
+                                                ? post.pictureUrl
+                                                : `http://localhost:8080${post.pictureUrl}`}
+                                            alt={post.username}
+                                            className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
                                         />
-                                      </motion.div>
+                                    ) : (
+                                        <motion.div whileHover={{ scale: 1.05 }}>
+                                          <AvatarFromName
+                                              firstName={post.firstName || post.username?.split(' ')[0]}
+                                              lastName={post.lastName || post.username?.split(' ')[1] || ''}
+                                              size={48}
+                                              className="border-2 border-green-200"
+                                          />
+                                        </motion.div>
                                     )}
                                     <div className="flex-1">
                                       <div className="flex items-center space-x-2">
                                         <h4 className="font-bold text-gray-800">{post.username}</h4>
                                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                                  Active Member
-                                </span>
+                  Active Member
+                </span>
                                       </div>
                                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                                         <span>🗓️ {post.createdAt}</span>
                                       </div>
                                     </div>
                                     <div className="text-right">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  post.postType === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-100 text-yellow-700' :
-                                      post.postType === 'MOTIVATION' ? 'bg-blue-100 text-blue-700' :
-                                          post.postType === 'QUESTION' ? 'bg-purple-100 text-purple-700' :
-                                              post.postType === 'ADVICE' ? 'bg-green-100 text-green-700' :
-                                                  'bg-gray-100 text-gray-700'
-                              }`}>
-                                {postTypes.find(type => type === post.postType)}
-                              </span>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  post.postType === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-100 text-yellow-700' :
+                      post.postType === 'MOTIVATION' ? 'bg-blue-100 text-blue-700' :
+                          post.postType === 'QUESTION' ? 'bg-purple-100 text-purple-700' :
+                              post.postType === 'ADVICE' ? 'bg-green-100 text-green-700' :
+                                  'bg-gray-100 text-gray-700'
+              }`}>
+                {postTypes.find(type => type === post.postType)}
+              </span>
                                     </div>
                                   </div>
 
@@ -500,26 +502,47 @@ const Community = () => {
                                         whileTap={{ scale: 0.9 }}
                                         className="flex items-center space-x-2 text-gray-600 hover:text-red-500 transition duration-300"
                                     >
-                                      <span>❤️</span>
-                                      <span>{post.likesCount}</span>
+                                      <span className="text-lg">❤️</span>
+                                      <span className="text-sm">{post.likesCount}</span>
                                     </motion.button>
+
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        className="flex items-center space-x-2 text-gray-600 hover:text-blue-500 transition duration-300"
+                                        onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+                                        className={`flex items-center space-x-2 transition duration-300 ${
+                                            expandedPostId === post.id ? 'text-blue-500' : 'text-gray-600 hover:text-blue-500'
+                                        }`}
                                     >
-                                      <span>💬</span>
-                                      <span>{post.commentsCount}</span>
+                                      <span className="text-lg">💬</span>
+                                      <span className="text-sm">Bình luận</span>
+                                      <span className="text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+      {post.commentsCount}
+    </span>
                                     </motion.button>
+
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
                                         className="flex items-center space-x-2 text-gray-600 hover:text-purple-500 transition duration-300"
                                     >
-                                      <span>🔗</span>
-                                      <span>Chia sẻ</span>
+                                      <span className="text-lg">🔗</span>
+                                      <span className="text-sm">Chia sẻ</span>
                                     </motion.button>
                                   </div>
+
+                                  {/* Expanded Comment Section */}
+                                  {expandedPostId === post.id && (
+                                      <motion.div
+                                          initial={{ opacity: 0, height: 0 }}
+                                          animate={{ opacity: 1, height: 'auto' }}
+                                          exit={{ opacity: 0, height: 0 }}
+                                          transition={{ duration: 0.3 }}
+                                          className="mt-4"
+                                      >
+                                        <CommentSection postId={post.id} />
+                                      </motion.div>
+                                  )}
                                 </motion.div>
                             ))}
                           </AnimatePresence>
@@ -621,85 +644,85 @@ const Community = () => {
                         </motion.div>
                       </div>
                     </motion.div>
-              </div>
-              </motion.div>
-              )}
-
-{activeTab === 'leaderboard' && (
-    <motion.div
-        key="leaderboard"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        className="max-w-4xl mx-auto"
-    >
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-green-100">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
-          <h2 className="text-2xl font-bold text-center">🏆 Bảng Xếp Hạng Cộng Đồng</h2>
-          <p className="text-center text-green-100 mt-2">Những người hùng trong hành trình cai nghiện thuốc lá</p>
-        </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {leaderboard.slice(0, 3).map((member, index) => (
-                <motion.div
-                    key={member.id}
-                    whileHover={{ scale: 1.03 }}
-                    className={`text-center p-6 rounded-xl ${
-                        index === 0 ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300' :
-                            index === 1 ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300' :
-                                'bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300'
-                    }`}
-                >
-                  <div className="text-4xl mb-2">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </div>
-                  <motion.img
-                      whileHover={{ scale: 1.1 }}
-                      src={member.avatar}
-                      alt={member.name}
-                      className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg"
-                  />
-                  <h3 className="font-bold text-gray-800">{member.name}</h3>
-                  <p className="text-lg font-bold text-green-600 mt-2">{member.days} ngày</p>
-                  <p className="text-sm text-gray-600">{formatCurrency(member.savings)} tiết kiệm</p>
                 </motion.div>
-            ))}
-          </div>
+            )}
 
-          <div className="space-y-3">
-            {leaderboard.slice(3).map((member, index) => (
+            {activeTab === 'leaderboard' && (
                 <motion.div
-                    key={member.id}
-                    whileHover={{ x: 5 }}
-                    className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition duration-300"
+                    key="leaderboard"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="max-w-4xl mx-auto"
                 >
-                  <div className="text-2xl mr-4">#{index + 4}</div>
-                  <img
-                      src={member.avatar}
-                      alt={member.name}
-                      className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-green-200"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-800">{member.name}</h4>
-                    <p className="text-sm text-gray-600">{member.days} ngày không hút thuốc</p>
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-green-100">
+                    <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
+                      <h2 className="text-2xl font-bold text-center">🏆 Bảng Xếp Hạng Cộng Đồng</h2>
+                      <p className="text-center text-green-100 mt-2">Những người hùng trong hành trình cai nghiện thuốc lá</p>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        {leaderboard.slice(0, 3).map((member, index) => (
+                            <motion.div
+                                key={member.id}
+                                whileHover={{ scale: 1.03 }}
+                                className={`text-center p-6 rounded-xl ${
+                                    index === 0 ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300' :
+                                        index === 1 ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300' :
+                                            'bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300'
+                                }`}
+                            >
+                              <div className="text-4xl mb-2">
+                                {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                              </div>
+                              <motion.img
+                                  whileHover={{ scale: 1.1 }}
+                                  src={member.avatar}
+                                  alt={member.name}
+                                  className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg"
+                              />
+                              <h3 className="font-bold text-gray-800">{member.name}</h3>
+                              <p className="text-lg font-bold text-green-600 mt-2">{member.days} ngày</p>
+                              <p className="text-sm text-gray-600">{formatCurrency(member.savings)} tiết kiệm</p>
+                            </motion.div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-3">
+                        {leaderboard.slice(3).map((member, index) => (
+                            <motion.div
+                                key={member.id}
+                                whileHover={{ x: 5 }}
+                                className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition duration-300"
+                            >
+                              <div className="text-2xl mr-4">#{index + 4}</div>
+                              <img
+                                  src={member.avatar}
+                                  alt={member.name}
+                                  className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-green-200"
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-bold text-gray-800">{member.name}</h4>
+                                <p className="text-sm text-gray-600">{member.days} ngày không hút thuốc</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-green-600">{formatCurrency(member.savings)}</p>
+                                <p className="text-sm text-gray-500">tiết kiệm</p>
+                              </div>
+                              <div className="ml-4 text-2xl">{member.badge}</div>
+                            </motion.div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600">{formatCurrency(member.savings)}</p>
-                    <p className="text-sm text-gray-500">tiết kiệm</p>
-                  </div>
-                  <div className="ml-4 text-2xl">{member.badge}</div>
                 </motion.div>
-            ))}
-          </div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
-    </motion.div>
-)}
-</AnimatePresence>
-</div>
-</motion.div>
-);
+      </motion.div>
+  );
 };
 
 export default Community;

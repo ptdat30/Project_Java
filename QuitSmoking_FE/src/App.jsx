@@ -19,6 +19,7 @@ import DailyProgressPage from "./components/progress/DailyProgressPage";
 import GhiNhanTinhTrang from "./components/ghinhantinhtrang";
 import Feedback from "./components/feedback/feedback";
 import AiChatWidget from "./components/AiChatBox/AiChatWidget";
+import PostDetail from "./components/community/PostDetail"; // Add this import
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import apiService from "./services/apiService";
 
@@ -29,9 +30,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Đang tải...
-      </div>
+        <div className="flex justify-center items-center h-screen">
+          Đang tải...
+        </div>
     );
   }
 
@@ -51,9 +52,9 @@ const GuestOnlyRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Đang tải...
-      </div>
+        <div className="flex justify-center items-center h-screen">
+          Đang tải...
+        </div>
     );
   }
 
@@ -70,7 +71,7 @@ const AppContent = () => {
 
   // Không hiển thị Navigation trên các trang auth
   const hideNavigation = ["/login", "/register", "/recover-password"].includes(
-    location.pathname
+      location.pathname
   );
 
   // --- Trạng thái kiểm tra backend ---
@@ -166,150 +167,158 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!hideNavigation && <Navigation />}
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route
-          path="/login"
-          element={
-            <GuestOnlyRoute>
-              <LoginPage />
-            </GuestOnlyRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <GuestOnlyRoute>
-              <RegisterPage />
-            </GuestOnlyRoute>
-          }
-        />
-        <Route
-          path="/recover-password"
-          element={
-            <GuestOnlyRoute>
-              <RecoverPasswordProcess />
-            </GuestOnlyRoute>
-          }
-        />
+      <div className="min-h-screen bg-gray-50">
+        {!hideNavigation && <Navigation />}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route
+              path="/login"
+              element={
+                <GuestOnlyRoute>
+                  <LoginPage />
+                </GuestOnlyRoute>
+              }
+          />
+          <Route
+              path="/register"
+              element={
+                <GuestOnlyRoute>
+                  <RegisterPage />
+                </GuestOnlyRoute>
+              }
+          />
+          <Route
+              path="/recover-password"
+              element={
+                <GuestOnlyRoute>
+                  <RecoverPasswordProcess />
+                </GuestOnlyRoute>
+              }
+          />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/community"
-          element={
-            <ProtectedRoute>
-              <Community />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/coach-consultation"
-          element={
-            <ProtectedRoute>
-              <CoachConsultation />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/achievements"
-          element={
-            <ProtectedRoute>
-              <Achievements />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/plan"
-          element={renderPlanRoute()}
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <SettingsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/membership"
-          element={
-            <ProtectedRoute>
-              <MembershipPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/daily-progress"
-          element={
-            <ProtectedRoute>
-              <DailyProgressPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/quit-status"
-          element={
-            <ProtectedRoute>
-              <GhiNhanTinhTrang />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ghinhantinhtrang"
-          element={
-            <ProtectedRoute>
-              {hasRecordedStatus ? (
-                <Navigate to="/plan" replace />
-              ) : (
-                <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
-              )}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/feedback"
-          element={
-            <ProtectedRoute allowedRoles={["MEMBER"]}>
-              <Feedback />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-      <AiChatWidget />
-    </div>
+          <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/community"
+              element={
+                <ProtectedRoute>
+                  <Community />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/posts/:postId"
+              element={
+                <ProtectedRoute>
+                  <PostDetail />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/coach-consultation"
+              element={
+                <ProtectedRoute>
+                  <CoachConsultation />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/achievements"
+              element={
+                <ProtectedRoute>
+                  <Achievements />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/plan"
+              element={renderPlanRoute()}
+          />
+          <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/membership"
+              element={
+                <ProtectedRoute>
+                  <MembershipPage />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/daily-progress"
+              element={
+                <ProtectedRoute>
+                  <DailyProgressPage />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/quit-status"
+              element={
+                <ProtectedRoute>
+                  <GhiNhanTinhTrang />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/ghinhantinhtrang"
+              element={
+                <ProtectedRoute>
+                  {hasRecordedStatus ? (
+                      <Navigate to="/plan" replace />
+                  ) : (
+                      <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
+                  )}
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <AdminPanel />
+                </ProtectedRoute>
+              }
+          />
+          <Route
+              path="/feedback"
+              element={
+                <ProtectedRoute allowedRoles={["MEMBER"]}>
+                  <Feedback />
+                </ProtectedRoute>
+              }
+          />
+        </Routes>
+        <AiChatWidget />
+      </div>
   );
 };
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
   );
 };
 
