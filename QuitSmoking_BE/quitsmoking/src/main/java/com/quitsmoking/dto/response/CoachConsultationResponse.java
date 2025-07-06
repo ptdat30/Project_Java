@@ -18,6 +18,13 @@ public class CoachConsultationResponse {
     private String memberEmail;
     private String memberPictureUrl;
 
+    // Thông tin coach bổ sung
+    private String coachFirstName;
+    private String coachLastName;
+    private String coachUsername;
+    private String coachEmail;
+    private String coachPictureUrl;
+
     // getter & setter
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -44,4 +51,15 @@ public class CoachConsultationResponse {
     public void setMemberEmail(String memberEmail) { this.memberEmail = memberEmail; }
     public String getMemberPictureUrl() { return memberPictureUrl; }
     public void setMemberPictureUrl(String memberPictureUrl) { this.memberPictureUrl = memberPictureUrl; }
+
+    public String getCoachFirstName() { return coachFirstName; }
+    public void setCoachFirstName(String coachFirstName) { this.coachFirstName = coachFirstName; }
+    public String getCoachLastName() { return coachLastName; }
+    public void setCoachLastName(String coachLastName) { this.coachLastName = coachLastName; }
+    public String getCoachUsername() { return coachUsername; }
+    public void setCoachUsername(String coachUsername) { this.coachUsername = coachUsername; }
+    public String getCoachEmail() { return coachEmail; }
+    public void setCoachEmail(String coachEmail) { this.coachEmail = coachEmail; }
+    public String getCoachPictureUrl() { return coachPictureUrl; }
+    public void setCoachPictureUrl(String coachPictureUrl) { this.coachPictureUrl = coachPictureUrl; }
 } 

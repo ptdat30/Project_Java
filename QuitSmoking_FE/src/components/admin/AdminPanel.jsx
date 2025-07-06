@@ -46,6 +46,16 @@ const AdminPanel = () => {
   const [reports, setReports] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
   const [userStatuses, setUserStatuses] = useState(new Map());
+  const [consultations, setConsultations] = useState([]);
+  const [encryptionStats, setEncryptionStats] = useState({
+    unencryptedCount: 0,
+    totalCount: 0
+  });
+  const [migrationStatus, setMigrationStatus] = useState({
+    isRunning: false,
+    message: '',
+    migratedCount: 0
+  });
 
   // Pagination states for UsersTab
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,10 +67,15 @@ const AdminPanel = () => {
   const [showDetailId, setShowDetailId] = useState(null);
   const [userDetail, setUserDetail] = useState(null);
 
+  // Thêm state cho filter
+  const [userRoleFilter, setUserRoleFilter] = useState('');
+  const [userNameFilter, setUserNameFilter] = useState('');
+
   const tabs = [
     { id: "dashboard", name: "Tổng quan", icon: "📊" },
     { id: "users", name: "Quản lý người dùng", icon: "👥" },
-    { id: "coaches", name: "Quản lý huấn luyện viên", icon: "🎓" },
+    { id: "conversations", name: "Quản lý trò chuyện", icon: "💬" },
+    { id: "encryption", name: "Mã hóa tin nhắn", icon: "🔐" },
     { id: "reports", name: "Báo cáo", icon: "📈" },
     { id: "feedback", name: "Phản hồi", icon: "💬" },
     { id: "system", name: "Hệ thống", icon: "⚙️" },
@@ -112,6 +127,8 @@ const AdminPanel = () => {
     if (token && !authLoading) {
       console.log("AdminPanel: Fetching data with token");
       fetchData();
+      if (activeTab === "conversations") fetchConsultations();
+      if (activeTab === "encryption") checkUnencryptedMessages();
     }
   }, [activeTab, token, authLoading]);
 
@@ -193,6 +210,18 @@ const AdminPanel = () => {
     setFeedbacks(response.data);
   };
   
+  const fetchConsultations = async () => {
+    try {
+      const response = await axios.get(`${config.API_BASE_URL}/api/coach-consultations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConsultations(response.data);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách cuộc trò chuyện:', error);
+      setConsultations([]);
+    }
+  };
+  
   const handleUserAction = async (userId, action) => {
     try {
       await axios.post(
@@ -261,10 +290,20 @@ const AdminPanel = () => {
     }).format(amount);
   };
 
-  // Get current users for pagination
+  // Lọc users theo role và username
+  const filteredUsers = users.filter(user => {
+    const matchRole = userRoleFilter ? user.role === userRoleFilter : true;
+    const matchName = userNameFilter ? (
+      (user.username && user.username.toLowerCase().includes(userNameFilter.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(userNameFilter.toLowerCase()))
+    ) : true;
+    return matchRole && matchName;
+  });
+
+  // Pagination cho filteredUsers
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
@@ -346,6 +385,55 @@ const AdminPanel = () => {
     const tokenCheckInterval = setInterval(checkAndRefreshToken, 60000); // 1 minute
     return () => clearInterval(tokenCheckInterval);
   }, [token]);
+
+  const handleDeleteConsultation = async (consultationId) => {
+    try {
+      await axios.delete(`${config.API_BASE_URL}/api/coach-consultations/${consultationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Refresh consultations list
+      fetchConsultations();
+    } catch (error) {
+      console.error('Lỗi khi xóa cuộc trò chuyện:', error);
+    }
+  };
+
+  const checkUnencryptedMessages = async () => {
+    try {
+      const response = await axios.get(`${config.API_BASE_URL}/api/admin/chat-migration/check`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setEncryptionStats({
+        unencryptedCount: response.data.unencryptedCount,
+        totalCount: response.data.unencryptedCount
+      });
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra tin nhắn chưa mã hóa:', error);
+    }
+  };
+
+  const runMigration = async () => {
+    try {
+      setMigrationStatus({ isRunning: true, message: 'Đang mã hóa tin nhắn...', migratedCount: 0 });
+      const response = await axios.post(`${config.API_BASE_URL}/api/admin/chat-migration/migrate`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMigrationStatus({
+        isRunning: false,
+        message: response.data.message,
+        migratedCount: response.data.migratedCount
+      });
+      // Refresh stats
+      checkUnencryptedMessages();
+    } catch (error) {
+      setMigrationStatus({
+        isRunning: false,
+        message: 'Lỗi khi mã hóa: ' + error.message,
+        migratedCount: 0
+      });
+      console.error('Lỗi khi chạy migration:', error);
+    }
+  };
 
   const DashboardTab = () => (
     <div className="space-y-6">
@@ -634,6 +722,33 @@ const AdminPanel = () => {
         <h3 className="text-lg font-semibold text-gray-900">
           Quản lý người dùng
         </h3>
+        {/* Bộ lọc */}
+        <div className="flex flex-wrap gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Lọc theo vai trò:</label>
+            <select
+              value={userRoleFilter}
+              onChange={e => { setUserRoleFilter(e.target.value); setCurrentPage(1); }}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value="">Tất cả</option>
+              <option value="GUEST">Khách</option>
+              <option value="MEMBER">Thành viên</option>
+              <option value="COACH">Huấn luyện viên</option>
+              <option value="ADMIN">Quản trị viên</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tìm kiếm tên hoặc username hoặc email:</label>
+            <input
+              type="text"
+              value={userNameFilter}
+              onChange={e => { setUserNameFilter(e.target.value); setCurrentPage(1); }}
+              placeholder="Nhập tên hoặc username..."
+              className="border rounded px-2 py-1 text-sm"
+            />
+          </div>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -773,10 +888,10 @@ const AdminPanel = () => {
       {/* Pagination Controls */}
       <div className="py-3 px-6 flex justify-between items-center bg-gray-50 border-t border-gray-200">
         <div className="text-sm text-gray-700">
-          Hiển thị {indexOfFirstUser + 1} đến {Math.min(indexOfLastUser, users.length)} của {users.length} người dùng
+          Hiển thị {indexOfFirstUser + 1} đến {Math.min(indexOfLastUser, filteredUsers.length)} của {filteredUsers.length} người dùng
         </div>
         <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-          {Array.from({ length: Math.ceil(users.length / usersPerPage) }, (_, i) => (
+          {Array.from({ length: Math.ceil(filteredUsers.length / usersPerPage) }, (_, i) => (
             <button
               key={i + 1}
               onClick={() => paginate(i + 1)}
@@ -816,11 +931,7 @@ const AdminPanel = () => {
     </div>
   );
 
-  // ... (giữ nguyên tất cả các import, useState, useEffect và các hàm khác của AdminPanel)
-
-// ... (phần code của DashboardTab, UsersTab, CoachesTab, ReportsTab)
-
-const FeedbackTab = () => {
+  const FeedbackTab = () => {
     // feedbacks cần được định nghĩa ở đây, ví dụ từ useState và useEffect để fetch dữ liệu
     // const [feedbacks, setFeedbacks] = useState([]);
     // useEffect(() => {
@@ -898,7 +1009,154 @@ const FeedbackTab = () => {
         </div>
     );
 };
-// ... (giữ nguyên phần export default AdminPanel)
+
+const ConversationsTab = () => (
+  <div className="bg-white rounded-lg shadow-sm">
+    <div className="px-6 py-4 border-b border-gray-200">
+      <h3 className="text-lg font-semibold text-gray-900">Quản lý các cuộc trò chuyện</h3>
+    </div>
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thành viên</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Huấn luyện viên</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại phiên</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {consultations.length > 0 ? consultations.map((c) => (
+            <tr key={c.id}>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <AvatarFromName firstName={c.memberFirstName} lastName={c.memberLastName} size={32} />
+                  <div className="ml-2">
+                    <div className="text-sm font-medium text-gray-900">{c.memberFirstName} {c.memberLastName}</div>
+                    <div className="text-xs text-gray-500">{c.memberUsername} / {c.memberEmail}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <AvatarFromName firstName={c.coachFirstName} lastName={c.coachLastName} size={32} />
+                  <div className="ml-2">
+                    <div className="text-sm font-medium text-gray-900">{c.coachFirstName} {c.coachLastName}</div>
+                    <div className="text-xs text-gray-500">{c.coachUsername} / {c.coachEmail}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.sessionType}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.status}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.createdAt ? new Date(c.createdAt).toLocaleString('vi-VN') : ''}</td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <button onClick={() => handleDeleteConsultation(c.id)} className="px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200">Xóa</button>
+              </td>
+            </tr>
+          )) : (
+            <tr>
+              <td colSpan="6" className="px-6 py-4 text-center text-gray-500">Không có cuộc trò chuyện nào.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+const EncryptionTab = () => (
+  <div className="bg-white rounded-lg shadow-sm">
+    <div className="px-6 py-4 border-b border-gray-200">
+      <h3 className="text-lg font-semibold text-gray-900">Quản lý mã hóa tin nhắn chat</h3>
+      <p className="text-sm text-gray-600 mt-1">
+        Mã hóa tất cả tin nhắn chat để bảo vệ quyền riêng tư của người dùng
+      </p>
+    </div>
+    
+    <div className="p-6 space-y-6">
+      {/* Thống kê mã hóa */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-lg font-medium text-blue-900 mb-2">Thống kê mã hóa</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg p-3 border border-blue-100">
+            <div className="text-2xl font-bold text-blue-600">{encryptionStats.unencryptedCount}</div>
+            <div className="text-sm text-blue-700">Tin nhắn chưa mã hóa</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 border border-green-100">
+            <div className="text-2xl font-bold text-green-600">
+              {encryptionStats.totalCount - encryptionStats.unencryptedCount}
+            </div>
+            <div className="text-sm text-green-700">Tin nhắn đã mã hóa</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trạng thái migration */}
+      {migrationStatus.message && (
+        <div className={`border rounded-lg p-4 ${
+          migrationStatus.isRunning ? 'bg-yellow-50 border-yellow-200' :
+          migrationStatus.migratedCount > 0 ? 'bg-green-50 border-green-200' :
+          'bg-red-50 border-red-200'
+        }`}>
+          <div className="flex items-center">
+            {migrationStatus.isRunning && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600 mr-2"></div>
+            )}
+            <span className={`text-sm font-medium ${
+              migrationStatus.isRunning ? 'text-yellow-800' :
+              migrationStatus.migratedCount > 0 ? 'text-green-800' :
+              'text-red-800'
+            }`}>
+              {migrationStatus.message}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Các nút thao tác */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <button
+          onClick={checkUnencryptedMessages}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+        >
+          🔍 Kiểm tra tin nhắn chưa mã hóa
+        </button>
+        
+        <button
+          onClick={runMigration}
+          disabled={migrationStatus.isRunning || encryptionStats.unencryptedCount === 0}
+          className={`flex-1 font-medium py-2 px-4 rounded-lg transition-colors ${
+            migrationStatus.isRunning || encryptionStats.unencryptedCount === 0
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
+        >
+          {migrationStatus.isRunning ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Đang mã hóa...
+            </>
+          ) : (
+            '🔐 Mã hóa tất cả tin nhắn'
+          )}
+        </button>
+      </div>
+
+      {/* Thông tin bảo mật */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <h4 className="text-lg font-medium text-gray-900 mb-2">Thông tin bảo mật</h4>
+        <ul className="text-sm text-gray-700 space-y-2">
+          <li>• Sử dụng thuật toán AES-256 để mã hóa tin nhắn</li>
+          <li>• Khóa mã hóa được lưu trữ an toàn trong cấu hình hệ thống</li>
+          <li>• Tin nhắn được tự động giải mã khi hiển thị cho người dùng</li>
+          <li>• Quá trình mã hóa không ảnh hưởng đến hiệu suất hệ thống</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -951,6 +1209,8 @@ const FeedbackTab = () => {
             {activeTab === "coaches" && <CoachesTab />}
             {activeTab === "reports" && <ReportsTab />}
             {activeTab === "feedback" && <FeedbackTab />}
+            {activeTab === "conversations" && <ConversationsTab />}
+            {activeTab === "encryption" && <EncryptionTab />}
           </div>
         )}
       </div>

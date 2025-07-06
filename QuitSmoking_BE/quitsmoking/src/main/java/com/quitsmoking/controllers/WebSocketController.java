@@ -55,6 +55,12 @@ public class WebSocketController {
             logger.info("WebSocketController: Sending message to topic: {}", topicDestination);
             messagingTemplate.convertAndSend(topicDestination, response);
             logger.info("WebSocketController: Message sent successfully to topic: {}", topicDestination);
+            
+            // Send to global topic for coaches to receive notifications
+            String globalTopicDestination = "/topic/global-messages";
+            logger.info("WebSocketController: Sending message to global topic: {}", globalTopicDestination);
+            messagingTemplate.convertAndSend(globalTopicDestination, response);
+            logger.info("WebSocketController: Message sent successfully to global topic: {}", globalTopicDestination);
         } catch (Exception e) {
             logger.error("WebSocketController: Error saving message: {}", e.getMessage());
             
@@ -74,6 +80,12 @@ public class WebSocketController {
             logger.info("WebSocketController: Sending message to topic: {}", topicDestination);
             messagingTemplate.convertAndSend(topicDestination, response);
             logger.info("WebSocketController: Message sent successfully to topic: {}", topicDestination);
+            
+            // Send to global topic for coaches to receive notifications
+            String globalTopicDestination = "/topic/global-messages";
+            logger.info("WebSocketController: Sending message to global topic: {}", globalTopicDestination);
+            messagingTemplate.convertAndSend(globalTopicDestination, response);
+            logger.info("WebSocketController: Message sent successfully to global topic: {}", globalTopicDestination);
         }
     }
 

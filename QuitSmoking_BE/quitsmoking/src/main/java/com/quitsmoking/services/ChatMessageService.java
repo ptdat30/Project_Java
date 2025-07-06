@@ -30,6 +30,9 @@ public class ChatMessageService {
     @Autowired
     private UserDAO userDAO;
     
+    @Autowired
+    private EncryptionService encryptionService;
+    
     public ChatMessage sendMessage(String consultationId, String senderId, String content, 
                                   ChatMessage.MessageType messageType, String fileUrl) {
         CoachConsultation consultation = consultationRepository.findById(consultationId)
@@ -41,7 +44,7 @@ public class ChatMessageService {
         ChatMessage message = new ChatMessage();
         message.setConsultation(consultation);
         message.setSender(sender);
-        message.setContent(content);
+        message.setContent(encryptionService.encrypt(content));
         message.setMessageType(messageType);
         message.setFileUrl(fileUrl);
         message.setTimestamp(LocalDateTime.now());
@@ -60,7 +63,7 @@ public class ChatMessageService {
         ChatMessage message = new ChatMessage();
         message.setConsultation(consultation);
         message.setSender(sender);
-        message.setContent(request.getContent());
+        message.setContent(encryptionService.encrypt(request.getContent()));
         message.setMessageType(ChatMessage.MessageType.valueOf(request.getMessageType()));
         message.setTimestamp(LocalDateTime.now());
         message.setIsRead(false);
@@ -69,11 +72,15 @@ public class ChatMessageService {
     }
     
     public Page<ChatMessage> getMessagesByConsultation(String consultationId, Pageable pageable) {
-        return messageRepository.findByConsultationIdWithSenderOrderByTimestampAsc(consultationId, pageable);
+        Page<ChatMessage> messages = messageRepository.findByConsultationIdWithSenderOrderByTimestampAsc(consultationId, pageable);
+        messages.getContent().forEach(this::decryptMessage);
+        return messages;
     }
     
     public List<ChatMessage> getUnreadMessages(String consultationId, String userId) {
-        return messageRepository.findByConsultationIdAndSenderIdNotAndIsReadFalse(consultationId, userId);
+        List<ChatMessage> messages = messageRepository.findByConsultationIdAndSenderIdNotAndIsReadFalse(consultationId, userId);
+        messages.forEach(this::decryptMessage);
+        return messages;
     }
     
     public void markMessagesAsRead(String consultationId, String userId) {
@@ -83,7 +90,9 @@ public class ChatMessageService {
     }
     
     public Optional<ChatMessage> getMessageById(String id) {
-        return messageRepository.findById(id);
+        Optional<ChatMessage> messageOpt = messageRepository.findById(id);
+        messageOpt.ifPresent(this::decryptMessage);
+        return messageOpt;
     }
     
     public void deleteMessage(String id) {
@@ -95,6 +104,23 @@ public class ChatMessageService {
     }
     
     public List<ChatMessage> getRecentMessages(String consultationId, int limit) {
-        return messageRepository.findByConsultationIdWithSenderOrderByTimestampDescLimit(consultationId, limit);
+        List<ChatMessage> messages = messageRepository.findByConsultationIdWithSenderOrderByTimestampDescLimit(consultationId, limit);
+        messages.forEach(this::decryptMessage);
+        return messages;
+    }
+    
+    public void deleteMessagesByConsultationId(String consultationId) {
+        messageRepository.deleteByConsultationId(consultationId);
+    }
+    
+    private void decryptMessage(ChatMessage message) {
+        if (message.getContent() != null && encryptionService.isEncrypted(message.getContent())) {
+            try {
+                String decryptedContent = encryptionService.decrypt(message.getContent());
+                message.setContent(decryptedContent);
+            } catch (Exception e) {
+                System.err.println("Không thể giải mã tin nhắn: " + e.getMessage());
+            }
+        }
     }
 }

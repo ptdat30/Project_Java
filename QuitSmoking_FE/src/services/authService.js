@@ -120,19 +120,58 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor để xử lý token hết hạn
+// Response interceptor để xử lý token hết hạn và quyền truy cập
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403)
-    ) {
-      console.warn(
-        "authService (Interceptor): Nhận phản hồi 401/403 Unauthorized/Forbidden. Đang xóa token và user từ localStorage."
-      );
-      // *** HÀM ĐANG GỌI LOGOUT Ở ĐÂY! ***
-      authService.logout(); // <-- Dòng này cần được kiểm tra
+    if (error.response) {
+      // Kiểm tra nếu là lỗi 401 (Unauthorized) - token hết hạn hoặc không hợp lệ
+      if (error.response.status === 401) {
+        console.warn(
+          "authService (Interceptor): Nhận phản hồi 401 Unauthorized. Token có thể đã hết hạn."
+        );
+        
+        // Log message từ backend để debug
+        const errorMessage = error.response.data?.message || '';
+        console.log("authService: Error message from backend:", errorMessage);
+        
+        // Chỉ logout nếu message thực sự chứa từ khóa token expired/invalid
+        const isTokenExpiredError = errorMessage.toLowerCase().includes('token expired') || 
+                                   errorMessage.toLowerCase().includes('expired') ||
+                                   errorMessage.toLowerCase().includes('hết hạn') ||
+                                   errorMessage.toLowerCase().includes('invalid token') ||
+                                   errorMessage.toLowerCase().includes('không hợp lệ') ||
+                                   errorMessage.toLowerCase().includes('unauthorized') ||
+                                   errorMessage.toLowerCase().includes('authentication failed');
+        
+        // Kiểm tra nếu là lỗi membership-related (không logout)
+        const isMembershipError = errorMessage.toLowerCase().includes('membership') || 
+                                 errorMessage.toLowerCase().includes('upgrade') ||
+                                 errorMessage.toLowerCase().includes('nâng cấp') ||
+                                 errorMessage.toLowerCase().includes('thành viên') ||
+                                 errorMessage.toLowerCase().includes('access') ||
+                                 errorMessage.toLowerCase().includes('plan') ||
+                                 errorMessage.toLowerCase().includes('trial') ||
+                                 errorMessage.toLowerCase().includes('guest') ||
+                                 errorMessage.toLowerCase().includes('restricted');
+        
+        if (isTokenExpiredError && !isMembershipError) {
+          console.log("authService: Token hết hạn, thực hiện logout");
+          authService.logout();
+        } else {
+          console.log("authService: Không phải lỗi token hết hạn hoặc là lỗi membership, không logout - để component xử lý");
+        }
+      }
+      
+      // Kiểm tra nếu là lỗi 403 (Forbidden) - không có quyền truy cập
+      if (error.response.status === 403) {
+        console.warn(
+          "authService (Interceptor): Nhận phản hồi 403 Forbidden. Không có quyền truy cập."
+        );
+        
+        // Không logout cho lỗi 403, để component xử lý hiển thị thông báo nâng cấp
+        console.log("authService: Lỗi quyền truy cập, không logout - để component xử lý");
+      }
     }
     return Promise.reject(error);
   }

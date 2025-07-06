@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
 import AvatarFromName from '../common/AvatarFromName';
+import useMembershipError from "../../hooks/useMembershipError";
+import MembershipUpgradeModal from "../common/MembershipUpgradeModal";
 
 const Community = () => {
   const navigate = useNavigate();
@@ -22,6 +24,9 @@ const Community = () => {
   const [errorPostTypes, setErrorPostTypes] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState('ALL');
   const [accessDeniedForGuest, setAccessDeniedForGuest] = useState(false);
+  
+  // Sử dụng hook xử lý lỗi membership
+  const { showUpgradeModal, errorMessage, handleApiError, closeUpgradeModal } = useMembershipError();
 
   useEffect(() => {
     let isMounted = true;
@@ -621,85 +626,92 @@ const Community = () => {
                         </motion.div>
                       </div>
                     </motion.div>
-              </div>
-              </motion.div>
-              )}
-
-{activeTab === 'leaderboard' && (
-    <motion.div
-        key="leaderboard"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        className="max-w-4xl mx-auto"
-    >
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-green-100">
-        <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
-          <h2 className="text-2xl font-bold text-center">🏆 Bảng Xếp Hạng Cộng Đồng</h2>
-          <p className="text-center text-green-100 mt-2">Những người hùng trong hành trình cai nghiện thuốc lá</p>
-        </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {leaderboard.slice(0, 3).map((member, index) => (
-                <motion.div
-                    key={member.id}
-                    whileHover={{ scale: 1.03 }}
-                    className={`text-center p-6 rounded-xl ${
-                        index === 0 ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300' :
-                            index === 1 ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300' :
-                                'bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300'
-                    }`}
-                >
-                  <div className="text-4xl mb-2">
-                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                   </div>
-                  <motion.img
-                      whileHover={{ scale: 1.1 }}
-                      src={member.avatar}
-                      alt={member.name}
-                      className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg"
-                  />
-                  <h3 className="font-bold text-gray-800">{member.name}</h3>
-                  <p className="text-lg font-bold text-green-600 mt-2">{member.days} ngày</p>
-                  <p className="text-sm text-gray-600">{formatCurrency(member.savings)} tiết kiệm</p>
                 </motion.div>
-            ))}
-          </div>
+            )}
 
-          <div className="space-y-3">
-            {leaderboard.slice(3).map((member, index) => (
+            {activeTab === 'leaderboard' && (
                 <motion.div
-                    key={member.id}
-                    whileHover={{ x: 5 }}
-                    className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition duration-300"
+                    key="leaderboard"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="max-w-4xl mx-auto"
                 >
-                  <div className="text-2xl mr-4">#{index + 4}</div>
-                  <img
-                      src={member.avatar}
-                      alt={member.name}
-                      className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-green-200"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-800">{member.name}</h4>
-                    <p className="text-sm text-gray-600">{member.days} ngày không hút thuốc</p>
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-green-100">
+                    <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6">
+                      <h2 className="text-2xl font-bold text-center">🏆 Bảng Xếp Hạng Cộng Đồng</h2>
+                      <p className="text-center text-green-100 mt-2">Những người hùng trong hành trình cai nghiện thuốc lá</p>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        {leaderboard.slice(0, 3).map((member, index) => (
+                            <motion.div
+                                key={member.id}
+                                whileHover={{ scale: 1.03 }}
+                                className={`text-center p-6 rounded-xl ${
+                                    index === 0 ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-300' :
+                                        index === 1 ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300' :
+                                            'bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300'
+                                }`}
+                            >
+                              <div className="text-4xl mb-2">
+                                {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                              </div>
+                              <motion.img
+                                  whileHover={{ scale: 1.1 }}
+                                  src={member.avatar}
+                                  alt={member.name}
+                                  className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-4 border-white shadow-lg"
+                              />
+                              <h3 className="font-bold text-gray-800">{member.name}</h3>
+                              <p className="text-lg font-bold text-green-600 mt-2">{member.days} ngày</p>
+                              <p className="text-sm text-gray-600">{formatCurrency(member.savings)} tiết kiệm</p>
+                            </motion.div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-3">
+                        {leaderboard.slice(3).map((member, index) => (
+                            <motion.div
+                                key={member.id}
+                                whileHover={{ x: 5 }}
+                                className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition duration-300"
+                            >
+                              <div className="text-2xl mr-4">#{index + 4}</div>
+                              <img
+                                  src={member.avatar}
+                                  alt={member.name}
+                                  className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-green-200"
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-bold text-gray-800">{member.name}</h4>
+                                <p className="text-sm text-gray-600">{member.days} ngày không hút thuốc</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-green-600">{formatCurrency(member.savings)}</p>
+                                <p className="text-sm text-gray-500">tiết kiệm</p>
+                              </div>
+                              <div className="ml-4 text-2xl">{member.badge}</div>
+                            </motion.div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600">{formatCurrency(member.savings)}</p>
-                    <p className="text-sm text-gray-500">tiết kiệm</p>
-                  </div>
-                  <div className="ml-4 text-2xl">{member.badge}</div>
                 </motion.div>
-            ))}
-          </div>
+            )}
+          </AnimatePresence>
+
+          {/* Membership Upgrade Modal */}
+          <MembershipUpgradeModal 
+            isOpen={showUpgradeModal}
+            onClose={closeUpgradeModal}
+            message={errorMessage}
+          />
         </div>
-      </div>
-    </motion.div>
-)}
-</AnimatePresence>
-</div>
-</motion.div>
-);
+      </motion.div>
+    );
 };
 
 export default Community;
