@@ -215,6 +215,11 @@ public abstract class User implements UserDetails, iAuthenticatable, iProfileMan
         this.membershipStartDate = membershipStartDate;
     }
 
+    // Trong class User
+    public String getPictureUrl() {
+        return this.pictureUrl;
+    }
+
     public LocalDate calculateMembershipEndDate() {
         if (this.currentMembershipPlan != null && this.membershipStartDate != null) {
             return this.membershipStartDate.plusDays(this.currentMembershipPlan.getDurationDays());
