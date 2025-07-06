@@ -44,8 +44,6 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
 
   const handleTobaccoTypeChange = (type) => {
     setSelectedTobaccoType(type);
-    setSelectedTobaccoBrand(""); // reset brand when type changes
-    setOtherTobaccoBrand("");
   };
 
   const toggleUnitDropdown = () => {
@@ -63,32 +61,6 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
 
   const toggleHealthIssueDropdown = () => {
     setIsHealthIssueDropdownOpen(!isHealthIssueDropdownOpen);
-  };
-
-  // Hàm lấy danh sách loại thuốc theo loại đã chọn
-  const getTobaccoBrandOptions = () => {
-    if (selectedTobaccoType === "cigarettes") {
-      return ["Jet", "Hero", "Marlboro", "555", "Thăng Long", "Vinataba"];
-    }
-    if (selectedTobaccoType === "rustic") {
-      return [
-        "Thuốc lào Thanh Hóa",
-        "Thuốc lào Tiên Lãng",
-        "Thuốc lào Vĩnh Bảo",
-        "Thuốc lào Cao Bằng",
-        "Thuốc lào Nghệ An"
-      ];
-    }
-    if (selectedTobaccoType === "vape") {
-      return [
-        "Pod System (Caliburn, Xros, Ursa Nano)",
-        "Box Mod (Aegis, Drag, Gen)",
-        "Tinh dầu Salt Nic (Juice Head, Romio, Caballo)",
-        "Tinh dầu Freebase (Gold Leaf, Yogi, Wotofo)",
-        "Pod dùng 1 lần (Relx, Elf Bar, disposable pods)"
-      ];
-    }
-    return [];
   };
 
   // Validation function
@@ -327,11 +299,7 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                     }`}
                 >
                 <span className={selectedTobaccoBrand ? "text-green-800" : "text-gray-500"}>
-                  {selectedTobaccoBrand || (selectedTobaccoType === "cigarettes"
-                    ? "Jet, Hero..."
-                    : selectedTobaccoType === "rustic"
-                      ? "Thuốc lào Thanh Hóa, Tiên Lãng..."
-                      : "Pod System, Box Mod...")}
+                  {selectedTobaccoBrand || "Jet, Hero..."}
                 </span>
                   <motion.i
                       animate={{ rotate: isTobaccoTypeDropdownOpen ? 180 : 0 }}
@@ -346,20 +314,20 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                           exit={{ opacity: 0, y: -10 }}
                           className="absolute left-0 right-0 mt-1 bg-white shadow-lg rounded-md py-1 z-10 border border-green-100 max-h-60 overflow-y-auto"
                       >
-                        {getTobaccoBrandOptions().map((brand, idx) => (
+                        {["Jet", "Hero", "Marlboro", "555", "Thăng Long", "Vinataba"].map((brand) => (
                             <motion.div
                                 key={brand}
-                                // Đã loại bỏ whileHover để chỉ dùng Tailwind CSS cho hiệu ứng hover
-                                className="px-4 py-2 hover:bg-green-50 cursor-pointer text-sm text-green-800"
+                                whileHover={{ backgroundColor: '#f0fdf4' }}
                                 onClick={() => {
                                   setSelectedTobaccoBrand(brand);
                                   setIsTobaccoTypeDropdownOpen(false);
                                 }}
+                                className="px-4 py-2 hover:bg-green-50 cursor-pointer text-sm text-green-800"
                             >
                               {brand}
                             </motion.div>
                         ))}
-                        <div className="px-4 py-2 cursor-pointer text-sm">
+                        <div className="px-4 py-2 hover:bg-green-50 cursor-pointer text-sm">
                           <div className="flex items-center">
                             <span className="text-green-800">Khác:</span>
                             <motion.input
@@ -437,6 +405,7 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                   className="w-full p-3 bg-green-50 rounded-md border-none focus:outline-none focus:ring-2 focus:ring-green-300 text-sm"
               />
               <p className="text-xs text-gray-500 mt-1">Để tính toán số tiền tiết kiệm được</p>
+              <p className="text-xs text-gray-500 mt-1 text-right">Bắt buộc điền vào</p>
             </motion.div>
 
             {/* Health Issues */}
@@ -485,6 +454,7 @@ const GhiNhanTinhTrang = ({ onComplete }) => {
                   )}
                 </AnimatePresence>
               </div>
+              <p className="text-xs text-gray-500 mt-1 text-right">Bắt buộc điền vào</p>
             </motion.div>
 
             {/* Submit Button */}
