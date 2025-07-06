@@ -203,13 +203,13 @@ const HomePage = () => {
   return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
         {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <section className="max-w-7xl mx-auto px-2 sm:px-4 py-8 sm:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 items-center">
             <div className={`transform transition-all duration-1000 ${isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4 sm:mb-6 leading-tight">
                 Hỗ trợ cai nghiện thuốc lá vì một cuộc sống khỏe mạnh hơn.
               </h1>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-8 leading-relaxed">
                 Chúng tôi hiểu rằng cai nghiện thuốc lá là một hành trình đầy
                 thách thức. Với đội ngũ chuyên gia giàu kinh nghiệm, chúng tôi cam
                 kết đồng hành cùng bạn trên con đường hướng tới một cuộc sống
@@ -217,14 +217,14 @@ const HomePage = () => {
               </p>
               <Link
                   to="/membership"
-                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25"
+                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25 text-sm sm:text-base"
               >
                 <span className="flex items-center">
                   ✨ Trải nghiệm tư vấn miễn phí 30 ngày
                 </span>
               </Link>
             </div>
-            <div className={`grid grid-cols-2 gap-4 transform transition-all duration-1000 delay-300 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+            <div className={`grid grid-cols-2 gap-2 sm:gap-4 transform transition-all duration-1000 delay-300 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
               {[1, 2, 3, 4].map((num) => (
                   <div
                       key={num}
@@ -236,7 +236,7 @@ const HomePage = () => {
                     <img
                         src={`/images/hinh${num}.png`}
                         alt={`Hình minh họa ${num}`}
-                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="w-full h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-500 max-w-full"
                     />
                   </div>
               ))}
@@ -245,19 +245,19 @@ const HomePage = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
+        <section className="py-10 sm:py-20 bg-white">
+          <div className="container mx-auto px-2 sm:px-6">
+            <div className="text-center mb-8 sm:mb-16">
+              <h2 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2 sm:mb-4">
                 Tại Sao Chọn Chúng Tôi?
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto">
                 Hệ thống hỗ trợ toàn diện với phương pháp khoa học và cộng đồng
                 nhiệt tình
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
               {[
                 {
                   icon: "/images/giadinh.png",
@@ -304,7 +304,7 @@ const HomePage = () => {
               ].map((feature, index) => (
                   <div
                       key={index}
-                      className={`relative overflow-hidden bg-gradient-to-br ${feature.gradient} rounded-2xl p-8 hover:shadow-2xl transition-all duration-500 text-center group transform hover:scale-105 hover:-translate-y-2 ${
+                      className={`relative overflow-hidden bg-gradient-to-br ${feature.gradient} rounded-2xl p-4 sm:p-8 hover:shadow-2xl transition-all duration-500 text-center group transform hover:scale-105 hover:-translate-y-2 ${
                           featuresVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                       }`}
                       style={{
@@ -316,17 +316,17 @@ const HomePage = () => {
                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                     <div className="relative z-10">
-                      <div className="mb-6">
+                      <div className="mb-4 sm:mb-6">
                         <img
                             src={feature.icon}
                             alt={feature.title}
-                            className="w-20 h-20 mx-auto group-hover:scale-125 transition-transform duration-500 filter drop-shadow-lg"
+                            className="w-12 h-12 sm:w-20 sm:h-20 mx-auto group-hover:scale-125 transition-transform duration-500 filter drop-shadow-lg max-w-full"
                         />
                       </div>
-                      <h3 className="text-xl font-bold text-white mb-4 group-hover:text-yellow-200 transition-colors duration-300">
+                      <h3 className="text-base sm:text-xl font-bold text-white mb-2 sm:mb-4 group-hover:text-yellow-200 transition-colors duration-300">
                         {feature.title}
                       </h3>
-                      <p className="text-white/90 leading-relaxed group-hover:text-white transition-colors duration-300">
+                      <p className="text-white/90 leading-relaxed group-hover:text-white transition-colors duration-300 text-sm sm:text-base">
                         {feature.description}
                       </p>
                     </div>
@@ -337,29 +337,29 @@ const HomePage = () => {
         </section>
 
         {/* News and Statistics Section */}
-        <section className="py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
+        <section className="py-10 sm:py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50">
+          <div className="container mx-auto px-2 sm:px-6">
+            <div className="text-center mb-8 sm:mb-16">
+              <h2 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2 sm:mb-4">
                 📊 Thống Kê Thực Tế
               </h2>
-              <p className="text-xl text-gray-600">
+              <p className="text-base sm:text-xl text-gray-600">
                 Những con số báo động về tác hại của thuốc lá
               </p>
             </div>
 
             {/* Sử dụng component biểu đồ tại đây */}
-            <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-8 mb-12 border border-green-100">
+            <div className="max-w-full sm:max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-4 sm:p-8 mb-6 sm:mb-12 border border-green-100">
               <SmokingStatsChart
                   deathsPerYear={smokingStats.deathsPerYearVietnam}
                   healthcareCosts={smokingStats.healthcareCostsVietnam}
                   diseases={smokingStats.diseasesCaused}
               />
-              <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-l-4 border-green-500">
-                <p className="text-sm text-gray-600 text-center">
+              <div className="mt-4 sm:mt-6 p-2 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-l-4 border-green-500">
+                <p className="text-xs sm:text-sm text-gray-600 text-center">
                   📋 <strong>Nguồn tham khảo:</strong> Báo Sức Khỏe & Đời Sống, VNExpress, Báo Lao Động.
                   <br />
-                  <span className="text-xs text-gray-500">
+                  <span className="text-[10px] sm:text-xs text-gray-500">
                     (Lưu ý: Các số liệu phụ trợ trong biểu đồ là giả định để minh họa sự so sánh)
                   </span>
                 </p>
@@ -367,7 +367,7 @@ const HomePage = () => {
             </div>
 
             {/* News Articles */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
               {newsArticles.map((article, index) => (
                   <a
                       key={article.id}
@@ -383,27 +383,27 @@ const HomePage = () => {
                       <img
                           src={article.image}
                           alt={article.title}
-                          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-500 max-w-full"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
 
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-green-600 transition-colors duration-300 line-clamp-2">
+                    <div className="p-4 sm:p-6">
+                      <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-3 group-hover:text-green-600 transition-colors duration-300 line-clamp-2">
                         {article.title}
                       </h3>
-                      <p className="text-gray-600 mb-4 leading-relaxed line-clamp-3">
+                      <p className="text-xs sm:text-base text-gray-600 mb-2 sm:mb-4 leading-relaxed line-clamp-3">
                         {article.excerpt}
                       </p>
 
-                      <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500">
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                           <span className="font-medium group-hover:text-green-600 transition-colors duration-300">
                             {article.source}
                           </span>
                         </div>
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[10px] sm:text-xs">
                           {article.date}
                         </span>
                       </div>
@@ -412,10 +412,10 @@ const HomePage = () => {
               ))}
             </div>
 
-            <div className="text-center mt-12">
+            <div className="text-center mt-8 sm:mt-12">
               <Link
                   to="/membership"
-                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25"
+                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25"
               >
                 <span className="flex items-center">
                   🚀 Đăng Ký Thành Viên Ngay
@@ -426,30 +426,30 @@ const HomePage = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
+        <section className="py-10 sm:py-20 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-white/5 opacity-50"></div>
 
-          <div className="container mx-auto px-6 text-center relative z-10">
-            <h2 className="text-4xl font-bold mb-6">
+          <div className="container mx-auto px-2 sm:px-6 text-center relative z-10">
+            <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">
               ✨ Sẵn Sàng Bắt Đầu Hành Trình Mới?
             </h2>
-            <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl mb-4 sm:mb-8 text-white/90 max-w-2xl mx-auto">
               Hãy để chúng tôi đồng hành cùng bạn trong việc xây dựng một cuộc
               sống khỏe mạnh và hạnh phúc hơn.
             </p>
 
             {!isAuthenticated ? (
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <Link
                       to="/register"
-                      className="bg-white text-green-600 px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                      className="bg-white text-green-600 px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     🎯 Đăng Ký Miễn Phí
                   </Link>
                   <Link
                       to="/membership"
-                      className="border-2 border-white text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105"
+                      className="border-2 border-white text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105"
                   >
                     💎 Xem Gói Premium
                   </Link>
@@ -457,7 +457,7 @@ const HomePage = () => {
             ) : (
                 <Link
                     to="/plan"
-                    className="bg-white text-green-600 px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl inline-block"
+                    className="bg-white text-green-600 px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl inline-block"
                 >
                   📋 Lập Kế Hoạch Cai Thuốc
                 </Link>
