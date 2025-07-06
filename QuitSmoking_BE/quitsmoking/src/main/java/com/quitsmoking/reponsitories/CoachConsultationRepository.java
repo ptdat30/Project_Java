@@ -52,5 +52,8 @@ public interface CoachConsultationRepository extends JpaRepository<CoachConsulta
     
     @Query("SELECT cc FROM CoachConsultation cc WHERE cc.member.id = :memberId AND cc.coach.id = :coachId ORDER BY cc.createdAt DESC")
     List<CoachConsultation> findByMemberIdAndCoachId(@Param("memberId") String memberId, @Param("coachId") String coachId);
+    
+    @Query("SELECT cc FROM CoachConsultation cc JOIN FETCH cc.member JOIN FETCH cc.coach ORDER BY cc.createdAt DESC")
+    List<CoachConsultation> findAllWithMemberAndCoach();
 }
 

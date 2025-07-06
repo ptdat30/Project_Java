@@ -1,5 +1,6 @@
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import notificationService from './notificationService';
 
 class WebSocketService {
     constructor() {
@@ -39,7 +40,15 @@ class WebSocketService {
                     console.log('WebSocketService: Received message on topic /topic/session.' + sessionId);
                     const receivedMessage = JSON.parse(message.body);
                     console.log('WebSocketService: Parsed message:', receivedMessage);
+                    
+                    // Gọi callback function để xử lý tin nhắn
                     onMessageReceived(receivedMessage);
+                    
+                    // Hiển thị thông báo nếu tin nhắn từ người khác
+                    if (receivedMessage.senderId && receivedMessage.senderId !== userId) {
+                        const senderName = receivedMessage.senderName || receivedMessage.senderUsername || 'Người dùng';
+                        notificationService.showNewMessageNotification(senderName, receivedMessage.sessionId);
+                    }
                 } catch (error) {
                     console.error('Error parsing WebSocket message:', error);
                 }

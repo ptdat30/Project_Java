@@ -41,7 +41,9 @@ const Navigation = () => {
   // Navigation items dành cho người dùng đã đăng nhập
   const authNavigationItems = [
     { name: "Trang chủ", href: "/", icon: "🏠" },
-    { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
+    user?.role === "COACH"
+      ? { name: "Tiến độ thành viên", href: "/dashboard-members", icon: "📈" }
+      : { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
     { name: "Cộng đồng", href: "/community", icon: "👥" },
     // Nếu là COACH thì đổi tên và icon
     user?.role === "COACH"
@@ -274,14 +276,6 @@ if (isAuthenticated) {
                         Hồ sơ cá nhân
                       </Link>
                       <Link
-                        to="/daily-progress"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition duration-300"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <span className="mr-3">📈</span>
-                        Tiến trình hàng ngày
-                      </Link>
-                      <Link
                         to="/settings"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition duration-300"
                         onClick={() => setIsUserMenuOpen(false)}
@@ -393,14 +387,6 @@ if (isAuthenticated) {
                   >
                     <span className="mr-3">👤</span>
                     Hồ sơ cá nhân
-                  </Link>
-                  <Link
-                    to="/daily-progress"
-                    className="flex items-center px-3 py-3 text-base font-medium text-gray-600 hover:text-green-700 hover:bg-white rounded-lg transition duration-300"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="mr-3">📈</span>
-                    Tiến trình hàng ngày
                   </Link>
                   <Link
                     to="/settings"

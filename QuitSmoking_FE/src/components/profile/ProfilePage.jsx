@@ -5,6 +5,8 @@ import axios from "axios";
 import config from "../../config/config.js";
 import authService from "../../services/authService";
 import AvatarFromName from '../common/AvatarFromName';
+import apiService from "../../services/apiService";
+
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, updateUser } = useAuth();
@@ -23,7 +25,29 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!loading && (!isAuthenticated || !user)) {
       navigate("/login");
+      return;
     }
+    
+    // Refetch profile from backend when page loads (only once)
+    const fetchProfile = async () => {
+      try {
+        const latestProfile = await apiService.getUserProfile();
+        if (latestProfile) {
+          updateUser(latestProfile); // Update AuthContext and localStorage
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    
+    // Only fetch if we have a user (to avoid unnecessary calls)
+    if (user) {
+      fetchProfile();
+    }
+  }, []); // Empty dependency array - only run once when component mounts
+
+  // Separate useEffect to update form data when user changes
+  useEffect(() => {
     if (user) {
       setFormData({
         firstName: user.firstName || "",
@@ -35,7 +59,7 @@ const ProfilePage = () => {
         avatar: null, // Không set avatar file, chỉ dùng khi upload mới
       });
     }
-  }, [isAuthenticated, user, loading]);
+  }, [user]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

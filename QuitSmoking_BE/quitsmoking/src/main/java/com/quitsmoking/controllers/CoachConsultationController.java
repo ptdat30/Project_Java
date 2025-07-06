@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/coach-consultations")
@@ -25,6 +26,14 @@ public class CoachConsultationController {
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String coachId
     ) {
+        // Trường hợp: Admin muốn xem tất cả session (không truyền param)
+        if (userId == null && coachId == null) {
+            var sessions = consultationService.getAllConsultationsForAdmin()
+                .stream()
+                .map(CoachConsultation::toDTO)
+                .toList();
+            return ResponseEntity.ok(sessions);
+        }
         // Trường hợp: chỉ truyền coachId (coach lấy tất cả session của mình)
         if (coachId != null && userId == null) {
             var sessions = consultationService.getConsultationsByCoachId(coachId)
@@ -43,6 +52,20 @@ public class CoachConsultationController {
         return ResponseEntity.badRequest().body("Thiếu tham số userId hoặc coachId");
     }
 
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllConsultationsForAdmin() {
+        try {
+            var sessions = consultationService.getAllConsultationsForAdmin()
+                .stream()
+                .map(CoachConsultation::toDTO)
+                .toList();
+            return ResponseEntity.ok(sessions);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi lấy danh sách cuộc trò chuyện: " + e.getMessage());
+        }
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('MEMBER', 'ADMIN', 'COACH')")
     public ResponseEntity<?> createConsultationSession(@RequestBody java.util.Map<String, Object> payload) {
@@ -54,8 +77,8 @@ public class CoachConsultationController {
             return ResponseEntity.badRequest().body("userId và coachId là bắt buộc");
         }
 
-        // Kiểm tra đã có session chưa
-        java.util.Optional<CoachConsultation> existing = consultationService.getConsultationByMemberAndCoach(userId, coachId);
+        // Kiểm tra đã có session chưa - sử dụng method mới để tránh duplicate
+        java.util.Optional<CoachConsultation> existing = consultationService.getLatestConsultationByMemberAndCoach(userId, coachId);
         if (existing.isPresent()) {
             return ResponseEntity.ok(existing.get().toDTO());
         }
@@ -76,5 +99,30 @@ public class CoachConsultationController {
 
         CoachConsultation created = consultationService.createConsultation(consultation);
         return ResponseEntity.ok(created.toDTO());
+    }
+    
+    @PostMapping("/cleanup-duplicates")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('COACH')")
+    public ResponseEntity<?> cleanupDuplicateSessions(@RequestParam(required = false) String coachId) {
+        try {
+            int cleanedCount = consultationService.cleanupDuplicateSessions(coachId);
+            return ResponseEntity.ok(Map.of(
+                "message", "Đã dọn dẹp " + cleanedCount + " session trùng lặp",
+                "cleanedCount", cleanedCount
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi dọn dẹp: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{consultationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deleteConsultation(@PathVariable String consultationId) {
+        try {
+            consultationService.deleteConsultation(consultationId);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa cuộc trò chuyện thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi xóa cuộc trò chuyện: " + e.getMessage());
+        }
     }
 } 

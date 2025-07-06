@@ -85,16 +85,16 @@ public class SecurityConfig {
                 // Endpoint upgrade yêu cầu các vai trò này
                 .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Endpoint ghi nhận tình trạng hút thuốc
-                .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/smoking-status/user/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint lập kế hoạch cai thuốc
                 .requestMatchers(HttpMethod.POST, "/api/quit-plans").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/quit-plans").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép MEMBER, ADMIN, COACH truy cập tiến trình tuần
-                .requestMatchers(HttpMethod.POST, "/api/daily-progress").hasAnyRole("MEMBER", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/daily-progress/**").hasAnyRole("MEMBER", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/daily-progress").hasAnyRole("GUEST", "MEMBER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/daily-progress/**").hasAnyRole("GUEST", "MEMBER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint community
                 .requestMatchers(HttpMethod.POST, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
@@ -102,7 +102,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/community/comments").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.POST, "/api/community/posts/like/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
-
+                // Cho phép truy cập endpoint share dashboard
+                .requestMatchers("/api/dashboard/share", "/api/dashboard/shared-coaches").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers("/api/dashboard/shared-members", "/api/dashboard/member/**").hasAnyRole("COACH", "ADMIN", "MEMBER")
+                
                 // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực                
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()

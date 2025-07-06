@@ -200,6 +200,12 @@ const apiService = {
     return response.data;
   },
 
+  // Lấy dashboard member từ backend
+  getMemberDashboard: async (memberId) => {
+    const response = await apiClient.get(`/api/dashboard/member/${memberId}`);
+    return response.data;
+  },
+
   // Coach Consultation
   getConsultations: async (page = 0, size = 10) => {
     const response = await apiClient.get(

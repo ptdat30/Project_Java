@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import apiService from "../../services/apiService";
+import Modal from "../common/MembershipUpgradeModal";
 
 const daysOfWeek = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [missingType, setMissingType] = useState(null); // 'plan' | 'smoking' | 'both' | null
 
   // Modal & input state cho cập nhật tiến trình
   const [showModal, setShowModal] = useState(false);
@@ -236,66 +238,49 @@ const Dashboard = () => {
     }
   };
 
-  // Lấy tiến trình tuần khi vào dashboard
+  // Khi vào dashboard, lấy dữ liệu tổng hợp từ backend
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    fetchWeeklyProgress();
-    // eslint-disable-next-line
-  }, [isAuthenticated]);
-
-  // Khi weeklyProgress thay đổi, tính lại stats
-  useEffect(() => {
-    if (!isAuthenticated) return;
     const fetchStats = async () => {
+      setLoading(true);
       try {
-        const plans = await apiService.getQuitPlans();
-        if (plans && plans.length > 0) {
-          const plan = plans[0];
-          // Tính số ngày không hút thuốc
-          const quitDate = new Date(plan.targetQuitDate);
-          const today = new Date();
-          const daysWithoutSmoking = Math.max(0, Math.floor((today - quitDate) / (1000 * 60 * 60 * 24)));
-          // Tính tiền tiết kiệm (giả sử mỗi ngày không hút 1 gói)
-          const moneySaved = daysWithoutSmoking * (plan.pricePerPack || 0);
-          // Tính số điếu không hút (giả sử 1 gói = 20 điếu)
-          const cigarettesNotSmoked = daysWithoutSmoking * 20;
-          // Lấy trạng thái hôm nay từ weeklyProgress (nếu có)
-          const todayIdx = (new Date().getDay() + 6) % 7; // 0: T2, ..., 6: CN
-          const todayStatus = weeklyProgress[todayIdx] || {
-            mood: 7,
-            cravings: 0,
-            exercise: false,
-            water: 0,
-            sleep: 7,
-            note: "",
-            smokedToday: false,
-            cigarettesToday: "",
-            moneySpentToday: ""
-          };
-          setStats({
-            daysWithoutSmoking,
-            moneySaved,
-            cigarettesNotSmoked,
-            todayStatus,
-            healthImprovements: [],
-            recentAchievements: [],
-            quitDate: plan.targetQuitDate,
-            currentPhaseInfo: null,
-            phaseSavedMoney: moneySaved,
-          });
-        } else {
-          setStats(null);
-        }
+        // Lấy số liệu tổng hợp từ backend
+        const res = await apiService.getMemberDashboard(user.id);
+        setStats({
+          daysWithoutSmoking: res.summary.smokeFreeDays,
+          moneySaved: res.summary.moneySaved,
+          cigarettesNotSmoked: res.summary.avoidedCigarettes,
+          todayStatus: {
+            mood: res.summary.todayMood,
+            cravings: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.cravings,
+            exercise: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.exercise,
+            water: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.water,
+            sleep: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.sleep,
+            note: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.note,
+            smokedToday: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.smokedToday,
+            cigarettesToday: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.cigarettesToday,
+            moneySpentToday: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.moneySpentToday,
+          },
+          weeklyProgress: res.weeklyProgress.dailyData,
+          statistics: res.statistics,
+          quitDate: res.member && res.member.quitDate,
+        });
+        setWeeklyProgress(res.weeklyProgress.dailyData || []);
+        setMissingType(null);
       } catch (e) {
         setStats(null);
+        setWeeklyProgress([]);
+        setMissingType('plan');
+      } finally {
+        setLoading(false);
       }
     };
     fetchStats();
     // eslint-disable-next-line
-  }, [weeklyProgress, isAuthenticated]);
+  }, [isAuthenticated]);
 
   // Lưu tiến trình ngày
   const handleSaveProgress = async () => {
@@ -328,8 +313,95 @@ const Dashboard = () => {
     startDate.setHours(0, 0, 0, 0);
     const taskDate = new Date(startDate);
     taskDate.setDate(startDate.getDate() + phaseStartOffset + taskIndex);
-    return taskDate.toLocaleDateString('vi-VN');
+    return safeFormatDate(taskDate);
   };
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [coaches, setCoaches] = useState([]);
+  const [sharedCoaches, setSharedCoaches] = useState([]);
+  const [selectedCoachId, setSelectedCoachId] = useState("");
+  const [shareMsg, setShareMsg] = useState("");
+
+  // Lấy danh sách coach
+  useEffect(() => {
+    if (user?.role === "MEMBER") {
+      console.log("Fetching coaches for user:", user.id, "role:", user.role);
+      apiService.getCoaches()
+        .then(data => {
+          console.log("Coaches data received:", data);
+          setCoaches(data);
+        })
+        .catch(error => {
+          console.error("Error fetching coaches:", error);
+          setCoaches([]);
+        });
+      apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches).catch(() => setSharedCoaches([]));
+    }
+  }, [user]);
+
+  // Chia sẻ tiến độ cho coach
+  const handleShare = async () => {
+    if (!selectedCoachId) return;
+    try {
+      await apiService.post("/api/dashboard/share", { coachId: selectedCoachId });
+      setShareMsg("Đã chia sẻ thành công!");
+      setShowShareModal(false);
+      setSelectedCoachId("");
+      // Refresh danh sách coach đã chia sẻ
+      apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches);
+    } catch (e) {
+      setShareMsg("Lỗi khi chia sẻ: " + (e?.response?.data || e.message));
+    }
+  };
+
+  // Hủy chia sẻ
+  const handleUnshare = async (coachId) => {
+    try {
+      await apiService.delete("/api/dashboard/share", { data: { coachId } });
+      setShareMsg("Đã hủy chia sẻ!");
+      apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches);
+    } catch (e) {
+      setShareMsg("Lỗi khi hủy chia sẻ: " + (e?.response?.data || e.message));
+    }
+  };
+
+  // Helper to safely format dates
+  const safeFormatDate = (dateInput) => {
+    const d = new Date(dateInput);
+    return !isNaN(d.getTime()) ? d.toLocaleDateString('vi-VN') : 'Chưa xác định';
+  };
+
+  if (missingType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-md">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Thiếu dữ liệu cần thiết</h2>
+          {missingType === 'both' && (
+            <>
+              <p className="text-gray-700 mb-4">Bạn cần nhập <b>tình trạng hút thuốc</b> và <b>kế hoạch bỏ thuốc</b> để sử dụng dashboard.</p>
+              <div className="flex gap-4 justify-center">
+                <button onClick={() => navigate('/ghinhantinhtrang')} className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition">Nhập tình trạng</button>
+                <button onClick={() => navigate('/plan')} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition">Nhập kế hoạch</button>
+              </div>
+            </>
+          )}
+          {missingType === 'smoking' && (
+            <>
+              <p className="text-gray-700 mb-4">Bạn cần nhập <b>tình trạng hút thuốc</b> để sử dụng dashboard.</p>
+              <button onClick={() => navigate('/ghinhantinhtrang')} className="bg-green-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-700 transition">Nhập tình trạng</button>
+            </>
+          )}
+          {missingType === 'plan' && (
+            <>
+              <p className="text-gray-700 mb-4">Bạn cần nhập <b>kế hoạch bỏ thuốc</b> để sử dụng dashboard.</p>
+              <button onClick={() => navigate('/plan')} className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition">Nhập kế hoạch</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -363,6 +435,33 @@ const Dashboard = () => {
           <p className="text-xl text-gray-600">
             Hy vọng bạn sẽ tin tưởng chúng tôi và thực hiện theo quy trình này!!! 🎉
           </p>
+          {user?.role === "MEMBER" && (
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition w-max"
+                onClick={() => setShowShareModal(true)}
+              >
+                📤 Chia sẻ tiến độ cho coach
+              </button>
+              {sharedCoaches.length > 0 && (
+                <div className="mt-2">
+                  <div className="font-semibold text-gray-700 mb-1">Đã chia sẻ với:</div>
+                  <ul className="space-y-1">
+                    {sharedCoaches.map(coach => (
+                      <li key={coach.id} className="flex items-center gap-2">
+                        <span className="font-medium text-blue-700">{coach.firstName} {coach.lastName} ({coach.email})</span>
+                        <button
+                          className="text-xs text-red-600 hover:underline"
+                          onClick={() => handleUnshare(coach.id)}
+                        >Hủy chia sẻ</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {shareMsg && <div className="text-green-600 text-sm mt-1">{shareMsg}</div>}
+            </div>
+          )}
         </div>
 
         {/* Main Stats Cards */}
@@ -450,7 +549,7 @@ const Dashboard = () => {
                       {phase.name} {isCurrentPhase && <span className="text-blue-600 text-sm">(Hiện tại)</span>}
                     </h3>
                     <p className="text-gray-700 text-sm mb-1">
-                      Thời gian: <span className="font-semibold">{phaseStartDate.toLocaleDateString('vi-VN')}</span> đến <span className="font-semibold">{phaseEndDate.toLocaleDateString('vi-VN')}</span>
+                      Thời gian: <span className="font-semibold">{safeFormatDate(phaseStartDate)}</span> đến <span className="font-semibold">{safeFormatDate(phaseEndDate)}</span>
                     </p>
                     <p className="text-gray-700 text-sm mb-1">
                       Mục tiêu: <span className="font-semibold">{phase.objective}</span>
@@ -502,7 +601,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">🏥 Cải thiện sức khỏe</h2>
               <div className="space-y-4">
-                {stats.healthImprovements.map((improvement, index) => (
+                {(stats.healthImprovements || []).map((improvement, index) => (
                   <div key={index} className={`p-4 rounded-lg border-l-4 ${
                     improvement.achieved ? 'bg-green-50 border-green-500' : 'bg-gray-50 border-gray-300'
                   }`}>
@@ -540,7 +639,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {weeklyProgress.map((day, idx) => (
+                    {(weeklyProgress || []).map((day, idx) => (
                       <tr key={idx} className={getTodayIndex() === idx ? "bg-green-50 font-bold" : ""}>
                         <td className="py-2 px-2 border-b">{daysOfWeek[idx]}</td>
                         {day ? (
@@ -820,6 +919,53 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      {/* Modal chọn coach */}
+      {showShareModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl"
+              onClick={() => setShowShareModal(false)}
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center text-blue-700">Chọn coach để chia sẻ tiến độ</h2>
+            {coaches.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-600 mb-2">Không có coach nào trong hệ thống</p>
+                <p className="text-sm text-gray-500">Vui lòng liên hệ admin để thêm coach</p>
+              </div>
+            ) : (
+              <>
+                <select
+                  className="w-full border rounded-lg p-3 mb-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedCoachId}
+                  onChange={e => setSelectedCoachId(e.target.value)}
+                >
+                  <option value="">-- Chọn coach --</option>
+                  {coaches.map(coach => (
+                    <option key={coach.id} value={coach.id}>
+                      {coach.firstName} {coach.lastName} ({coach.email})
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-4 justify-end">
+                  <button
+                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                    onClick={() => setShowShareModal(false)}
+                  >Hủy</button>
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleShare}
+                    disabled={!selectedCoachId}
+                  >Chia sẻ</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
