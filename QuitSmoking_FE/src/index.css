@@ -16,3 +16,27 @@
 .flash-black {
   animation: flash-black 1.5s ease-in-out infinite;
 }
+
+@media (max-width: 768px) {
+  .container {
+    padding: 8px;
+  }
+  h1, h2, h3 {
+    font-size: 1.2rem;
+  }
+  .some-class {
+    flex-direction: column;
+  }
+}
+
+/* Ẩn spinner trên input type="number" cho Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Ẩn spinner trên input type="number" cho Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
