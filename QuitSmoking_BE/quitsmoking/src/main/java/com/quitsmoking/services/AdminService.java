@@ -3,6 +3,7 @@ package com.quitsmoking.services;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest; // Thêm import này
 import org.springframework.data.domain.Pageable;   // Thêm import này
+import org.springframework.transaction.annotation.Transactional;
 
 import com.quitsmoking.dto.response.AdminStatsResponse;
 import com.quitsmoking.dto.response.UserAdminResponse;
@@ -514,18 +515,33 @@ public class AdminService {
      * @param size Kích thước trang.
      * @return Danh sách các đối tượng FeedbackResponse.
      */
+    @Transactional
     public List<FeedbackResponse> getAllFeedbacks(int page, int size) {
         // Tạo đối tượng Pageable để hỗ trợ phân trang
         Pageable pageable = PageRequest.of(page, size);
         
-        // Truy vấn tất cả các Feedback từ database, có hỗ trợ phân trang
-        List<Feedback> feedbacks = feedbackRepository.findAll(pageable).getContent();
+        // Truy vấn tất cả các Feedback từ database với user được fetch eagerly
+        List<Feedback> feedbacks = feedbackRepository.findAllWithUser(pageable).getContent();
 
         // Chuyển đổi List<Feedback> (entities) sang List<FeedbackResponse> (DTOs)
         return feedbacks.stream().map(feedback -> {
-            // Lấy userId từ đối tượng User liên kết
-            // Kiểm tra null an toàn vì user có thể không tồn tại hoặc bị xóa
-            String userId = (feedback.getUser() != null) ? feedback.getUser().getId() : "N/A";
+            // Lấy thông tin user từ đối tượng User liên kết
+            String userId = "N/A";
+            String userName = "N/A";
+            String userEmail = "N/A";
+            
+            if (feedback.getUser() != null) {
+                User user = feedback.getUser();
+                userId = user.getId();
+                // Tạo tên đầy đủ từ firstName + lastName
+                String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+                String lastName = user.getLastName() != null ? user.getLastName() : "";
+                userName = (firstName + " " + lastName).trim();
+                if (userName.isEmpty()) {
+                    userName = user.getUsername(); // Fallback to username if no name
+                }
+                userEmail = user.getEmail() != null ? user.getEmail() : "N/A";
+            }
 
             // Tạo một đối tượng FeedbackResponse mới từ dữ liệu của Feedback entity
             return new FeedbackResponse(
@@ -534,6 +550,8 @@ public class AdminService {
                 feedback.getFeedbackContent(),
                 feedback.getSubmissionTime(),
                 userId,
+                userName,
+                userEmail,
                 null // Không có thông báo cụ thể cho từng feedback khi liệt kê
             );
         }).collect(Collectors.toList()); // Thu thập các DTO vào một List

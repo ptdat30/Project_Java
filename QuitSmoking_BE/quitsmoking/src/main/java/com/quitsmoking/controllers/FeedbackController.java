@@ -11,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/feedback")
 // Cấu hình CORS cho Controller này. Tốt hơn nên cấu hình toàn cục trong WebConfig.java
@@ -45,34 +43,6 @@ public class FeedbackController {
     }
 
     /**
-     * Endpoint để admin lấy tất cả feedback.
-     * @return ResponseEntity với danh sách FeedbackResponse.
-     */
-    @GetMapping("/admin/all")
-    public ResponseEntity<List<FeedbackResponse>> getAllFeedbacks() {
-        logger.debug("Received GET request to /api/feedback/admin/all");
-        List<FeedbackResponse> responses = feedbackService.getAllFeedbacks();
-        return ResponseEntity.ok(responses);
-    }
-
-    /**
-     * Endpoint để lấy feedback theo ID (cho admin).
-     * @param id ID của feedback cần lấy.
-     * @return ResponseEntity với FeedbackResponse.
-     */
-    @GetMapping("/admin/{id}")
-    public ResponseEntity<FeedbackResponse> getFeedbackById(@PathVariable Long id) {
-        logger.debug("Received GET request to /api/feedback/admin/{}", id);
-        try {
-            FeedbackResponse response = feedbackService.getFeedbackById(id);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            logger.warn("Feedback not found with ID: {}", id);
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    /**
      * Endpoint để người dùng gửi phản hồi/đánh giá.
      * @param feedbackRequest DTO chứa rating và nội dung phản hồi.
      * @return ResponseEntity với FeedbackResponse và HttpStatus.CREATED nếu thành công.
@@ -83,22 +53,4 @@ public class FeedbackController {
         FeedbackResponse response = feedbackService.submitFeedback(feedbackRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-
-    // Bạn có thể thêm các endpoint khác ở đây, ví dụ để lấy danh sách feedback (chỉ cho Admin)
-    /*
-    @GetMapping
-    public ResponseEntity<List<FeedbackResponse>> getAllFeedbacks() {
-        // Đây là ví dụ, bạn cần tạo phương thức trong FeedbackService để lấy và chuyển đổi Feedback sang FeedbackResponse
-        // List<Feedback> feedbacks = feedbackRepository.findAll();
-        // List<FeedbackResponse> responses = feedbacks.stream()
-        //                                            .map(feedback -> FeedbackResponse.builder()
-        //                                                .id(feedback.getId())
-        //                                                .rating(feedback.getRating())
-        //                                                .feedbackContent(feedback.getFeedbackContent())
-        //                                                .submissionTime(feedback.getSubmissionTime())
-        //                                                .build())
-        //                                            .collect(Collectors.toList());
-        // return ResponseEntity.ok(responses);
-    }
-    */
 }

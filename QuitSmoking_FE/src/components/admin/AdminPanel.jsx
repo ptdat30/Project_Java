@@ -9,67 +9,28 @@ const AdminPanel = () => {
   const { token, loading: authLoading, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    newUsersThisMonth: 0,
-    totalPlans: 0,
-    successfulQuits: 0,
-    totalRevenue: 0,
-    totalCoaches: 0,
-    activeCoaches: 0,
-    totalPosts: 0,
-    totalComments: 0,
-    bannedUsers: 0,
-    totalTransactions: 0,
-    monthlyRevenue: 0,
-    yearlyRevenue: 0,
-    dailyActiveUsers: 0,
-    weeklyActiveUsers: 0,
-    monthlyActiveUsers: 0,
-    totalAchievements: 0,
-    achievementsEarned: 0,
-    totalConsultations: 0,
-    activeDiscussions: 0,
-    freeMembers: 0,
-    basicMembers: 0,
-    premiumMembers: 0,
-    vipMembers: 0,
-    activePlans: 0,
-    completedPlans: 0,
-    systemHealth: "UNKNOWN",
-    systemUptime: 0,
-    lastBackup: null,
-  });
+  const [dashboardStats, setDashboardStats] = useState({});
   const [users, setUsers] = useState([]);
   const [coaches, setCoaches] = useState([]);
   const [reports, setReports] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
-  const [userStatuses, setUserStatuses] = useState(new Map());
   const [consultations, setConsultations] = useState([]);
-  const [encryptionStats, setEncryptionStats] = useState({
-    unencryptedCount: 0,
-    totalCount: 0
-  });
-  const [migrationStatus, setMigrationStatus] = useState({
-    isRunning: false,
-    message: '',
-    migratedCount: 0
-  });
-
-  // Pagination states for UsersTab
   const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage] = useState(6); // Display 6 users per page
-
-  // Đặt các state điều khiển modal/chỉnh role ở ngoài map
+  const [usersPerPage] = useState(10);
+  const [userRoleFilter, setUserRoleFilter] = useState("");
+  const [userNameFilter, setUserNameFilter] = useState("");
   const [editRoleId, setEditRoleId] = useState(null);
-  const [selectedRole, setSelectedRole] = useState('');
-  const [showDetailId, setShowDetailId] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("");
   const [userDetail, setUserDetail] = useState(null);
-
-  // Thêm state cho filter
-  const [userRoleFilter, setUserRoleFilter] = useState('');
-  const [userNameFilter, setUserNameFilter] = useState('');
+  const [showDetailId, setShowDetailId] = useState(null);
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [encryptionStats, setEncryptionStats] = useState({ unencryptedCount: 0, totalCount: 0 });
+  const [migrationStatus, setMigrationStatus] = useState({ isRunning: false, message: '', migratedCount: 0 });
+  const [userStatuses, setUserStatuses] = useState(new Map());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConsultationId, setDeleteConsultationId] = useState(null);
+  const [deleteSuccessMessage, setDeleteSuccessMessage] = useState("");
 
   const tabs = [
     { id: "dashboard", name: "Tổng quan", icon: "📊" },
@@ -81,28 +42,23 @@ const AdminPanel = () => {
     { id: "system", name: "Hệ thống", icon: "⚙️" },
   ];
 
-  // Debug token
   useEffect(() => {
     console.log("AdminPanel: Token received:", token ? "Present" : "Missing");
     console.log("AdminPanel: Auth loading:", authLoading);
   }, [token, authLoading]);
 
-  // WebSocket connection for user status
   useEffect(() => {
     if (token && !authLoading && user) {
-      // Connect to WebSocket for user status updates using actual user ID
       websocketService.connect(
-        user.id, // Use actual user ID instead of 'admin'
+        user.id,
         'admin-panel', 
         handleUserStatusUpdate
       );
 
-      // Listen for user status updates via custom events
       const handleStatusUpdate = (event) => {
         const statusUpdate = event.detail;
         console.log('AdminPanel: Received user status update:', statusUpdate);
         setUserStatuses(prev => new Map(prev.set(statusUpdate.userId, statusUpdate)));
-        // Cập nhật luôn trường online của user trong state users
         setUsers(prevUsers => prevUsers.map(u =>
           u.id === statusUpdate.userId ? { ...u, online: statusUpdate.online } : u
         ));
@@ -122,7 +78,6 @@ const AdminPanel = () => {
     setUserStatuses(prev => new Map(prev.set(statusUpdate.userId, statusUpdate)));
   };
 
-  // Fetch data khi component mount và khi tab thay đổi
   useEffect(() => {
     if (token && !authLoading) {
       console.log("AdminPanel: Fetching data with token");
@@ -170,7 +125,7 @@ const AdminPanel = () => {
     const response = await axios.get(`${config.API_BASE_URL}/api/admin/stats`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    setStats(response.data);
+    setDashboardStats(response.data);
   };
   
   const fetchUsers = async () => {
@@ -202,7 +157,7 @@ const AdminPanel = () => {
   
   const fetchFeedbacks = async () => {
     const response = await axios.get(
-      `${config.API_BASE_URL}/api/feedback/admin/all`,
+      `${config.API_BASE_URL}/api/admin/feedbacks`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -231,14 +186,13 @@ const AdminPanel = () => {
       );
 
       alert(`${action === "ban" ? "Khóa" : "Mở khóa"} người dùng thành công!`);
-      fetchUsers(); // Refetch users after action
+      fetchUsers();
     } catch (error) {
       console.error("Lỗi khi thực hiện hành động:", error);
       alert("Có lỗi xảy ra. Vui lòng thử lại!");
     }
   };
 
-  // Quick action handlers
   const handleQuickAction = (action) => {
     switch (action) {
       case "manageUsers":
@@ -290,7 +244,6 @@ const AdminPanel = () => {
     }).format(amount);
   };
 
-  // Lọc users theo role và username
   const filteredUsers = users.filter(user => {
     const matchRole = userRoleFilter ? user.role === userRoleFilter : true;
     const matchName = userNameFilter ? (
@@ -300,15 +253,12 @@ const AdminPanel = () => {
     return matchRole && matchName;
   });
 
-  // Pagination cho filteredUsers
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
-  // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Hàm xử lý lưu role mới
   const handleSaveRole = async (userId) => {
     try {
       const response = await axios.post(
@@ -328,7 +278,6 @@ const AdminPanel = () => {
       console.error('Error updating role:', err);
       
       if (err.response?.status === 401) {
-        // Token hết hạn, logout và redirect
         alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -340,7 +289,6 @@ const AdminPanel = () => {
     }
   };
 
-  // Hàm xử lý xem chi tiết user
   const handleShowDetail = async (userId) => {
     try {
       const res = await axios.get(
@@ -354,22 +302,17 @@ const AdminPanel = () => {
     }
   };
 
-  // Kiểm tra và refresh token nếu cần
   const checkAndRefreshToken = () => {
     if (!token) return;
     
     try {
-      // Decode JWT token để lấy thời gian hết hạn
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const expTime = payload.exp * 1000; // Convert to milliseconds
+      const expTime = payload.exp * 1000;
       const currentTime = Date.now();
       const timeUntilExpiry = expTime - currentTime;
       
-      // Nếu token sẽ hết hạn trong 5 phút tới, refresh
-      if (timeUntilExpiry < 300000) { // 5 minutes = 300000ms
+      if (timeUntilExpiry < 300000) {
         console.log('Token will expire soon, refreshing...');
-        // Có thể thêm logic refresh token ở đây
-        // Hoặc logout user để đăng nhập lại
         alert('Phiên đăng nhập sắp hết hạn. Vui lòng đăng nhập lại!');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -380,9 +323,8 @@ const AdminPanel = () => {
     }
   };
 
-  // Kiểm tra token mỗi phút
   useEffect(() => {
-    const tokenCheckInterval = setInterval(checkAndRefreshToken, 60000); // 1 minute
+    const tokenCheckInterval = setInterval(checkAndRefreshToken, 60000);
     return () => clearInterval(tokenCheckInterval);
   }, [token]);
 
@@ -391,7 +333,6 @@ const AdminPanel = () => {
       await axios.delete(`${config.API_BASE_URL}/api/coach-consultations/${consultationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Refresh consultations list
       fetchConsultations();
     } catch (error) {
       console.error('Lỗi khi xóa cuộc trò chuyện:', error);
@@ -423,7 +364,6 @@ const AdminPanel = () => {
         message: response.data.message,
         migratedCount: response.data.migratedCount
       });
-      // Refresh stats
       checkUnencryptedMessages();
     } catch (error) {
       setMigrationStatus({
@@ -437,7 +377,6 @@ const AdminPanel = () => {
 
   const DashboardTab = () => (
     <div className="space-y-6">
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="flex items-center">
@@ -461,7 +400,7 @@ const AdminPanel = () => {
                 Tổng người dùng
               </h3>
               <p className="text-3xl font-bold text-blue-600">
-                {(stats.totalUsers || 0).toLocaleString()}
+                {(dashboardStats.totalUsers || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -488,7 +427,7 @@ const AdminPanel = () => {
                 Người dùng hoạt động
               </h3>
               <p className="text-3xl font-bold text-green-600">
-                {(stats.activeUsers || 0).toLocaleString()}
+                {(dashboardStats.activeUsers || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -515,7 +454,7 @@ const AdminPanel = () => {
                 Kế hoạch cai thuốc
               </h3>
               <p className="text-3xl font-bold text-purple-600">
-                {(stats.totalPlans || 0).toLocaleString()}
+                {(dashboardStats.totalPlans || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -542,7 +481,7 @@ const AdminPanel = () => {
                 Cai thuốc thành công
               </h3>
               <p className="text-3xl font-bold text-yellow-600">
-                {(stats.successfulQuits || 0).toLocaleString()}
+                {(dashboardStats.successfulQuits || 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -569,7 +508,7 @@ const AdminPanel = () => {
                 Tổng doanh thu
               </h3>
               <p className="text-3xl font-bold text-red-600">
-                {formatCurrency(stats.totalRevenue || 0)}
+                {formatCurrency(dashboardStats.totalRevenue || 0)}
               </p>
             </div>
           </div>
@@ -596,14 +535,13 @@ const AdminPanel = () => {
                 Người dùng mới (tháng này)
               </h3>
               <p className="text-3xl font-bold text-indigo-600">
-                {(stats.newUsersThisMonth || 0).toLocaleString()}
+                {(dashboardStats.newUsersThisMonth || 0).toLocaleString()}
               </p>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Hành động nhanh
@@ -654,7 +592,6 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Hoạt động gần đây
@@ -663,12 +600,12 @@ const AdminPanel = () => {
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center">
               <div className={`w-3 h-3 rounded-full mr-3 ${
-                stats.systemHealth === "HEALTHY" ? "bg-green-500" : 
-                stats.systemHealth === "WARNING" ? "bg-yellow-500" : "bg-red-500"
+                dashboardStats.systemHealth === "HEALTHY" ? "bg-green-500" : 
+                dashboardStats.systemHealth === "WARNING" ? "bg-yellow-500" : "bg-red-500"
               }`}></div>
               <span className="text-sm text-gray-700">
-                Hệ thống: {stats.systemHealth === "HEALTHY" ? "Hoạt động bình thường" : 
-                             stats.systemHealth === "WARNING" ? "Cảnh báo" : "Có vấn đề"}
+                Hệ thống: {dashboardStats.systemHealth === "HEALTHY" ? "Hoạt động bình thường" : 
+                             dashboardStats.systemHealth === "WARNING" ? "Cảnh báo" : "Có vấn đề"}
               </span>
             </div>
             <span className="text-xs text-gray-500">Vừa xong</span>
@@ -677,7 +614,7 @@ const AdminPanel = () => {
             <div className="flex items-center">
               <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
               <span className="text-sm text-gray-700">
-                {(stats.newUsersThisMonth || 0)} người dùng mới đăng ký tháng này
+                {(dashboardStats.newUsersThisMonth || 0)} người dùng mới đăng ký tháng này
               </span>
             </div>
             <span className="text-xs text-gray-500">Tháng này</span>
@@ -686,7 +623,7 @@ const AdminPanel = () => {
             <div className="flex items-center">
               <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
               <span className="text-sm text-gray-700">
-                {(stats.totalPlans || 0)} kế hoạch cai thuốc tổng cộng
+                {(dashboardStats.totalPlans || 0)} kế hoạch cai thuốc tổng cộng
               </span>
             </div>
             <span className="text-xs text-gray-500">Tổng cộng</span>
@@ -695,17 +632,17 @@ const AdminPanel = () => {
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
               <span className="text-sm text-gray-700">
-                {(stats.successfulQuits || 0)} người cai thuốc thành công
+                {(dashboardStats.successfulQuits || 0)} người cai thuốc thành công
               </span>
             </div>
             <span className="text-xs text-gray-500">Tổng cộng</span>
           </div>
-          {stats.lastBackup && (
+          {dashboardStats.lastBackup && (
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
                 <span className="text-sm text-gray-700">
-                  Backup cuối cùng: {new Date(stats.lastBackup).toLocaleString('vi-VN')}
+                  Backup cuối cùng: {new Date(dashboardStats.lastBackup).toLocaleString('vi-VN')}
                 </span>
               </div>
               <span className="text-xs text-gray-500">Backup</span>
@@ -722,7 +659,6 @@ const AdminPanel = () => {
         <h3 className="text-lg font-semibold text-gray-900">
           Quản lý người dùng
         </h3>
-        {/* Bộ lọc */}
         <div className="flex flex-wrap gap-4 mt-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Lọc theo vai trò:</label>
@@ -885,7 +821,6 @@ const AdminPanel = () => {
           </tbody>
         </table>
       </div>
-      {/* Pagination Controls */}
       <div className="py-3 px-6 flex justify-between items-center bg-gray-50 border-t border-gray-200">
         <div className="text-sm text-gray-700">
           Hiển thị {indexOfFirstUser + 1} đến {Math.min(indexOfLastUser, filteredUsers.length)} của {filteredUsers.length} người dùng
@@ -932,12 +867,6 @@ const AdminPanel = () => {
   );
 
   const FeedbackTab = () => {
-    // feedbacks cần được định nghĩa ở đây, ví dụ từ useState và useEffect để fetch dữ liệu
-    // const [feedbacks, setFeedbacks] = useState([]);
-    // useEffect(() => {
-    //   // Gọi API để lấy dữ liệu feedbacks và set vào state
-    // }, []);
-
     return (
         <div className="bg-white rounded-lg shadow-sm">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -965,8 +894,6 @@ const AdminPanel = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Đảm bảo 'feedbacks' là một mảng và có dữ liệu */}
-                        {/* Nếu 'feedbacks' chưa được định nghĩa hoặc rỗng, đoạn này sẽ lỗi */}
                         {feedbacks && feedbacks.length > 0 ? (
                             feedbacks.map((feedback) => (
                                 <tr key={feedback.id}>
@@ -974,12 +901,12 @@ const AdminPanel = () => {
                                         <div className="flex items-center">
                                             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
                                                 <span className="text-green-600 font-medium text-sm">
-                                                    {feedback.userId ? feedback.userId.substring(0, 2).toUpperCase() : 'U'}
+                                                    {feedback.userName ? feedback.userName.substring(0, 2).toUpperCase() : 'U'}
                                                 </span>
                                             </div>
                                             <div>
-                                                <div className="font-medium text-gray-900">User ID: {feedback.userId}</div>
-                                                <div className="text-gray-500 text-xs">{feedback.message}</div>
+                                                <div className="font-medium text-gray-900">{feedback.userName || 'N/A'}</div>
+                                                <div className="text-gray-500 text-xs">{feedback.userEmail || 'N/A'}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -1001,8 +928,11 @@ const AdminPanel = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <button
-                                            onClick={() => console.log("Xem chi tiết feedback:", feedback.id)}
-                                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200 mr-2"
+                                            onClick={() => {
+                                                setSelectedFeedback(feedback);
+                                                setShowFeedbackModal(true);
+                                            }}
+                                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200"
                                         >
                                             Xem chi tiết
                                         </button>
@@ -1019,7 +949,6 @@ const AdminPanel = () => {
                     </tbody>
                 </table>
             </div>
-            {/* Có thể thêm phân trang ở đây nếu cần, tương tự như UsersTab */}
         </div>
     );
 };
@@ -1066,7 +995,13 @@ const ConversationsTab = () => (
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.status}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.createdAt ? new Date(c.createdAt).toLocaleString('vi-VN') : ''}</td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <button onClick={() => handleDeleteConsultation(c.id)} className="px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200">Xóa</button>
+                <button
+                  onClick={() => {
+                    setDeleteConsultationId(c.id);
+                    setShowDeleteModal(true);
+                  }}
+                  className="px-3 py-1 bg-red-100 text-red-800 rounded text-xs font-medium hover:bg-red-200"
+                >Xóa</button>
               </td>
             </tr>
           )) : (
@@ -1090,7 +1025,6 @@ const EncryptionTab = () => (
     </div>
     
     <div className="p-6 space-y-6">
-      {/* Thống kê mã hóa */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="text-lg font-medium text-blue-900 mb-2">Thống kê mã hóa</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1107,7 +1041,6 @@ const EncryptionTab = () => (
         </div>
       </div>
 
-      {/* Trạng thái migration */}
       {migrationStatus.message && (
         <div className={`border rounded-lg p-4 ${
           migrationStatus.isRunning ? 'bg-yellow-50 border-yellow-200' :
@@ -1129,7 +1062,6 @@ const EncryptionTab = () => (
         </div>
       )}
 
-      {/* Các nút thao tác */}
       <div className="flex flex-col sm:flex-row gap-4">
         <button
           onClick={checkUnencryptedMessages}
@@ -1158,7 +1090,6 @@ const EncryptionTab = () => (
         </button>
       </div>
 
-      {/* Thông tin bảo mật */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <h4 className="text-lg font-medium text-gray-900 mb-2">Thông tin bảo mật</h4>
         <ul className="text-sm text-gray-700 space-y-2">
@@ -1174,7 +1105,6 @@ const EncryptionTab = () => (
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -1186,19 +1116,15 @@ const EncryptionTab = () => (
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         )}
 
-        {/* Content */}
         {!loading && (
           <div className="space-y-6">
-            {/* Tabs */}
             <div className="border-b border-gray-200">
               <nav className="-mb-px flex space-x-8">
                 {tabs.map((tab) => (
@@ -1217,7 +1143,6 @@ const EncryptionTab = () => (
               </nav>
             </div>
 
-            {/* Tab Content */}
             {activeTab === "dashboard" && <DashboardTab />}
             {activeTab === "users" && <UsersTab />}
             {activeTab === "coaches" && <CoachesTab />}
@@ -1229,7 +1154,6 @@ const EncryptionTab = () => (
         )}
       </div>
 
-      {/* Modal xem chi tiết user */}
       {showDetailId && userDetail && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
@@ -1245,7 +1169,6 @@ const EncryptionTab = () => (
             <h2 className="text-xl font-bold mb-6 text-gray-800">Thông tin chi tiết người dùng</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Thông tin cơ bản */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin cơ bản</h3>
                 
@@ -1289,7 +1212,6 @@ const EncryptionTab = () => (
                 </div>
               </div>
               
-              {/* Thông tin bổ sung */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin bổ sung</h3>
                 
@@ -1326,7 +1248,6 @@ const EncryptionTab = () => (
               </div>
             </div>
             
-            {/* Thông tin thành viên */}
             <div className="mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin thành viên</h3>
               
@@ -1361,7 +1282,6 @@ const EncryptionTab = () => (
               </div>
             </div>
             
-            {/* Thông tin tài khoản */}
             <div className="mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Trạng thái tài khoản</h3>
               
@@ -1404,7 +1324,6 @@ const EncryptionTab = () => (
               </div>
             </div>
             
-            {/* Thông tin thời gian */}
             <div className="mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin thời gian</h3>
               
@@ -1425,7 +1344,6 @@ const EncryptionTab = () => (
               </div>
             </div>
             
-            {/* Avatar */}
             <div className="mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Ảnh đại diện</h3>
               <div className="flex justify-center">
@@ -1448,6 +1366,162 @@ const EncryptionTab = () => (
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xem chi tiết feedback */}
+      {showFeedbackModal && selectedFeedback && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl mx-4 relative overflow-y-auto" style={{maxHeight: '95vh'}}>
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Chi tiết phản hồi</h3>
+                <button
+                  onClick={() => {
+                    setShowFeedbackModal(false);
+                    setSelectedFeedback(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 space-y-6">
+              {/* Thông tin người dùng */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-md font-semibold text-gray-700 mb-3">Thông tin người dùng</h4>
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                    <span className="text-green-600 font-medium text-sm">
+                      {selectedFeedback.userName ? selectedFeedback.userName.substring(0, 2).toUpperCase() : 'U'}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 text-lg">{selectedFeedback.userName || 'N/A'}</div>
+                    <div className="text-gray-500">{selectedFeedback.userEmail || 'N/A'}</div>
+                    <div className="text-gray-400 text-sm">ID: {selectedFeedback.userId || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Đánh giá */}
+              <div className="bg-yellow-50 rounded-lg p-4">
+                <h4 className="text-md font-semibold text-gray-700 mb-3">Đánh giá</h4>
+                <div className="flex items-center">
+                  <span className="text-yellow-400 text-2xl mr-3">
+                    {selectedFeedback.rating !== null ? '⭐'.repeat(selectedFeedback.rating) : 'N/A'}
+                  </span>
+                  <span className="text-gray-700 font-medium">({selectedFeedback.rating}/5)</span>
+                </div>
+              </div>
+
+              {/* Nội dung phản hồi */}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h4 className="text-md font-semibold text-gray-700 mb-3">Nội dung phản hồi</h4>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <p className="text-gray-800 leading-relaxed">
+                    {selectedFeedback.feedbackContent || "Không có nội dung"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Thông tin thời gian */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-md font-semibold text-gray-700 mb-3">Thông tin thời gian</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-gray-500 text-sm">Thời gian gửi:</span>
+                    <div className="font-medium text-gray-900">
+                      {selectedFeedback.submissionTime ? new Date(selectedFeedback.submissionTime).toLocaleString('vi-VN') : 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-sm">ID phản hồi:</span>
+                    <div className="font-medium text-gray-900">{selectedFeedback.id}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông báo */}
+              {selectedFeedback.message && (
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h4 className="text-md font-semibold text-gray-700 mb-3">Thông báo</h4>
+                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                    <p className="text-gray-800">{selectedFeedback.message}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowFeedbackModal(false);
+                  setSelectedFeedback(null);
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={() => {
+                  // Có thể thêm chức năng trả lời feedback ở đây
+                  console.log("Trả lời feedback:", selectedFeedback.id);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Trả lời
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xác nhận xóa cuộc trò chuyện */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4 relative">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Xác nhận xóa cuộc trò chuyện</h3>
+            <p className="mb-6 text-gray-700">Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConsultationId(null);
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  if (deleteConsultationId) {
+                    await handleDeleteConsultation(deleteConsultationId);
+                    setShowDeleteModal(false);
+                    setDeleteConsultationId(null);
+                    setDeleteSuccessMessage("Đã xóa cuộc trò chuyện thành công!");
+                    setTimeout(() => setDeleteSuccessMessage(""), 2500);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Thông báo xóa thành công */}
+      {deleteSuccessMessage && (
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100]">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+            {deleteSuccessMessage}
           </div>
         </div>
       )}
