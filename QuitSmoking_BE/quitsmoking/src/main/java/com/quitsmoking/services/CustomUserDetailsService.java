@@ -3,19 +3,20 @@ package com.quitsmoking.services;
 import com.quitsmoking.model.User;
 import com.quitsmoking.reponsitories.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-import java.util.Collections;
-import java.util.Set;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
 
     private final UserDAO userDAO;
 
@@ -25,34 +26,31 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Find the user by email in your database
-        User user = userDAO.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found with email: " + email));
-
-        // Convert the user's role to GrantedAuthority
-        Set<GrantedAuthority> authorities;
-        if (user.getRole() != null) {
-            authorities = Collections.singleton(
-                    new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
-            );
-        } else {
-            // Handle case where User has no Role or Role name is null
-            // For security, you might want to throw an exception or assign a default role.
-            // Assigning a default "USER" role for robustness here.
-            authorities = Collections.singleton(
-                    new SimpleGrantedAuthority("ROLE_USER") // Assign a default role
-            );
-            System.err.println("Warning: User " + user.getEmail() + " has no assigned role or role name is null. Defaulting to ROLE_USER.");
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        // Ưu tiên tìm theo username trước (local user)
+        Optional<User> userOptional = userDAO.findByUsername(identifier);
+        if (userOptional.isEmpty()) {
+            // Nếu không có, thử tìm theo email (Google user)
+            userOptional = userDAO.findByEmail(identifier);
         }
+        if (userOptional.isEmpty()) {
+            // Nếu không có, thử tìm theo UUID (nếu cần)
+            if (isValidUUID(identifier)) {
+                userOptional = userDAO.findByIdWithMembership(identifier);
+            }
+        }
+        User user = userOptional.orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
+        logger.info("CustomUserDetailsService: Successfully loaded user details for '{}'. User ID: {}, Role: {}", identifier, user.getId(), user.getRole().name());
+        return user;
+    }
 
-        // Return the Spring Security UserDetails object
-        // The password can be empty if the user only logs in via OAuth2
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword() != null ? user.getPassword() : "",
-                authorities
-        );
+    // Hàm kiểm tra xem một chuỗi có phải là UUID hợp lệ hay không
+    private boolean isValidUUID(String str) {
+        try {
+            UUID.fromString(str);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

@@ -202,7 +202,7 @@ const AdminPanel = () => {
   
   const fetchFeedbacks = async () => {
     const response = await axios.get(
-      `${config.API_BASE_URL}/api/admin/feedbacks`,
+      `${config.API_BASE_URL}/api/feedback/admin/all`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -948,10 +948,10 @@ const AdminPanel = () => {
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ID Người dùng
+                                Người dùng
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Star
+                                Đánh giá
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Nội dung phản hồi
@@ -959,9 +959,9 @@ const AdminPanel = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Thời gian gửi
                             </th>
-                            {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Hành động
-                            </th> */}
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -971,28 +971,42 @@ const AdminPanel = () => {
                             feedbacks.map((feedback) => (
                                 <tr key={feedback.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {feedback.userId || "N/A"}
+                                        <div className="flex items-center">
+                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                                <span className="text-green-600 font-medium text-sm">
+                                                    {feedback.userId ? feedback.userId.substring(0, 2).toUpperCase() : 'U'}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div className="font-medium text-gray-900">User ID: {feedback.userId}</div>
+                                                <div className="text-gray-500 text-xs">{feedback.message}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {/* SỬA ĐỔI 1: Dùng feedback.rating thay vì feedback.starRating */}
-                                        {feedback.rating !== null ? '⭐'.repeat(feedback.rating) : 'N/A'}
+                                        <div className="flex items-center">
+                                            <span className="text-yellow-400 mr-1">
+                                                {feedback.rating !== null ? '⭐'.repeat(feedback.rating) : 'N/A'}
+                                            </span>
+                                            <span className="text-gray-500 text-xs">({feedback.rating}/5)</span>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                                        {/* SỬA ĐỔI 2: Dùng feedback.feedbackContent thay vì feedback.message */}
-                                        {feedback.feedbackContent || "N/A"}
+                                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                                        <div className="max-h-20 overflow-y-auto">
+                                            {feedback.feedbackContent || "Không có nội dung"}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {/* SỬA ĐỔI 3: Dùng feedback.submissionTime thay vì feedback.createdAt */}
                                         {feedback.submissionTime ? new Date(feedback.submissionTime).toLocaleString('vi-VN') : 'N/A'}
                                     </td>
-                                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <button
                                             onClick={() => console.log("Xem chi tiết feedback:", feedback.id)}
                                             className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium hover:bg-blue-200 mr-2"
                                         >
-                                            Xem & Trả lời
+                                            Xem chi tiết
                                         </button>
-                                    </td> */}
+                                    </td>
                                 </tr>
                             ))
                         ) : (

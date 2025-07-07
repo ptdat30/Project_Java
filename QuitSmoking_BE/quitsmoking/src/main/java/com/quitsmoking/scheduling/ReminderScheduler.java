@@ -1,9 +1,11 @@
 package com.quitsmoking.scheduling;
 
 import com.quitsmoking.model.User;
-import com.quitsmoking.model.Role; // THÊM IMPORT NÀY
+import com.quitsmoking.model.Role;
 import com.quitsmoking.reponsitories.UserRepository;
 import com.quitsmoking.services.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -15,19 +17,20 @@ import java.util.List;
 @Component
 public class ReminderScheduler {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReminderScheduler.class);
+
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private EmailService emailService;
 
-    // Gửi nhắc nhở hàng ngày vào lúc 0 giờ 15 phút sáng (00:15 AM)
+    // Gửi nhắc nhở hàng ngày vào lúc 0 giờ 30 phút sáng (00:30 AM)
     @Scheduled(cron = "0 30 0 * * *")
     public void sendDailyReminders() {
-        System.out.println("Running daily reminder task...");
+        logger.info("Running daily reminder task...");
         // Lấy tất cả người dùng có gói thành viên
         List<User> allActiveUsers = userRepository.findByCurrentMembershipPlanIsNotNull();
-        LocalDate today = LocalDate.now();
 
         for (User user : allActiveUsers) {
             // Kiểm tra user có vai trò là MEMBER và các điều kiện khác
@@ -46,9 +49,9 @@ public class ReminderScheduler {
                 );
                 try {
                     emailService.sendEmail(user.getEmail(), subject, body);
-                    System.out.println("Gửi nhắc nhở hàng ngày cho: " + user.getEmail());
+                    logger.info("Gửi nhắc nhở hàng ngày cho: {}", user.getEmail());
                 } catch (Exception e) {
-                    System.err.println("Lỗi khi gửi nhắc nhở hàng ngày cho " + user.getEmail() + ": " + e.getMessage());
+                    logger.error("Lỗi khi gửi nhắc nhở hàng ngày cho {}: {}", user.getEmail(), e.getMessage(), e);
                 }
             }
         }
@@ -57,7 +60,7 @@ public class ReminderScheduler {
     // Gửi nhắc nhở hàng tuần vào mỗi Chủ Nhật lúc 9:00 sáng
     @Scheduled(cron = "0 0 9 ? * SUN")
     public void sendWeeklyReminders() {
-        System.out.println("Running weekly reminder task...");
+        logger.info("Running weekly reminder task...");
         // Lấy tất cả người dùng có gói thành viên
         List<User> allActiveUsers = userRepository.findByCurrentMembershipPlanIsNotNull();
         LocalDate today = LocalDate.now();
@@ -82,9 +85,9 @@ public class ReminderScheduler {
                     );
                     try {
                         emailService.sendEmail(user.getEmail(), subject, body);
-                        System.out.println("Gửi nhắc nhở hàng tuần cho: " + user.getEmail());
+                        logger.info("Gửi nhắc nhở hàng tuần cho: {}", user.getEmail());
                     } catch (Exception e) {
-                        System.err.println("Lỗi khi gửi nhắc nhỡ hàng tuần cho " + user.getEmail() + ": " + e.getMessage());
+                        logger.error("Lỗi khi gửi nhắc nhở hàng tuần cho {}: {}", user.getEmail(), e.getMessage(), e);
                     }
                 }
             }
@@ -94,7 +97,7 @@ public class ReminderScheduler {
     // Gửi nhắc nhở hàng tháng vào ngày mùng 1 hàng tháng lúc 10:00 sáng
     @Scheduled(cron = "0 0 10 1 * ?")
     public void sendMonthlyReminders() {
-        System.out.println("Running monthly reminder task...");
+        logger.info("Running monthly reminder task...");
         // Lấy tất cả người dùng có gói thành viên
         List<User> allActiveUsers = userRepository.findByCurrentMembershipPlanIsNotNull();
         LocalDate today = LocalDate.now();
@@ -119,9 +122,9 @@ public class ReminderScheduler {
                     );
                     try {
                         emailService.sendEmail(user.getEmail(), subject, body);
-                        System.out.println("Gửi nhắc nhở hàng tháng cho: " + user.getEmail());
+                        logger.info("Gửi nhắc nhở hàng tháng cho: {}", user.getEmail());
                     } catch (Exception e) {
-                        System.err.println("Lỗi khi gửi nhắc nhỡ hàng tháng cho " + user.getEmail() + ": " + e.getMessage());
+                        logger.error("Lỗi khi gửi nhắc nhở hàng tháng cho {}: {}", user.getEmail(), e.getMessage(), e);
                     }
                 }
             }

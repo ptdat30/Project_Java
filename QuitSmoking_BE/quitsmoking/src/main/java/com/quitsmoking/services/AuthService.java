@@ -4,14 +4,12 @@ import com.quitsmoking.dto.request.RegisterRequest;
 import com.quitsmoking.model.*;
 import com.quitsmoking.reponsitories.UserDAO;
 import com.quitsmoking.services.interfaces.iRegistrableService;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.quitsmoking.exceptions.EmailAlreadyExistsException; 
 import com.quitsmoking.exceptions.UserAlreadyExistsException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.quitsmoking.model.interfaces.iAuthenticatable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,13 +17,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.quitsmoking.config.JwtUtil;
 
-import java.util.Collections;
-import java.util.regex.Pattern;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
-public class AuthService implements iRegistrableService, UserDetailsService {
+public class AuthService implements iRegistrableService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class); // Khởi tạo logger
 
     private final UserDAO userDAO;
@@ -50,50 +45,34 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         User user = userDAO.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
         
+        // Log thông tin user để tracking
+        logger.info("Sending password reset OTP to user: {} (ID: {})", user.getUsername(), user.getId());
+        
         String otp = otpService.generateOtp(email);
         emailService.sendOtpEmail(email, otp);
+        
+        logger.info("Password reset OTP sent successfully to: {}", email);
     }
 
     public void resetPassword(String email, String otp, String newPassword) {
         if (!otpService.validateOtp(email, otp)) {
+            logger.warn("Invalid OTP attempt for email: {}", email);
             throw new IllegalArgumentException("Mã OTP không hợp lệ hoặc đã hết hạn");
         }
         
         User user = userDAO.findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
         
+        logger.info("Resetting password for user: {} (ID: {})", user.getUsername(), user.getId());
+        
         user.setPassword(passwordEncoder.encode(newPassword));
         userDAO.save(user);
+        
+        logger.info("Password reset successfully for user: {}", user.getUsername());
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        // Ưu tiên tìm theo username trước (local user)
-        Optional<User> userOptional = userDAO.findByUsername(identifier);
-        if (userOptional.isEmpty()) {
-            // Nếu không có, thử tìm theo email (Google user)
-            userOptional = userDAO.findByEmail(identifier);
-        }
-        if (userOptional.isEmpty()) {
-            // Nếu không có, thử tìm theo UUID (nếu cần)
-            if (isValidUUID(identifier)) {
-                userOptional = userDAO.findByIdWithMembership(identifier);
-            }
-        }
-        User user = userOptional.orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
-        logger.info("AuthService: Successfully loaded user details for '{}'. User ID: {}, Role: {}", identifier, user.getId(), user.getRole().name());
-        return user;
-    }
-
-    // Hàm kiểm tra xem một chuỗi có phải là UUID hợp lệ hay không
-    private boolean isValidUUID(String str) {
-        try {
-            UUID.fromString(str);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
+    // Removed loadUserByUsername method to avoid infinite loop
+    // This method is now handled by CustomUserDetailsService
 
         @Override
     public User register(String username, String rawPassword, String email, String firstName, String lastName, Role requestedRole) {
@@ -149,38 +128,38 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         Optional<User> userOptional = userDAO.findByEmailOrUsername(username);
 
         if (userOptional.isEmpty()) {
-            System.err.println("Login failed: User '" + username + "' not found.");
+            logger.warn("Login failed: User '{}' not found.", username);
             return null;
         }
 
         User user = userOptional.get();
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            System.err.println("Login failed: Incorrect password for user '" + username + "'.");
+            logger.warn("Login failed: Incorrect password for user '{}'.", username);
             return null;
         }
 
         if (user instanceof iAuthenticatable) {
             ((iAuthenticatable) user).login();
         } else {
-            System.out.println("User " + user.getUsername() + " accessed content.");
+            logger.info("User {} accessed content.", user.getUsername());
         }
 
-        System.out.println("User " + user.getUsername() + " logged in successfully with role: " + user.getRole().name());
+        logger.info("User {} logged in successfully with role: {}", user.getUsername(), user.getRole().name());
         return user;
     }
 
     public Member upgradeGuestToMember(String userId) {
         Optional<User> userOptional = userDAO.findById(userId);
         if (userOptional.isEmpty()) {
-            System.err.println("Upgrade failed: User with ID '" + userId + "' not found.");
+            logger.warn("Upgrade failed: User with ID '{}' not found.", userId);
             return null;
         }
 
         User user = userOptional.get();
 
         if (user.getRole() != Role.GUEST) {
-            System.err.println("Upgrade failed: User '" + user.getUsername() + "' is not a GUEST (current role: " + user.getRole().name() + ").");
+            logger.warn("Upgrade failed: User '{}' is not a GUEST (current role: {}).", user.getUsername(), user.getRole().name());
             return null;
         }
 
@@ -188,7 +167,7 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         user.setRole(Role.MEMBER);
         userDAO.save(user);
 
-        System.out.println("User " + user.getUsername() + " (ID: " + user.getId() + ") successfully upgraded to MEMBER.");
+        logger.info("User {} (ID: {}) successfully upgraded to MEMBER.", user.getUsername(), user.getId());
         return (Member) user;
     }
 
@@ -197,8 +176,8 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         User user;
         if (userOpt.isPresent()) {
             user = userOpt.get();
+            logger.info("Existing Google user found: {} (ID: {})", user.getUsername(), user.getId());
             
-    
             // Chỉ cập nhật nếu trường đó đang null/rỗng
             if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
                 user.setFirstName(firstName);
@@ -213,10 +192,12 @@ public class AuthService implements iRegistrableService, UserDetailsService {
             user.setGoogleId(googleId);
             user.setEmail(email);
             userDAO.save(user);
+            logger.info("Updated existing Google user: {}", user.getUsername());
         } else {
             // Tạo user mới từ Google info
             user = new GoogleUser(email, firstName, lastName, googleId, pictureUrl, AuthProvider.GOOGLE, Role.GUEST);
             userDAO.save(user);
+            logger.info("Created new Google user: {} (ID: {})", user.getUsername(), user.getId());
         }
         return user;
     }
@@ -225,21 +206,21 @@ public class AuthService implements iRegistrableService, UserDetailsService {
         Optional<User> userOptional = userDAO.findById(userId);
 
         if (userOptional.isEmpty()) {
-            System.err.println("Change role failed: User with ID '" + userId + "' not found.");
+            logger.warn("Change role failed: User with ID '{}' not found.", userId);
             return null;
         }
 
         User user = userOptional.get();
 
         if (user.getRole() == Role.GUEST && newRole != Role.MEMBER) {
-            System.err.println("Change role failed: Cannot directly change GUEST to non-MEMBER role via this method.");
+            logger.warn("Change role failed: Cannot directly change GUEST to non-MEMBER role via this method.");
             return null;
         }
 
         user.setRole(newRole);
         User updatedUser = userDAO.save(user);
 
-        System.out.println("User '" + user.getUsername() + "' (ID: " + userId + ") role changed to " + newRole.name() + ".");
+        logger.info("User '{}' (ID: {}) role changed to {}.", user.getUsername(), userId, newRole.name());
         return updatedUser;
     }
     public String generateJwtToken(User user) {

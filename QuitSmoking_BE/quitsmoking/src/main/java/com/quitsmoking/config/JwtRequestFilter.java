@@ -11,11 +11,11 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.quitsmoking.services.AuthService;
+import com.quitsmoking.services.CustomUserDetailsService;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.security.SignatureException;
 
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -26,11 +26,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class); // Use SLF4J logger
 
-    private final AuthService authService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final JwtUtil jwtUtil;
 
-    public JwtRequestFilter(AuthService authService, JwtUtil jwtUtil) {
-        this.authService = authService;
+    public JwtRequestFilter(CustomUserDetailsService customUserDetailsService, JwtUtil jwtUtil) {
+        this.customUserDetailsService = customUserDetailsService;
         this.jwtUtil = jwtUtil;
     }
 
@@ -108,7 +108,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = null;
             try {
-                userDetails = this.authService.loadUserByUsername(username);
+                userDetails = this.customUserDetailsService.loadUserByUsername(username);
             } catch (Exception e) {
                 logger.error("Không thể tải thông tin chi tiết người dùng cho tên người dùng '{}': {}", username, e.getMessage());
                 // Nếu không thể tải thông tin chi tiết người dùng (ví dụ: không tìm thấy người dùng trong DB), coi như chưa được xác thực

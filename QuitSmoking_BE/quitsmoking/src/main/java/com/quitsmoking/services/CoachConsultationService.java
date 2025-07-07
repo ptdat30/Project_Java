@@ -1,9 +1,7 @@
 package com.quitsmoking.services;
 
 import com.quitsmoking.model.CoachConsultation;
-import com.quitsmoking.model.User;
 import com.quitsmoking.reponsitories.CoachConsultationRepository;
-import com.quitsmoking.reponsitories.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,9 +21,6 @@ public class CoachConsultationService {
     
     @Autowired
     private CoachConsultationRepository consultationRepository;
-    
-    @Autowired
-    private UserDAO userDAO;
     
     @Autowired
     private ChatMessageService chatMessageService;

@@ -1,7 +1,6 @@
 package com.quitsmoking.controllers;
 
 import com.quitsmoking.dto.response.DailyProgressResponse;
-import com.quitsmoking.dto.response.SharedMemberResponse;
 import com.quitsmoking.model.DashboardShare;
 import com.quitsmoking.model.User;
 import com.quitsmoking.reponsitories.DashboardShareRepository;
@@ -10,14 +9,11 @@ import com.quitsmoking.services.DailyProgressService;
 import com.quitsmoking.reponsitories.QuitPlanDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.DayOfWeek;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +57,11 @@ public class DashboardShareController {
             share.setSharedAt(LocalDateTime.now());
 
             dashboardShareRepository.save(share);
+            System.out.println("Dashboard shared successfully: Member " + member.getUsername() + " -> Coach " + coach.getUsername());
             return ResponseEntity.ok().body("Dashboard shared successfully");
         } catch (Exception e) {
+            System.err.println("Error sharing dashboard: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error sharing dashboard: " + e.getMessage());
         }
     }
@@ -83,6 +82,8 @@ public class DashboardShareController {
             List<User> coaches = userRepository.findAllById(coachIds);
             return ResponseEntity.ok(coaches);
         } catch (Exception e) {
+            System.err.println("Error getting shared coaches: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -127,6 +128,8 @@ public class DashboardShareController {
 
             return ResponseEntity.ok(responses);
         } catch (Exception e) {
+            System.err.println("Error getting shared members: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -241,8 +244,7 @@ public class DashboardShareController {
                 weekData.add(dp != null ? DailyProgressResponse.fromEntity(dp) : null);
             }
 
-            // Lấy thống kê tổng quan
-            DailyProgressService.ProgressStatistics stats = dailyProgressService.getProgressStatistics(member);
+            // Thống kê đã được tính toán ở trên (smokeFreeDays, moneySaved, avoidedCigarettes, todayMood)
             
             Map<String, Object> response = new HashMap<>();
             
@@ -276,9 +278,12 @@ public class DashboardShareController {
             weeklyProgress.put("dailyData", weekData);
             response.put("weeklyProgress", weeklyProgress);
             
+            System.out.println("Dashboard accessed: User " + currentUser.getUsername() + " viewing member " + member.getUsername() + " dashboard");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            e.printStackTrace(); // Log lỗi để debug
+            // Log lỗi để debug
+            System.err.println("Error in getMemberDashboard: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }

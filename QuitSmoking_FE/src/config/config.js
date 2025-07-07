@@ -23,7 +23,11 @@ const config = {
 
     // Achievements
     achievements: "/api/achievements",
-    userAchievements: "/api/achievements/user",
+    userAchievements: "/api/achievements/my",
+    shareAchievement: "/api/achievements/share",
+    sharedAchievements: "/api/achievements/shared",
+    checkAchievements: "/api/achievements/check",
+    achievementStats: "/api/achievements/stats",
 
     // Community
     communityPosts: "/api/community/posts",

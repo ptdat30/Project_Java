@@ -30,6 +30,9 @@ const Dashboard = () => {
 
   // --- State cho weeklyProgress ---
   const [weeklyProgress, setWeeklyProgress] = useState([]);
+  const [selectedWeek, setSelectedWeek] = useState('current');
+  const [weekData, setWeekData] = useState([]);
+  const [showWeekDetailModal, setShowWeekDetailModal] = useState(false);
 
   // Định nghĩa các giai đoạn
   const phases = [
@@ -371,6 +374,77 @@ const Dashboard = () => {
     return !isNaN(d.getTime()) ? d.toLocaleDateString('vi-VN') : 'Chưa xác định';
   };
 
+  // Hàm tính toán thống kê tuần
+  const calculateWeekStats = (data) => {
+    if (!data || data.length === 0) return null;
+    
+    const validDays = data.filter(day => day !== null);
+    const daysWithData = validDays.length;
+    
+    if (daysWithData === 0) return null;
+    
+    const avgMood = validDays.reduce((sum, day) => sum + (day.mood || 0), 0) / daysWithData;
+    const avgCravings = validDays.reduce((sum, day) => sum + (day.cravings || 0), 0) / daysWithData;
+    const exerciseDays = validDays.filter(day => day.exercise === true).length;
+    
+    return {
+      daysWithData,
+      avgMood: avgMood.toFixed(1),
+      avgCravings: avgCravings.toFixed(1),
+      exerciseDays
+    };
+  };
+
+  // Hàm lấy dữ liệu tuần được chọn từ backend
+  const getWeekData = async (weekType) => {
+    try {
+      let weekOffset = 0;
+      switch (weekType) {
+        case 'current':
+          weekOffset = 0;
+          break;
+        case 'last':
+          weekOffset = 1;
+          break;
+        case '2weeks':
+          weekOffset = 2;
+          break;
+        default:
+          weekOffset = 0;
+      }
+      
+      const data = await apiService.getWeeklyProgressByOffset(weekOffset);
+      return data;
+    } catch (error) {
+      console.error('Error fetching week data:', error);
+      return [];
+    }
+  };
+
+  // Effect để cập nhật dữ liệu khi chọn tuần
+  useEffect(() => {
+    const fetchWeekData = async () => {
+      const data = await getWeekData(selectedWeek);
+      setWeekData(data);
+    };
+    
+    if (selectedWeek) {
+      fetchWeekData();
+    }
+  }, [selectedWeek]);
+
+  // Hàm lấy tên ngày trong tuần
+  const getDayName = (index) => {
+    return daysOfWeek[index];
+  };
+
+  // Hàm format ngày
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+  };
+
   if (missingType) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
@@ -423,6 +497,9 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  // Trong phần render, thay thế vùng chọn tuần
+  const weekStats = calculateWeekStats(weekData);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
@@ -597,26 +674,72 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content (Health Progress & Weekly Progress Table) */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Health Progress */}
+            {/* Vùng chọn tuần và hiển thị lịch sử tiến trình */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">🏥 Cải thiện sức khỏe</h2>
-              <div className="space-y-4">
-                {(stats.healthImprovements || []).map((improvement, index) => (
-                  <div key={index} className={`p-4 rounded-lg border-l-4 ${
-                    improvement.achieved ? 'bg-green-50 border-green-500' : 'bg-gray-50 border-gray-300'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">{improvement.milestone}</h3>
-                        <p className="text-gray-600">{improvement.description}</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">📊 Thống kê tiến trình theo tuần</h2>
+              {weekData && weekData.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <label className="font-medium text-gray-700">Xem thống kê tuần:</label>
+                    <select 
+                      value={selectedWeek}
+                      onChange={(e) => setSelectedWeek(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="current">Tuần hiện tại</option>
+                      <option value="last">Tuần trước</option>
+                      <option value="2weeks">2 tuần trước</option>
+                    </select>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-blue-800 font-medium">
+                      {selectedWeek === 'current' ? 'Tuần hiện tại' : 
+                       selectedWeek === 'last' ? 'Tuần trước' : '2 tuần trước'} (T2 - CN)
+                    </p>
+                    <p className="text-blue-600 text-sm mt-1">Tổng quan thống kê của tuần này</p>
+                  </div>
+                  {weekStats ? (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <p className="font-medium text-green-800">Ngày có tiến trình: {weekStats.daysWithData}/7</p>
                       </div>
-                      <div className="text-2xl">
-                        {improvement.achieved ? '✅' : '⏳'}
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <p className="font-medium text-orange-800">Tâm trạng trung bình: {weekStats.avgMood}/10</p>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded-lg">
+                        <p className="font-medium text-purple-800">Cơn thèm trung bình: {weekStats.avgCravings}/5</p>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="font-medium text-blue-800">Tập thể dục: {weekStats.exerciseDays}/7 ngày</p>
                       </div>
                     </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      Không có dữ liệu cho tuần này
+                    </div>
+                  )}
+                  
+                  {/* Nút xem chi tiết */}
+                  <div className="text-center pt-4">
+                    <button
+                      onClick={() => setShowWeekDetailModal(true)}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-300 font-medium"
+                    >
+                      Xem chi tiết tuần này
+                    </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">Chưa có dữ liệu tiến trình tuần nào.</p>
+                  <button 
+                    onClick={() => setShowModal(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                  >
+                    Bắt đầu ghi nhận tiến trình
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Weekly Progress Table */}
@@ -963,6 +1086,112 @@ const Dashboard = () => {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {/* Modal chi tiết tuần */}
+      {showWeekDetailModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl relative overflow-y-auto" style={{maxHeight: '95vh'}}>
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
+              onClick={() => setShowWeekDetailModal(false)}
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            
+            <h3 className="text-xl font-bold mb-6 text-center text-blue-700">
+              Chi tiết tiến trình - {selectedWeek === 'current' ? 'Tuần hiện tại' : 
+              selectedWeek === 'last' ? 'Tuần trước' : '2 tuần trước'}
+            </h3>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200 rounded-lg text-center text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="py-3 px-4 border-b font-medium">Ngày</th>
+                    <th className="py-3 px-4 border-b font-medium">Tâm trạng</th>
+                    <th className="py-3 px-4 border-b font-medium">Cơn thèm</th>
+                    <th className="py-3 px-4 border-b font-medium">Tập thể dục</th>
+                    <th className="py-3 px-4 border-b font-medium">Nước (ly)</th>
+                    <th className="py-3 px-4 border-b font-medium">Ngủ</th>
+                    <th className="py-3 px-4 border-b font-medium">Hút thuốc?</th>
+                    <th className="py-3 px-4 border-b font-medium">Số điếu</th>
+                    <th className="py-3 px-4 border-b font-medium">Tiền tiêu</th>
+                    <th className="py-3 px-4 border-b font-medium">Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(weekData || []).map((day, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="py-3 px-4 border-b">
+                        <div className="font-medium">{getDayName(idx)}</div>
+                        <div className="text-xs text-gray-500">{formatDate(day?.date)}</div>
+                      </td>
+                      {day ? (
+                        <>
+                          <td className="py-3 px-4 border-b">
+                            <span className="text-blue-600 font-medium">{day.mood || 0}/10</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="text-red-600 font-medium">{day.cravings || 0}/5</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="text-2xl">{day.exercise ? "✅" : "❌"}</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.water || 0}/8</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.sleep || 0}/10</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              day.smokedToday === true ? 'bg-red-100 text-red-800' : 
+                              day.smokedToday === false ? 'bg-green-100 text-green-800' : 
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {day.smokedToday === true ? "Có" : day.smokedToday === false ? "Không" : "-"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.cigarettesToday || "-"}</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.moneySpentToday ? formatCurrency(day.moneySpentToday) : "-"}</span>
+                          </td>
+                          <td className="py-3 px-4 border-b text-left">
+                            <span className="text-gray-700 text-sm">{day.note || "-"}</span>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setShowWeekDetailModal(false)}
+                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition duration-300"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
