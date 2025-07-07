@@ -1,9 +1,7 @@
 package com.quitsmoking.dto.response;
 
-import com.quitsmoking.dto.response.MembershipPlanResponse; // Đảm bảo bạn có import cho Role enum của mình
-import com.quitsmoking.model.User;
-// Đảm bảo bạn có import cho Role enum của mình
-import com.quitsmoking.model.Role; // Hoặc đường dẫn đúng đến enum Role của bạn
+
+import com.quitsmoking.model.User; 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -21,6 +21,7 @@ const ProfilePage = () => {
     avatar: null,
   });
   const [errors, setErrors] = useState({});
+  const [sharedAchievements, setSharedAchievements] = useState([]);
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || !user)) {
@@ -44,6 +45,9 @@ const ProfilePage = () => {
     if (user) {
       fetchProfile();
     }
+
+    // Load shared achievements
+    apiService.getMySharedAchievements && apiService.getMySharedAchievements().then(setSharedAchievements);
   }, []); // Empty dependency array - only run once when component mounts
 
   // Separate useEffect to update form data when user changes
@@ -241,6 +245,26 @@ const ProfilePage = () => {
               </button>
             )}
           </div>
+        </div>
+        {/* Vùng thành tựu đã chia sẻ */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-bold mb-4 text-blue-700">Các thành tựu đã chia sẻ</h2>
+          {sharedAchievements.length === 0 ? (
+            <div className="text-gray-500">Bạn chưa chia sẻ thành tựu nào.</div>
+          ) : (
+            <div className="flex flex-wrap gap-4">
+              {sharedAchievements.map((ach) => (
+                <div
+                  key={ach.achievementId}
+                  className="flex flex-col items-center"
+                  title={ach.achievementName}
+                >
+                  <span className="text-3xl mb-1">{ach.achievementIconUrl || "🏆"}</span>
+                  <span className="text-xs text-gray-700 text-center">{ach.achievementName}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         {/* Profile Form */}
         <div className="bg-white rounded-lg shadow-sm p-6">

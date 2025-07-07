@@ -19,6 +19,7 @@ import DailyProgressPage from "./components/progress/DailyProgressPage";
 import GhiNhanTinhTrang from "./components/ghinhantinhtrang";
 import Feedback from "./components/feedback/feedback";
 import AiChatWidget from "./components/AiChatBox/AiChatWidget";
+import PostDetail from "./components/community/PostDetail"; // Add this import
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import apiService from "./services/apiService";
 import { ToastContainer } from "react-toastify";
@@ -34,9 +35,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Đang tải...
-      </div>
+        <div className="flex justify-center items-center h-screen">
+          Đang tải...
+        </div>
     );
   }
 
@@ -56,9 +57,9 @@ const GuestOnlyRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Đang tải...
-      </div>
+        <div className="flex justify-center items-center h-screen">
+          Đang tải...
+        </div>
     );
   }
 
@@ -75,7 +76,7 @@ const AppContent = () => {
 
   // Không hiển thị Navigation trên các trang auth
   const hideNavigation = ["/login", "/register", "/recover-password"].includes(
-    location.pathname
+      location.pathname
   );
 
   // Reset notification cooldown khi chuyển trang
@@ -193,36 +194,35 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!hideNavigation && <Navigation />}
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route
-          path="/login"
-          element={
-            <GuestOnlyRoute>
-              <LoginPage />
-            </GuestOnlyRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <GuestOnlyRoute>
-              <RegisterPage />
-            </GuestOnlyRoute>
-          }
-        />
-        <Route
-          path="/recover-password"
-          element={
-            <GuestOnlyRoute>
-              <RecoverPasswordProcess />
-            </GuestOnlyRoute>
-          }
-        />
-
-        <Route
+      <div className="min-h-screen bg-gray-50">
+        {!hideNavigation && <Navigation />}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route
+              path="/login"
+              element={
+                <GuestOnlyRoute>
+                  <LoginPage />
+                </GuestOnlyRoute>
+              }
+          />
+          <Route
+              path="/register"
+              element={
+                <GuestOnlyRoute>
+                  <RegisterPage />
+                </GuestOnlyRoute>
+              }
+          />
+          <Route
+              path="/recover-password"
+              element={
+                <GuestOnlyRoute>
+                  <RecoverPasswordProcess />
+                </GuestOnlyRoute>
+              }
+          />
+          <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
@@ -356,9 +356,9 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
   );
 };
 

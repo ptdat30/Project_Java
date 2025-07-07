@@ -2,10 +2,11 @@ package com.quitsmoking.model;
 
 import jakarta.persistence.*;
 import java.time.Instant; // Dùng Instant cho timestamp
-import java.util.UUID; // Cần thiết nếu ID của User là UUID
 
 @Entity
-@Table(name = "feedbacks") // Tên bảng trong cơ sở dữ liệu
+@Table(name = "feedbacks", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id"}, name = "unique_user_feedback")
+}) // Tên bảng trong cơ sở dữ liệu với unique constraint
 public class Feedback {
 
     @Id

@@ -133,6 +133,33 @@ public class DailyProgressController {
         }
         return ResponseEntity.ok(weekData);
     }
+    @GetMapping("/week/{weekOffset}")
+    public ResponseEntity<?> getWeeklyProgressByOffset(Authentication authentication, @PathVariable int weekOffset) {
+        User user = userService.findByUsername(authentication.getName());
+        java.time.LocalDate today = java.time.LocalDate.now();
+        
+        // Tính ngày Thứ 2 của tuần hiện tại
+        java.time.DayOfWeek dow = today.getDayOfWeek();
+        int daysFromMonday = (dow.getValue() + 6) % 7; // Monday=0, Sunday=6
+        java.time.LocalDate currentMonday = today.minusDays(daysFromMonday);
+        
+        // Tính ngày Thứ 2 của tuần được yêu cầu
+        java.time.LocalDate targetMonday = currentMonday.minusWeeks(weekOffset);
+        java.time.LocalDate targetSunday = targetMonday.plusDays(6);
+        
+        java.util.List<DailyProgress> progressList = dailyProgressService.getProgressInDateRange(user, targetMonday, targetSunday);
+        java.util.Map<java.time.LocalDate, DailyProgress> progressMap = progressList.stream()
+            .collect(java.util.stream.Collectors.toMap(DailyProgress::getDate, dp -> dp));
+        
+        java.util.List<DailyProgressResponse> weekData = new java.util.ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            java.time.LocalDate date = targetMonday.plusDays(i);
+            DailyProgress dp = progressMap.get(date);
+            weekData.add(dp != null ? DailyProgressResponse.fromEntity(dp) : null);
+        }
+        
+        return ResponseEntity.ok(weekData);
+    }
     // DTO class cho request
     public static class UpdateProgressRequest {
         private int cigarettesSmoked;

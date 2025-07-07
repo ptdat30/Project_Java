@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication; // Bỏ comment nếu d
 import org.springframework.security.core.context.SecurityContextHolder; // Bỏ comment nếu dùng Spring Security
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -82,7 +83,7 @@ public class FeedbackService {
         String feedbackContent = savedFeedback.getFeedbackContent(); // Đảm bảo tên phương thức getter này khớp với entity Feedback của bạn
         java.time.Instant submissionTime = savedFeedback.getSubmissionTime(); // Đảm bảo kiểu dữ liệu khớp
         String userId = (savedFeedback.getUser() != null) ? savedFeedback.getUser().getId() : null;
-        String message = "Phản hồi của bạn đã được ghi nhận. Xin cảm ơn!"; // Thông báo mong muốn
+        String message = existingFeedback.isPresent() ? "Phản hồi của bạn đã được cập nhật. Xin cảm ơn!" : "Phản hồi của bạn đã được ghi nhận. Xin cảm ơn!"; // Thông báo mong muốn
 
         // Tạo đối tượng FeedbackResponse bằng constructor
         return new FeedbackResponse(
@@ -92,6 +93,82 @@ public class FeedbackService {
                 submissionTime,
                 userId,
                 message
+        );
+    }
+
+    /**
+     * Lấy feedback hiện tại của người dùng đã đăng nhập.
+     * @return FeedbackResponse chứa thông tin feedback của người dùng
+     * @throws RuntimeException nếu người dùng chưa có feedback
+     */
+    public FeedbackResponse getMyFeedback() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = null;
+
+        if (authentication != null && authentication.isAuthenticated() && !("anonymousUser").equals(authentication.getPrincipal())) {
+            String username = authentication.getName();
+            currentUser = userDAO.findByUsername(username)
+                                 .orElseThrow(() -> {
+                                     logger.error("Authenticated user not found in database: {}", username);
+                                     return new RuntimeException("Authenticated user not found.");
+                                 });
+        } else {
+            logger.warn("Attempting to get feedback by an unauthenticated or anonymous user.");
+            throw new RuntimeException("User must be authenticated to get feedback.");
+        }
+
+        Optional<Feedback> existingFeedback = feedbackRepository.findByUser(currentUser);
+        
+        if (existingFeedback.isPresent()) {
+            Feedback feedback = existingFeedback.get();
+            return new FeedbackResponse(
+                feedback.getId(),
+                feedback.getRating(),
+                feedback.getFeedbackContent(),
+                feedback.getSubmissionTime(),
+                feedback.getUser().getId(),
+                "Feedback hiện tại của bạn"
+            );
+        } else {
+            throw new RuntimeException("User has no feedback yet.");
+        }
+    }
+
+    /**
+     * Lấy tất cả feedback (cho admin).
+     * @return List<FeedbackResponse> chứa tất cả feedback
+     */
+    public List<FeedbackResponse> getAllFeedbacks() {
+        List<Feedback> feedbacks = feedbackRepository.findAll();
+        return feedbacks.stream()
+                .map(feedback -> new FeedbackResponse(
+                    feedback.getId(),
+                    feedback.getRating(),
+                    feedback.getFeedbackContent(),
+                    feedback.getSubmissionTime(),
+                    feedback.getUser().getId(),
+                    "Feedback từ " + feedback.getUser().getUsername()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
+     * Lấy feedback theo ID (cho admin).
+     * @param id ID của feedback cần lấy
+     * @return FeedbackResponse chứa thông tin feedback
+     * @throws RuntimeException nếu không tìm thấy feedback
+     */
+    public FeedbackResponse getFeedbackById(Long id) {
+        Feedback feedback = feedbackRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Feedback not found with ID: " + id));
+        
+        return new FeedbackResponse(
+            feedback.getId(),
+            feedback.getRating(),
+            feedback.getFeedbackContent(),
+            feedback.getSubmissionTime(),
+            feedback.getUser().getId(),
+            "Feedback từ " + feedback.getUser().getUsername()
         );
     }
 }

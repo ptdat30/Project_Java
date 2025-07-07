@@ -10,10 +10,7 @@ import com.quitsmoking.dto.response.FeedbackResponse; // <-- Đảm bảo import
 
 import com.quitsmoking.model.Role;
 import com.quitsmoking.model.User;
-import com.quitsmoking.model.QuitPlan;
-import com.quitsmoking.model.DailyProgress;
 import com.quitsmoking.model.MembershipTransaction;
-import com.quitsmoking.model.MembershipPlan;
 import com.quitsmoking.model.Feedback; // <-- Đảm bảo import này cho Feedback entity
 
 import com.quitsmoking.reponsitories.UserDAO;
@@ -46,7 +43,6 @@ public class AdminService {
     private final QuitPlanDAO quitPlanDAO;
     private final DailyProgressRepository dailyProgressRepository;
     private final MembershipTransactionRepository membershipTransactionRepository;
-    private final MembershipPlanRepository membershipPlanRepository;
     private final UserStatusService userStatusService;
     private final FeedbackRepository feedbackRepository; // <-- Khai báo dependency mới
 
@@ -63,7 +59,6 @@ public class AdminService {
         this.quitPlanDAO = quitPlanDAO;
         this.dailyProgressRepository = dailyProgressRepository;
         this.membershipTransactionRepository = membershipTransactionRepository;
-        this.membershipPlanRepository = membershipPlanRepository;
         this.userStatusService = userStatusService;
         this.feedbackRepository = feedbackRepository; // <-- Khởi tạo dependency
     }
@@ -100,7 +95,10 @@ public class AdminService {
     // Các phương thức quản lý người dùng khác mà Admin có thể làm
     public User viewUserDetails(String adminId, String targetUserId) {
         // Kiểm tra quyền admin
-        // ...
+        Optional<User> adminUserOptional = userDAO.findById(adminId);
+        if (adminUserOptional.isEmpty() || adminUserOptional.get().getRole() != Role.ADMIN) {
+            throw new RuntimeException("Permission denied: Only Admin can view user details.");
+        }
         return userService.getUserById(targetUserId); // Gọi UserService để lấy chi tiết
     }
 
@@ -403,7 +401,8 @@ public class AdminService {
     public User addCoach(Map<String, Object> coachData) {
         // Implementation for adding a new coach
         // This would involve creating a new user with COACH role
-        return null; // Placeholder
+        // TODO: Implement coach creation logic
+        throw new UnsupportedOperationException("Coach creation not yet implemented");
     }
 
     public Map<String, Object> removeCoach(String coachId) {
@@ -441,6 +440,7 @@ public class AdminService {
 
     public List<Object> getSystemReportsByEndDate(int page, int size, String endDate) {
         // Implementation for system reports
+        // TODO: Implement system reports logic
         return new ArrayList<>();
     }
 
@@ -475,7 +475,7 @@ public class AdminService {
         report.put("transactionCount", transactionCount);
         report.put("period", period);
         report.put("averageTransactionValue", transactionCount > 0 ? 
-                totalRevenue.divide(BigDecimal.valueOf(transactionCount), 2, BigDecimal.ROUND_HALF_UP) : 
+                totalRevenue.divide(BigDecimal.valueOf(transactionCount), java.math.RoundingMode.HALF_UP) : 
                 BigDecimal.ZERO);
         
         return report;
@@ -527,29 +527,22 @@ public class AdminService {
             // Kiểm tra null an toàn vì user có thể không tồn tại hoặc bị xóa
             String userId = (feedback.getUser() != null) ? feedback.getUser().getId() : "N/A";
 
-            // Thêm các dòng System.out.println() này để kiểm tra dữ liệu
-            // Bạn có thể bỏ đi sau khi debug xong
-            System.out.println("DEBUG - Feedback ID: " + feedback.getId());
-            System.out.println("DEBUG - Rating: " + feedback.getRating());
-            System.out.println("DEBUG - Content from entity: " + feedback.getFeedbackContent()); // <-- Đã sửa
-            System.out.println("DEBUG - Submission Time from entity: " + feedback.getSubmissionTime()); // <-- Đã sửa
-            System.out.println("DEBUG - User ID from entity: " + userId);
-
             // Tạo một đối tượng FeedbackResponse mới từ dữ liệu của Feedback entity
             return new FeedbackResponse(
                 feedback.getId(),
                 feedback.getRating(),
-                feedback.getFeedbackContent(), // Giả định đây là getter đúng cho nội dung
-                feedback.getSubmissionTime(),  // Giả định đây là getter đúng cho thời gian
+                feedback.getFeedbackContent(),
+                feedback.getSubmissionTime(),
                 userId,
-                null // Hoặc "" - Không có thông báo cụ thể cho từng feedback khi liệt kê
+                null // Không có thông báo cụ thể cho từng feedback khi liệt kê
             );
         }).collect(Collectors.toList()); // Thu thập các DTO vào một List
     }
 
     public Object replyToFeedback(String feedbackId, String message, String adminId) {
         // Implementation for replying to feedback
-        return null;
+        // TODO: Implement feedback reply logic
+        throw new UnsupportedOperationException("Feedback reply not yet implemented");
     }
 
     public Map<String, Object> updateSystemSettings(Map<String, Object> settings) {
@@ -589,7 +582,8 @@ public class AdminService {
 
     public User updateCoach(String coachId) {
         // Implementation for updating coach information
-        return null;
+        // TODO: Implement coach update logic
+        throw new UnsupportedOperationException("Coach update not yet implemented");
     }
 
     public User getUserById(String userId) {

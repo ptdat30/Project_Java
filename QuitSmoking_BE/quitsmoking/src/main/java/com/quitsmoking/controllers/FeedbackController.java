@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/feedback")
 // Cấu hình CORS cho Controller này. Tốt hơn nên cấu hình toàn cục trong WebConfig.java
@@ -24,6 +26,50 @@ public class FeedbackController {
     @Autowired
     public FeedbackController(FeedbackService feedbackService) {
         this.feedbackService = feedbackService;
+    }
+
+    /**
+     * Endpoint để lấy feedback hiện tại của người dùng đã đăng nhập.
+     * @return ResponseEntity với FeedbackResponse nếu có, hoặc 404 nếu chưa có feedback.
+     */
+    @GetMapping("/my-feedback")
+    public ResponseEntity<FeedbackResponse> getMyFeedback() {
+        logger.debug("Received GET request to /api/feedback/my-feedback");
+        try {
+            FeedbackResponse response = feedbackService.getMyFeedback();
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.warn("User has no feedback yet: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Endpoint để admin lấy tất cả feedback.
+     * @return ResponseEntity với danh sách FeedbackResponse.
+     */
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<FeedbackResponse>> getAllFeedbacks() {
+        logger.debug("Received GET request to /api/feedback/admin/all");
+        List<FeedbackResponse> responses = feedbackService.getAllFeedbacks();
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Endpoint để lấy feedback theo ID (cho admin).
+     * @param id ID của feedback cần lấy.
+     * @return ResponseEntity với FeedbackResponse.
+     */
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<FeedbackResponse> getFeedbackById(@PathVariable Long id) {
+        logger.debug("Received GET request to /api/feedback/admin/{}", id);
+        try {
+            FeedbackResponse response = feedbackService.getFeedbackById(id);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.warn("Feedback not found with ID: {}", id);
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**

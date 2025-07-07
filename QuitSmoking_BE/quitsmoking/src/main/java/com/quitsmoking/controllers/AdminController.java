@@ -5,7 +5,6 @@ import com.quitsmoking.services.UserStatusService;
 import com.quitsmoking.dto.response.AdminStatsResponse;
 import com.quitsmoking.dto.response.UserAdminResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,8 +28,6 @@ public class AdminController {
     @Autowired
     private UserStatusService userStatusService;
 
-    @Autowired
-    private ApplicationContext applicationContext;
     /**
      * Lấy thống kê tổng quan hệ thống
      */

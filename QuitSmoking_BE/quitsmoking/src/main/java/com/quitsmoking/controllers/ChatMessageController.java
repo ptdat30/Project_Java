@@ -2,7 +2,6 @@ package com.quitsmoking.controllers;
 
 import com.quitsmoking.model.ChatMessage;
 import com.quitsmoking.services.ChatMessageService;
-import com.quitsmoking.dto.request.ChatMessageRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
