@@ -5,8 +5,6 @@ const useMembershipError = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleApiError = useCallback((error) => {
-    console.log('useMembershipError: Handling API error:', error);
-    
     // Kiểm tra nếu là lỗi 401 hoặc 403
     if (error.response) {
       const { status, data } = error.response;

@@ -31,6 +31,9 @@ const AdminPanel = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConsultationId, setDeleteConsultationId] = useState(null);
   const [deleteSuccessMessage, setDeleteSuccessMessage] = useState("");
+  const [showRoleUpdateModal, setShowRoleUpdateModal] = useState(false);
+  const [roleUpdateMessage, setRoleUpdateMessage] = useState("");
+  const [roleUpdateSuccess, setRoleUpdateSuccess] = useState(true);
 
   const tabs = [
     { id: "dashboard", name: "Tổng quan", icon: "📊" },
@@ -266,26 +269,31 @@ const AdminPanel = () => {
         { role: selectedRole }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
       if (response.status === 200) {
         setUsers(prevUsers => prevUsers.map(u =>
           u.id === userId ? { ...u, role: selectedRole } : u
         ));
         setEditRoleId(null);
-        alert('Cập nhật vai trò thành công!');
+        setRoleUpdateMessage('Cập nhật vai trò thành công!');
+        setRoleUpdateSuccess(true);
+        setShowRoleUpdateModal(true);
       }
     } catch (err) {
       console.error('Error updating role:', err);
-      
       if (err.response?.status === 401) {
-        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        setRoleUpdateMessage('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!');
+        setRoleUpdateSuccess(false);
+        setShowRoleUpdateModal(true);
+        setTimeout(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }, 1500);
         return;
       }
-      
-      alert('Lỗi khi cập nhật role: ' + (err.response?.data?.message || err.message));
+      setRoleUpdateMessage('Lỗi khi cập nhật role: ' + (err.response?.data?.message || err.message));
+      setRoleUpdateSuccess(false);
+      setShowRoleUpdateModal(true);
     }
   };
 
@@ -1526,6 +1534,24 @@ const EncryptionTab = () => (
         <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100]">
           <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
             {deleteSuccessMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Modal thông báo cập nhật role */}
+      {showRoleUpdateModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4 relative">
+            <h3 className={`text-lg font-semibold mb-4 ${roleUpdateSuccess ? 'text-green-700' : 'text-red-700'}`}>{roleUpdateSuccess ? 'Thành công' : 'Lỗi'}</h3>
+            <p className="mb-6 text-gray-700">{roleUpdateMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowRoleUpdateModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

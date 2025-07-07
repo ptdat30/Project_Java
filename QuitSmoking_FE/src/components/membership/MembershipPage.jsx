@@ -138,14 +138,6 @@ const currentPriority = currentPlan ? currentPlan.priority : -1;
 
   // useEffect để cập nhật currentPlanId và isFreePlanClaimed khi user từ AuthContext thay đổi
   useEffect(() => {
-    console.log(
-      "MembershipPage useEffect: isAuthenticated =",
-      isAuthenticated,
-      "User:",
-      user,
-      "AuthLoading:",
-      authLoading
-    );
     if (!authLoading && user) {
       setCurrentPlanId(user.membership?.id || null); // Cập nhật ID gói hiện tại
       setIsFreePlanClaimed(user.freePlanClaimed || false); // Cập nhật trạng thái gói miễn phí
@@ -156,14 +148,6 @@ const currentPriority = currentPlan ? currentPlan.priority : -1;
   }, [user, authLoading, isAuthenticated]); // Dependency vào user, authLoading, isAuthenticated
 
   const handleSelectPlan = (plan) => {
-    console.log(
-      "handleSelectPlan (NGAY KHI CLICK): isAuthenticated =",
-      isAuthenticated,
-      "User:",
-      user,
-      "AuthLoading:",
-      authLoading
-    );
     checkAuthSync(); // Đảm bảo trạng thái xác thực được kiểm tra đồng bộ
 
     if (!isAuthenticated) {
@@ -195,20 +179,6 @@ const currentPriority = currentPlan ? currentPlan.priority : -1;
   };
 
   const handleUpgrade = async (plan) => {
-    console.log("handleUpgrade: Đang xử lý gói", plan.name);
-    const token = authService.getToken();
-    console.log(
-      "handleUpgrade: Token hiện tại từ authService:",
-      token ? "Có" : "Không"
-    );
-    console.log(
-      "handleUpgrade: User hiện tại từ authService:",
-      authService.getCurrentUser()
-    );
-    console.log(
-      "handleUpgrade: isAuthenticated từ AuthContext:",
-      isAuthenticated
-    );
     setProcessing(true);
     setShowSuccessMessage(false); // Ẩn thông báo thành công cũ
 
@@ -263,7 +233,6 @@ const currentPriority = currentPlan ? currentPlan.priority : -1;
         setShowSuccessMessage(false); // Ẩn thông báo sau một thời gian
       }, 3000); // Ví dụ: 3 giây
     } catch (error) {
-      console.error("Lỗi khi xử lý gói thành viên:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||

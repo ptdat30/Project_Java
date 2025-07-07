@@ -18,27 +18,6 @@ const Navigation = () => {
     error: authError,
   } = useAuth();
 
-  // LOG MỚI: Ghi lại trạng thái mà Navigation nhận được từ AuthContext
-  useEffect(() => {
-    console.log(
-      "Navigation: Trạng thái AuthContext nhận được - isAuthenticated:",
-      isAuthenticated,
-      "User:",
-      user,
-      "Loading:",
-      authLoading,
-      "Error:",
-      authError
-    );
-    // Thêm log để kiểm tra đối tượng user ngay khi nó được cập nhật trong Navigation
-    if (user) {
-      console.log("Navigation useEffect: Đối tượng User nhận được:", user);
-      console.log("Navigation useEffect: user.id:", user.id);
-      console.log("Navigation useEffect: user.username:", user.username);
-      console.log("Navigation useEffect: user.role:", user.role);
-    }
-  }, [isAuthenticated, user, authLoading, authError]);
-
   // Đóng user menu khi click ra ngoài
   useEffect(() => {
     if (!isUserMenuOpen) return;
@@ -119,13 +98,6 @@ if (isAuthenticated) {
   const getUserDisplayName = () => {
     if (!user) return "User";
 
-    // Thêm log bên trong hàm để kiểm tra giá trị của user tại thời điểm này
-    console.log("getUserDisplayName: user object:", user);
-    console.log("getUserDisplayName: user.firstName:", user.firstName);
-    console.log("getUserDisplayName: user.lastName:", user.lastName);
-    console.log("getUserDisplayName: user.username:", user.username);
-    console.log("getUserDisplayName: user.email:", user.email);
-
     // Ưu tiên firstName + lastName, sau đó là username, cuối cùng là email
     if (
       user.firstName &&
@@ -157,13 +129,6 @@ if (isAuthenticated) {
               <span className="font-medium">Đang tải...</span>
             ) : isAuthenticated ? (
               <>
-                {/* Thêm log ngay trước khi hiển thị để kiểm tra giá trị cuối cùng */}
-                {console.log(
-                  "Navigation Render: Display Name:",
-                  getUserDisplayName(),
-                  "Role:",
-                  user?.role
-                )}
                 <span className="font-medium">
                   Xin chào, {getUserDisplayName()} ({user?.role})
                 </span>

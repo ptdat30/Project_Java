@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Collections; // Import Collections
 import org.slf4j.Logger; // Import Logger
@@ -74,6 +75,18 @@ public class CommunityController {
             return ResponseEntity.ok(postsPage);
         } catch (Exception e) {
             logger.error("Error retrieving posts: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Lỗi: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> deletePost(@PathVariable String postId) {
+        try {
+            communityService.deletePost(postId);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Xóa bài viết thành công!"));
+        } catch (Exception e) {
+            logger.error("Error deleting post: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Lỗi: " + e.getMessage()));
         }
     }

@@ -6,6 +6,7 @@ import AvatarFromName from '../common/AvatarFromName';
 import useMembershipError from "../../hooks/useMembershipError";
 import MembershipUpgradeModal from "../common/MembershipUpgradeModal";
 import CommentSection from '../community/CommentSection';
+import axios from 'axios';
 
 const Community = () => {
   const navigate = useNavigate();
@@ -24,11 +25,15 @@ const Community = () => {
   const [loadingPostTypes, setLoadingPostTypes] = useState(true);
   const [errorPostTypes, setErrorPostTypes] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState('ALL');
-  const [accessDeniedForGuest, setAccessDeniedForGuest] = useState(false);
 
   // Sử dụng hook xử lý lỗi membership
   const { showUpgradeModal, errorMessage, handleApiError, closeUpgradeModal } = useMembershipError();
   const [expandedPostId, setExpandedPostId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [showGuestActionModal, setShowGuestActionModal] = useState(false);
+  const [guestActionMessage, setGuestActionMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -57,15 +62,8 @@ const Community = () => {
       try {
         setLoadingPosts(true);
         setErrorPosts(null);
-        setAccessDeniedForGuest(false);
 
         if (authLoading) return;
-
-        if (user && user.role === 'GUEST' && user.membership?.id === 'FREE_TRIAL_PLAN') {
-          setAccessDeniedForGuest(true);
-          setLoadingPosts(false);
-          return;
-        }
 
         const token = localStorage.getItem('jwt_token');
         const headers = {
@@ -79,14 +77,6 @@ const Community = () => {
           headers: headers,
         });
 
-        if (response.status === 403) {
-          if (isMounted) {
-            setAccessDeniedForGuest(true);
-            setErrorPosts('Bạn không có quyền truy cập chức năng này. Vui lòng nâng cấp gói thành viên.');
-          }
-          return;
-        }
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(`HTTP Error: ${response.status} - ${errorData.error || response.statusText}`);
@@ -98,7 +88,6 @@ const Community = () => {
         }
 
         const jsonData = JSON.parse(text);
-        console.log(jsonData);
 
         const mappedJson = jsonData.content.map(post => ({
           id: post.id,
@@ -116,6 +105,8 @@ const Community = () => {
           username: post.username,
           firstName: post.firstName,
           lastName: post.lastName,
+          role: post.role,
+          membershipPlanId: post.membershipPlanId,
         }));
 
         if (isMounted) {
@@ -124,7 +115,6 @@ const Community = () => {
       } catch (error) {
         if (isMounted) {
           setErrorPosts('Không thể tải bài viết: ' + error.message);
-          console.error('Error fetching posts:', error);
         }
       } finally {
         if (isMounted) {
@@ -134,12 +124,7 @@ const Community = () => {
     };
 
     if (!authLoading) {
-      if (user && user.role === 'GUEST' && (!user.membership || user.membership.id === 'FREE_TRIAL_PLAN')) {
-        setAccessDeniedForGuest(true);
-        setLoadingPosts(false);
-      } else {
-        fetchPostData();
-      }
+      fetchPostData();
     }
 
     initializePostTypes();
@@ -194,7 +179,6 @@ const Community = () => {
       const responseData = await response.json();
 
       if (response.ok) {
-        console.log(responseData.message);
         const createdPost = {
           id: responseData.id,
           commentsCount: 0,
@@ -211,6 +195,8 @@ const Community = () => {
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
+          role: user.role,
+          membershipPlanId: user.membershipPlanId,
         };
 
         setPosts(prevPosts => [createdPost, ...prevPosts]);
@@ -226,78 +212,41 @@ const Community = () => {
     }
   };
 
-  // Nếu là guest user thì hiển thị trang truy cập bị từ chối
-  if (accessDeniedForGuest) {
-    return (
-        <div className="min-h-screen bg-gray-50 py-8">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="text-6xl mb-6">👥</div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                Cộng đồng dành cho thành viên
-              </h1>
-              <p className="text-lg text-gray-600 mb-8">
-                Tính năng cộng đồng là tính năng premium chỉ dành cho thành viên.
-                Hãy nâng cấp gói thành viên để trải nghiệm đầy đủ tính năng này!
-              </p>
+  // Thêm hàm xác định danh hiệu và màu sắc
+  const getUserBadge = (role, membershipPlanId) => {
+    if (role === 'ADMIN') return { label: 'Quản trị viên', color: 'bg-red-100 text-red-700' };
+    if (role === 'COACH') return { label: 'Huấn luyện viên', color: 'bg-blue-100 text-blue-700' };
+    if (role === 'MEMBER') {
+      if (membershipPlanId === 'PLAN90DAYS') return { label: 'Thành viên VIP', color: 'bg-yellow-100 text-yellow-800' };
+      if (membershipPlanId === 'PLAN60DAYS') return { label: 'Thành viên Premium', color: 'bg-purple-100 text-purple-700' };
+      // FREE_TRIAL_PLAN, PLAN30DAYS hoặc khác
+      return { label: 'Thành viên', color: 'bg-green-100 text-green-700' };
+    }
+    if (role === 'GUEST') return { label: 'Khách', color: 'bg-gray-100 text-gray-700' };
+    return { label: 'Thành viên', color: 'bg-green-100 text-green-700' };
+  };
 
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  🎯 Lợi ích khi nâng cấp:
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">💬</div>
-                    <div>
-                      <div className="font-medium text-gray-900">Tham gia cộng đồng</div>
-                      <div className="text-sm text-gray-600">Kết nối với những người cùng mục tiêu</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">📝</div>
-                    <div>
-                      <div className="font-medium text-gray-900">Đăng bài chia sẻ</div>
-                      <div className="text-sm text-gray-600">Chia sẻ hành trình của bạn</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">🏆</div>
-                    <div>
-                      <div className="font-medium text-gray-900">Bảng xếp hạng</div>
-                      <div className="text-sm text-gray-600">Theo dõi tiến độ và thi đua</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">🤝</div>
-                    <div>
-                      <div className="font-medium text-gray-900">Hỗ trợ từ cộng đồng</div>
-                      <div className="text-sm text-gray-600">Nhận động viên và lời khuyên</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+  const handleDeletePost = async (postId) => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      await axios.delete(`http://localhost:8080/api/community/posts/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      setDeleteMessage('Đã xóa bài viết thành công!');
+    } catch (err) {
+      setDeleteMessage('Lỗi khi xóa bài viết!');
+    } finally {
+      setShowDeleteModal(false);
+      setTimeout(() => setDeleteMessage(''), 2000);
+    }
+  };
 
-              <div className="space-y-4">
-                <button
-                    onClick={() => navigate('/membership')}
-                    className="w-full md:w-auto bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:from-green-700 hover:to-blue-700 transition duration-300 shadow-lg"
-                >
-                  🚀 Nâng cấp ngay
-                </button>
-                <div>
-                  <button
-                      onClick={() => navigate('/')}
-                      className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    ← Quay về trang chủ
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-    );
-  }
+  // Hàm mở modal khi guest click vào chức năng bị hạn chế
+  const handleGuestAction = (message) => {
+    setGuestActionMessage(message);
+    setShowGuestActionModal(true);
+  };
 
   return (
       <motion.div
@@ -419,64 +368,37 @@ const Community = () => {
                         </motion.div>
                     )}
 
-                    {/* Access Denied Message */}
-                    <AnimatePresence>
-                      {accessDeniedForGuest && (
-                          <motion.div
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0 }}
-                              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-center"
-                              role="alert"
-                          >
-                            <strong className="font-bold">Truy cập bị từ chối!</strong>
-                            <span className="block sm:inline ml-2">Chức năng này không dành cho khách.</span>
-                            <p className="mt-2">Vui lòng nâng cấp gói thành viên để truy cập toàn bộ tính năng cộng đồng.</p>
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => navigate('/membership')}
-                                className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition duration-300 shadow-md w-full sm:w-auto"
-                            >
-                              Nâng Cấp Ngay
-                            </motion.button>
-                          </motion.div>
-                      )}
-                    </AnimatePresence>
-
                     {/* Post Filters */}
-                    {!accessDeniedForGuest && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.3 }}
-                            className="flex flex-wrap gap-2 my-4"
-                        >
-                          {['ALL', 'ACHIEVEMENT_SHARE', 'MOTIVATION', 'QUESTION', 'ADVICE'].map((filter) => (
-                              <motion.button
-                                  key={filter}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => setSelectedFilter(filter)}
-                                  className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
-                                      selectedFilter === filter
-                                          ? filter === 'ALL' ? 'bg-green-600 text-white' :
-                                              filter === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-500 text-white' :
-                                                  filter === 'MOTIVATION' ? 'bg-blue-500 text-white' :
-                                                      filter === 'QUESTION' ? 'bg-purple-500 text-white' :
-                                                          'bg-green-500 text-white'
-                                          : filter === 'ALL' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                                              filter === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' :
-                                                  filter === 'MOTIVATION' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                                                      filter === 'QUESTION' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
-                                                          'bg-green-100 text-green-700 hover:bg-green-200'
-                                  }`}
-                              >
-                                {filter}
-                              </motion.button>
-                          ))}
-                        </motion.div>
-                    )}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="flex flex-wrap gap-2 my-4"
+                    >
+                      {['ALL', 'ACHIEVEMENT_SHARE', 'MOTIVATION', 'QUESTION', 'ADVICE'].map((filter) => (
+                          <motion.button
+                              key={filter}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setSelectedFilter(filter)}
+                              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                                  selectedFilter === filter
+                                      ? filter === 'ALL' ? 'bg-green-600 text-white' :
+                                          filter === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-500 text-white' :
+                                              filter === 'MOTIVATION' ? 'bg-blue-500 text-white' :
+                                                  filter === 'QUESTION' ? 'bg-purple-500 text-white' :
+                                                      'bg-green-500 text-white'
+                                      : filter === 'ALL' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                                          filter === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' :
+                                              filter === 'MOTIVATION' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                                                  filter === 'QUESTION' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' :
+                                                      'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                          >
+                            {filter}
+                          </motion.button>
+                      ))}
+                    </motion.div>
 
                     {/* Posts List */}
                     <div className="space-y-6">
@@ -500,7 +422,7 @@ const Community = () => {
                           </motion.div>
                       )}
 
-                      {!loadingPosts && !errorPosts && filterPosts.length === 0 && !accessDeniedForGuest && (
+                      {!loadingPosts && !errorPosts && filterPosts.length === 0 && (
                           <motion.div
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
@@ -510,7 +432,7 @@ const Community = () => {
                           </motion.div>
                       )}
 
-                      {!loadingPosts && !errorPosts && filterPosts.length > 0 && !accessDeniedForGuest && (
+                      {!loadingPosts && !errorPosts && filterPosts.length > 0 && (
                           <AnimatePresence>
                             {filterPosts.map((post) => (
                                 <motion.div
@@ -544,9 +466,14 @@ const Community = () => {
                                     <div className="flex-1 w-full">
                                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
                                         <h4 className="font-bold text-gray-800 text-base sm:text-lg">{post.username}</h4>
-                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full mt-1 sm:mt-0">
-                  Active Member
-                </span>
+                                        {(() => {
+                                          const badge = getUserBadge(post.role, post.membershipPlanId);
+                                          return (
+                                            <span className={`text-xs px-2 py-1 rounded-full mt-1 sm:mt-0 font-semibold ${badge.color}`}>
+                                              {badge.label}
+                                            </span>
+                                          );
+                                        })()}
                                       </div>
                                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 mt-1">
                                         <span>🗓️ {post.createdAt}</span>
@@ -578,7 +505,9 @@ const Community = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        className="flex items-center space-x-2 text-gray-600 hover:text-red-500 transition duration-300"
+                                        className={`flex items-center space-x-2 text-gray-600 transition duration-300 ${user && user.role === 'GUEST' ? 'opacity-60 cursor-not-allowed' : 'hover:text-red-500'}`}
+                                        onClick={user && user.role === 'GUEST' ? () => handleGuestAction('Bạn cần đăng ký thành viên để thả tim bài viết!') : undefined}
+                                        disabled={user && user.role === 'GUEST'}
                                     >
                                       <span className="text-lg">❤️</span>
                                       <span className="text-sm">{post.likesCount}</span>
@@ -587,30 +516,38 @@ const Community = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
-                                        className={`flex items-center space-x-2 transition duration-300 ${
-                                            expandedPostId === post.id ? 'text-blue-500' : 'text-gray-600 hover:text-blue-500'
-                                        }`}
+                                        className={`flex items-center space-x-2 transition duration-300 ${user && user.role === 'GUEST' ? 'opacity-60 cursor-not-allowed' : expandedPostId === post.id ? 'text-blue-500' : 'text-gray-600 hover:text-blue-500'}`}
+                                        onClick={user && user.role === 'GUEST' ? () => handleGuestAction('Bạn cần đăng ký thành viên để bình luận!') : () => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+                                        disabled={user && user.role === 'GUEST'}
                                     >
                                       <span className="text-lg">💬</span>
                                       <span className="text-sm">Bình luận</span>
-                                      <span className="text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                                        {post.commentsCount}
-                                      </span>
+                                      <span className="text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{post.commentsCount}</span>
                                     </motion.button>
 
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
-                                        className="flex items-center space-x-2 text-gray-600 hover:text-purple-500 transition duration-300"
+                                        className={`flex items-center space-x-2 text-gray-600 transition duration-300 ${user && user.role === 'GUEST' ? 'opacity-60 cursor-not-allowed' : 'hover:text-purple-500'}`}
+                                        onClick={user && user.role === 'GUEST' ? () => handleGuestAction('Bạn cần đăng ký thành viên để chia sẻ bài viết!') : undefined}
+                                        disabled={user && user.role === 'GUEST'}
                                     >
                                       <span className="text-lg">🔗</span>
                                       <span className="text-sm">Chia sẻ</span>
                                     </motion.button>
+
+                                    {user && user.role === 'ADMIN' && (
+                                      <button
+                                        onClick={() => { setShowDeleteModal(true); setPostToDelete(post.id); }}
+                                        className="ml-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold hover:bg-red-200 transition"
+                                      >
+                                        Xóa
+                                      </button>
+                                    )}
                                   </div>
 
                                   {/* Expanded Comment Section */}
-                                  {expandedPostId === post.id && (
+                                  {expandedPostId === post.id && user && user.role !== 'GUEST' && (
                                       <motion.div
                                           initial={{ opacity: 0, height: 0 }}
                                           animate={{ opacity: 1, height: 'auto' }}
@@ -805,6 +742,42 @@ const Community = () => {
             onClose={closeUpgradeModal}
             message={errorMessage}
           />
+
+          {/* Modal xác nhận xóa bài viết */}
+          {showDeleteModal && (
+            <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4 relative">
+                <h3 className="text-lg font-semibold text-red-700 mb-4">Xác nhận xóa bài viết</h3>
+                <p className="mb-6 text-gray-700">Bạn có chắc chắn muốn xóa bài viết này? Hành động này không thể hoàn tác.</p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={() => handleDeletePost(postToDelete)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Xác nhận xóa
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Thông báo xóa thành công/lỗi */}
+          {deleteMessage && (
+            <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100]">
+              <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+                {deleteMessage}
+              </div>
+            </div>
+          )}
+
+          {/* Modal thông báo cho guest */}
+          <MembershipUpgradeModal isOpen={showGuestActionModal} onClose={() => setShowGuestActionModal(false)} message={guestActionMessage} />
         </div>
       </motion.div>
     );

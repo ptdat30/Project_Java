@@ -209,8 +209,6 @@ const PlanPage = () => {
       targetQuitDate: actualStartDate, // Hoặc tính toán ngày mục tiêu dựa trên logic
     };
 
-    console.log("Dữ liệu kế hoạch gửi đi:", planData);
-
     try {
       await apiService.createQuitPlan(planData);
       setSubmitSuccess(true);

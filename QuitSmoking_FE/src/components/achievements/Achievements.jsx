@@ -67,16 +67,13 @@ const Achievements = () => {
       // Load all achievements
       const allAchievements = await apiService.getAllAchievements();
       setAchievements(allAchievements);
-      console.log('DEBUG: Loaded all achievements:', allAchievements.length);
 
       // Load user achievements
       const userAchievementsData = await apiService.getUserAchievements();
       setUserAchievements(userAchievementsData);
-      console.log('DEBUG: Loaded user achievements:', userAchievementsData.length);
 
       // Load user stats
       const stats = await apiService.getAchievementStats();
-      console.log('DEBUG: Loaded user stats:', stats);
       setUserStats({
         daysSmokeFreeDays: stats.daysSmokeFreeDays || 0,
         moneySaved: stats.moneySaved || 0,
@@ -88,7 +85,6 @@ const Achievements = () => {
       await apiService.checkAchievements();
 
     } catch (err) {
-      console.error("Error loading achievements:", err);
       setError("Không thể tải dữ liệu huy hiệu. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -221,20 +217,14 @@ const Achievements = () => {
       // Show success message
       alert("Đã chia sẻ thành tích với cộng đồng!");
     } catch (err) {
-      console.error("Error sharing achievement:", err);
       alert("Không thể chia sẻ thành tích. Vui lòng thử lại sau.");
     }
   };
 
   const handleUnlockAchievement = async (achievementId) => {
     try {
-      console.log('DEBUG: Attempting to unlock achievement:', achievementId);
-      console.log('DEBUG: Current userStats:', userStats);
-      console.log('DEBUG: User achievements:', userAchievements);
-      
       // Gọi API unlock và nhận về object thành tựu vừa unlock
       const unlocked = await apiService.unlockAchievement(achievementId);
-      console.log('DEBUG: Unlocked achievement:', unlocked);
       
       // Reload achievements để cập nhật danh sách
       await loadAchievements();
@@ -242,7 +232,6 @@ const Achievements = () => {
       setNewAchievement(unlocked);
       // Không cần alert nữa vì đã có modal
     } catch (err) {
-      console.error("Error unlocking achievement:", err);
       let errorMessage = "Không thể mở khóa huy hiệu. Vui lòng thử lại sau.";
       if (err.response?.data) {
         const errorData = err.response.data;
@@ -264,14 +253,10 @@ const Achievements = () => {
 
   const handleRefreshStats = async () => {
     try {
-      console.log('DEBUG: Refreshing all achievement data...');
-      
       // Reload toàn bộ dữ liệu
       await loadAchievements();
       
-      console.log('DEBUG: Refresh completed');
     } catch (err) {
-      console.error("Error refreshing stats:", err);
       alert('Có lỗi khi làm mới dữ liệu. Vui lòng thử lại.');
     }
   };
@@ -455,17 +440,6 @@ const Achievements = () => {
             const userAchievement = userAchievements.find(
               ua => ua.achievementId === achievement.id
             );
-
-            // Debug log cho achievement đang xem
-            console.log(`DEBUG: Achievement ${achievement.name}:`, {
-              id: achievement.id,
-              earned,
-              unlockable,
-              progress,
-              criteriaType: achievement.criteriaType,
-              criteriaValue: achievement.criteriaValue,
-              userStats
-            });
 
             return (
               <div

@@ -168,19 +168,16 @@ const CoachConsultation = () => {
 
   // Handle WebSocket message received
   const handleWebSocketMessage = (message) => {
-    console.log('CoachConsultation: Received WebSocket message:', message);
     setMessages(prevMessages => [...prevMessages, message]);
     
     // Nếu tin nhắn từ người khác và đang ở trang danh sách session (không phải trong chat)
     if (message.senderId !== user.id && !activeSession) {
-      console.log('CoachConsultation: Adding session to unread list:', message.sessionId);
       notificationService.addUnreadSession(message.sessionId);
     }
   };
 
   // Handle WebSocket status changes
   const handleWebSocketStatusChange = (status) => {
-    console.log('CoachConsultation: WebSocket status changed to:', status);
     setWebsocketStatus(status);
   };
 
@@ -216,11 +213,6 @@ const CoachConsultation = () => {
     };
   }, []);
 
-  // Debug log khi unreadSessions thay đổi
-  useEffect(() => {
-    console.log('CoachConsultation: unreadSessions changed:', unreadSessions);
-  }, [unreadSessions]);
-
   // Khi bắt đầu chat với user (coach) hoặc coach chọn session
   const handleStartSession = async (target) => {
     // Prevent multiple clicks
@@ -237,7 +229,6 @@ const CoachConsultation = () => {
           setMessages(res.content || []);
           
           // Connect to WebSocket
-          console.log('CoachConsultation: Connecting to WebSocket for coach session:', target.id);
           websocketService.connect(
             user.id, 
             target.id, 
@@ -247,15 +238,12 @@ const CoachConsultation = () => {
           // Join session after a short delay to ensure connection is established
           setTimeout(() => {
             if (websocketService.isConnected()) {
-              console.log('CoachConsultation: Joining WebSocket session:', target.id);
               websocketService.joinSession(
                 target.id,
                 user.id,
                 user.firstName + " " + user.lastName,
                 user.username
               );
-            } else {
-              console.warn('CoachConsultation: WebSocket not connected, cannot join session');
             }
           }, 1000);
         } catch (err) {
@@ -284,7 +272,6 @@ const CoachConsultation = () => {
           setMessages(res.content || []);
           
           // Connect to WebSocket
-          console.log('CoachConsultation: Connecting to WebSocket for member session:', session.id);
           websocketService.connect(
             user.id, 
             session.id, 
@@ -294,15 +281,12 @@ const CoachConsultation = () => {
           // Join session after a short delay to ensure connection is established
           setTimeout(() => {
             if (websocketService.isConnected()) {
-              console.log('CoachConsultation: Joining WebSocket session:', session.id);
               websocketService.joinSession(
                 session.id,
                 user.id,
                 user.firstName + " " + user.lastName,
                 user.username
               );
-            } else {
-              console.warn('CoachConsultation: WebSocket not connected, cannot join session');
             }
           }, 1000);
         } catch (err) {
@@ -329,7 +313,6 @@ const CoachConsultation = () => {
     try {
       // Send via WebSocket (this will also save to database)
       if (websocketService.isConnected()) {
-        console.log('CoachConsultation: Sending message via WebSocket');
         websocketService.sendMessage(
           activeSession.id,
           user.id,
@@ -341,7 +324,6 @@ const CoachConsultation = () => {
         setNewMessage("");
       } else {
         // Fallback to REST API if WebSocket is not connected
-        console.warn('CoachConsultation: WebSocket not connected, using REST API fallback');
         await apiService.sendMessage(activeSession.id, {
           senderId: user.id,
           content: newMessage,
@@ -352,7 +334,6 @@ const CoachConsultation = () => {
         setMessages(res.content || []);
       }
     } catch (err) {
-      console.error('CoachConsultation: Error sending message:', err);
       alert("Không gửi được tin nhắn!");
     }
   };
@@ -618,7 +599,6 @@ const CoachConsultation = () => {
               {isCoach
                 ? sessions.map((session) => {
                     const hasUnread = unreadSessions.includes(session.id);
-                    console.log(`Session ${session.id}: hasUnread = ${hasUnread}, unreadSessions =`, unreadSessions);
                     return (
                       <div key={session.id} className="bg-white rounded-lg shadow-sm p-6 relative">
                         {/* Dấu ! nếu có tin nhắn mới */}
