@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import apiService from "../../services/apiService";
@@ -25,6 +25,14 @@ const PlanPage = () => {
       return () => clearTimeout(timer);
     }
   }, [submitSuccess, navigate]);
+  const [errors, setErrors] = useState({});
+
+  // Thêm ref cho từng trường
+  const customDateRef = useRef(null);
+  const cigarettesPerDayRef = useRef(null);
+  const pricePerPackRef = useRef(null);
+  const reasonsRef = useRef(null);
+  const triggersRef = useRef(null);
 
   // Define the full list of reasons to quit with their titles and images
   // Dữ liệu này phải được định nghĩa ở đây để có thể truy cập trong handleStartPlan
