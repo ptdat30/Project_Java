@@ -25,7 +25,7 @@ const Community = () => {
   const [errorPostTypes, setErrorPostTypes] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState('ALL');
   const [accessDeniedForGuest, setAccessDeniedForGuest] = useState(false);
-  
+
   // Sử dụng hook xử lý lỗi membership
   const { showUpgradeModal, errorMessage, handleApiError, closeUpgradeModal } = useMembershipError();
   const [expandedPostId, setExpandedPostId] = useState(null);
@@ -225,6 +225,79 @@ const Community = () => {
       console.error("Error creating post", e);
     }
   };
+
+  // Nếu là guest user thì hiển thị trang truy cập bị từ chối
+  if (accessDeniedForGuest) {
+    return (
+        <div className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="text-6xl mb-6">👥</div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Cộng đồng dành cho thành viên
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">
+                Tính năng cộng đồng là tính năng premium chỉ dành cho thành viên.
+                Hãy nâng cấp gói thành viên để trải nghiệm đầy đủ tính năng này!
+              </p>
+
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-8">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  🎯 Lợi ích khi nâng cấp:
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">💬</div>
+                    <div>
+                      <div className="font-medium text-gray-900">Tham gia cộng đồng</div>
+                      <div className="text-sm text-gray-600">Kết nối với những người cùng mục tiêu</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">📝</div>
+                    <div>
+                      <div className="font-medium text-gray-900">Đăng bài chia sẻ</div>
+                      <div className="text-sm text-gray-600">Chia sẻ hành trình của bạn</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">🏆</div>
+                    <div>
+                      <div className="font-medium text-gray-900">Bảng xếp hạng</div>
+                      <div className="text-sm text-gray-600">Theo dõi tiến độ và thi đua</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">🤝</div>
+                    <div>
+                      <div className="font-medium text-gray-900">Hỗ trợ từ cộng đồng</div>
+                      <div className="text-sm text-gray-600">Nhận động viên và lời khuyên</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <button
+                    onClick={() => navigate('/membership')}
+                    className="w-full md:w-auto bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:from-green-700 hover:to-blue-700 transition duration-300 shadow-lg"
+                >
+                  🚀 Nâng cấp ngay
+                </button>
+                <div>
+                  <button
+                      onClick={() => navigate('/')}
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    ← Quay về trang chủ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    );
+  }
 
   return (
       <motion.div
