@@ -203,50 +203,52 @@ const HomePage = () => {
   return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50">
         {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-2 sm:px-4 py-8 sm:py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 items-center">
-            <div className={`transform transition-all duration-1000 ${isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}>
-              <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4 sm:mb-6 leading-tight">
+        <section className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-6 sm:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-12 items-center w-full">
+            <div className={`transform transition-all duration-1000 ${isLoaded ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'} w-full`}> 
+              <h1 className="text-lg xs:text-xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-3 sm:mb-6 leading-tight">
                 Hỗ trợ cai nghiện thuốc lá vì một cuộc sống khỏe mạnh hơn.
               </h1>
-              <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-8 leading-relaxed">
+              <p className="text-sm xs:text-base sm:text-lg text-gray-600 mb-3 sm:mb-8 leading-relaxed">
                 Chúng tôi hiểu rằng cai nghiện thuốc lá là một hành trình đầy
                 thách thức. Với đội ngũ chuyên gia giàu kinh nghiệm, chúng tôi cam
                 kết đồng hành cùng bạn trên con đường hướng tới một cuộc sống
                 không khói thuốc.
               </p>
-              <Link
+              <div className="flex justify-center sm:justify-start w-full">
+                <Link
                   to="/membership"
-                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25 text-sm sm:text-base"
-              >
-                <span className="flex items-center">
-                  ✨ Trải nghiệm tư vấn miễn phí 30 ngày
-                </span>
-              </Link>
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 xs:px-4 sm:px-8 py-2 xs:py-3 sm:py-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25 text-xs xs:text-sm sm:text-base w-auto text-center"
+                >
+                  <span className="flex items-center justify-center">
+                    ✨ Trải nghiệm tư vấn miễn phí 30 ngày
+                  </span>
+                </Link>
+              </div>
             </div>
-            <div className={`grid grid-cols-2 gap-2 sm:gap-4 transform transition-all duration-1000 delay-300 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+            <div className={`grid grid-cols-2 gap-2 xs:gap-3 sm:gap-4 transform transition-all duration-1000 delay-300 ${isLoaded ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'} w-full mt-4 sm:mt-0`}> 
               {[1, 2, 3, 4].map((num) => (
-                  <div
-                      key={num}
-                      className="overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-110 hover:rotate-1 group"
-                      style={{
-                        animationDelay: `${num * 200}ms`,
-                      }}
-                  >
-                    <img
-                        src={`/images/hinh${num}.png`}
-                        alt={`Hình minh họa ${num}`}
-                        className="w-full h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-500 max-w-full"
-                    />
-                  </div>
+                <div
+                  key={num}
+                  className="overflow-hidden rounded-lg shadow-md hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:rotate-1 group w-full"
+                  style={{
+                    animationDelay: `${num * 200}ms`,
+                  }}
+                >
+                  <img
+                    src={`/images/hinh${num}.png`}
+                    alt={`Hình minh họa ${num}`}
+                    className="w-full h-20 xs:h-24 sm:h-32 md:h-40 object-cover group-hover:scale-110 transition-transform duration-500 max-w-full rounded-lg"
+                  />
+                </div>
               ))}
             </div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section className="py-10 sm:py-20 bg-white">
-          <div className="container mx-auto px-2 sm:px-6">
+        <section className="py-10 sm:py-20 bg-white w-full">
+          <div className="container mx-auto px-2 sm:px-6 w-full">
             <div className="text-center mb-8 sm:mb-16">
               <h2 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2 sm:mb-4">
                 Tại Sao Chọn Chúng Tôi?
@@ -257,7 +259,7 @@ const HomePage = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 w-full">
               {[
                 {
                   icon: "/images/giadinh.png",
@@ -320,7 +322,7 @@ const HomePage = () => {
                         <img
                             src={feature.icon}
                             alt={feature.title}
-                            className="w-12 h-12 sm:w-20 sm:h-20 mx-auto group-hover:scale-125 transition-transform duration-500 filter drop-shadow-lg max-w-full"
+                            className="w-12 h-12 xs:w-16 xs:h-16 sm:w-20 sm:h-20 mx-auto group-hover:scale-125 transition-transform duration-500 filter drop-shadow-lg max-w-full"
                         />
                       </div>
                       <h3 className="text-base sm:text-xl font-bold text-white mb-2 sm:mb-4 group-hover:text-yellow-200 transition-colors duration-300">
@@ -337,8 +339,8 @@ const HomePage = () => {
         </section>
 
         {/* News and Statistics Section */}
-        <section className="py-10 sm:py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50">
-          <div className="container mx-auto px-2 sm:px-6">
+        <section className="py-10 sm:py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50 w-full">
+          <div className="container mx-auto px-2 sm:px-6 w-full">
             <div className="text-center mb-8 sm:mb-16">
               <h2 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2 sm:mb-4">
                 📊 Thống Kê Thực Tế
@@ -349,7 +351,7 @@ const HomePage = () => {
             </div>
 
             {/* Sử dụng component biểu đồ tại đây */}
-            <div className="max-w-full sm:max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-4 sm:p-8 mb-6 sm:mb-12 border border-green-100">
+            <div className="w-full max-w-full sm:max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-2 xs:p-4 sm:p-8 mb-6 sm:mb-12 border border-green-100 overflow-x-auto">
               <SmokingStatsChart
                   deathsPerYear={smokingStats.deathsPerYearVietnam}
                   healthcareCosts={smokingStats.healthcareCostsVietnam}
@@ -367,14 +369,14 @@ const HomePage = () => {
             </div>
 
             {/* News Articles */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 w-full">
               {newsArticles.map((article, index) => (
                   <a
                       key={article.id}
                       href={article.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 group block transform hover:scale-105 hover:-translate-y-2"
+                      className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 group block transform hover:scale-105 hover:-translate-y-2 w-full"
                       style={{
                         animationDelay: `${index * 200}ms`,
                       }}
@@ -383,12 +385,12 @@ const HomePage = () => {
                       <img
                           src={article.image}
                           alt={article.title}
-                          className="w-full h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-500 max-w-full"
+                          className="w-full h-28 xs:h-32 sm:h-48 object-cover group-hover:scale-110 transition-transform duration-500 max-w-full"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
 
-                    <div className="p-4 sm:p-6">
+                    <div className="p-3 xs:p-4 sm:p-6">
                       <h3 className="text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-3 group-hover:text-green-600 transition-colors duration-300 line-clamp-2">
                         {article.title}
                       </h3>
@@ -415,9 +417,9 @@ const HomePage = () => {
             <div className="text-center mt-8 sm:mt-12">
               <Link
                   to="/membership"
-                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25"
+                  className="inline-block bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:shadow-green-500/25 w-full sm:w-auto text-center"
               >
-                <span className="flex items-center">
+                <span className="flex items-center justify-center">
                   🚀 Đăng Ký Thành Viên Ngay
                 </span>
               </Link>
@@ -426,11 +428,11 @@ const HomePage = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-10 sm:py-20 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden">
+        <section className="py-10 sm:py-20 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden w-full">
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-white/5 opacity-50"></div>
 
-          <div className="container mx-auto px-2 sm:px-6 text-center relative z-10">
+          <div className="container mx-auto px-2 sm:px-6 text-center relative z-10 w-full">
             <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">
               ✨ Sẵn Sàng Bắt Đầu Hành Trình Mới?
             </h2>
@@ -440,16 +442,16 @@ const HomePage = () => {
             </p>
 
             {!isAuthenticated ? (
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full">
                   <Link
                       to="/register"
-                      className="bg-white text-green-600 px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                      className="bg-white text-green-600 px-4 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto text-center"
                   >
                     🎯 Đăng Ký Miễn Phí
                   </Link>
                   <Link
                       to="/membership"
-                      className="border-2 border-white text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105"
+                      className="border-2 border-white text-white px-4 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-white hover:text-green-600 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto text-center"
                   >
                     💎 Xem Gói Premium
                   </Link>
@@ -457,7 +459,7 @@ const HomePage = () => {
             ) : (
                 <Link
                     to="/plan"
-                    className="bg-white text-green-600 px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl inline-block"
+                    className="bg-white text-green-600 px-4 sm:px-10 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-green-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl inline-block w-full sm:w-auto text-center"
                 >
                   📋 Lập Kế Hoạch Cai Thuốc
                 </Link>
