@@ -136,9 +136,19 @@ const CoachConsultation = () => {
       }
     });
     
-    // Trả về danh sách đã deduplicate, sắp xếp theo thời gian tạo mới nhất
+    // Trả về danh sách đã deduplicate, sắp xếp ưu tiên session có tin nhắn chưa đọc
     return Array.from(sessionMap.values())
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      .sort((a, b) => {
+        const aHasUnread = unreadSessions.includes(a.id);
+        const bHasUnread = unreadSessions.includes(b.id);
+        
+        // Ưu tiên session có tin nhắn chưa đọc
+        if (aHasUnread && !bHasUnread) return -1;
+        if (!aHasUnread && bHasUnread) return 1;
+        
+        // Nếu cùng trạng thái đọc, sắp xếp theo thời gian tạo mới nhất
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
   };
 
   // Handle cleanup duplicate sessions
@@ -160,6 +170,12 @@ const CoachConsultation = () => {
   const handleWebSocketMessage = (message) => {
     console.log('CoachConsultation: Received WebSocket message:', message);
     setMessages(prevMessages => [...prevMessages, message]);
+    
+    // Nếu tin nhắn từ người khác và đang ở trang danh sách session (không phải trong chat)
+    if (message.senderId !== user.id && !activeSession) {
+      console.log('CoachConsultation: Adding session to unread list:', message.sessionId);
+      notificationService.addUnreadSession(message.sessionId);
+    }
   };
 
   // Handle WebSocket status changes
@@ -177,6 +193,33 @@ const CoachConsultation = () => {
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
+
+  // Cập nhật lại danh sách session khi unreadSessions thay đổi (để sắp xếp lại)
+  useEffect(() => {
+    if (isCoach && sessions.length > 0) {
+      const sortedSessions = deduplicateSessions(sessions);
+      setSessions(sortedSessions);
+    }
+  }, [unreadSessions, isCoach]);
+
+  // Cập nhật unreadSessions khi có tin nhắn mới từ WebSocket
+  useEffect(() => {
+    const handleUnreadUpdate = () => {
+      setUnreadSessions(notificationService.getUnreadSessions());
+    };
+
+    // Tạo custom event để cập nhật unread sessions
+    window.addEventListener('unreadSessionsUpdate', handleUnreadUpdate);
+    
+    return () => {
+      window.removeEventListener('unreadSessionsUpdate', handleUnreadUpdate);
+    };
+  }, []);
+
+  // Debug log khi unreadSessions thay đổi
+  useEffect(() => {
+    console.log('CoachConsultation: unreadSessions changed:', unreadSessions);
+  }, [unreadSessions]);
 
   // Khi bắt đầu chat với user (coach) hoặc coach chọn session
   const handleStartSession = async (target) => {
@@ -341,6 +384,10 @@ const CoachConsultation = () => {
                   setMessages([]);
                   // Disconnect WebSocket when leaving chat
                   websocketService.disconnect();
+                  // Xóa session khỏi unread list khi rời khỏi chat
+                  if (isCoach) {
+                    notificationService.removeUnreadSession(activeSession.id);
+                  }
                 }}
                 className="mr-4 p-2 text-gray-500 hover:text-gray-700"
               >
@@ -532,52 +579,62 @@ const CoachConsultation = () => {
             {/* Danh sách session cho coach hoặc danh sách coach cho member */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {isCoach
-                ? sessions.map((session) => (
-                    <div key={session.id} className="bg-white rounded-lg shadow-sm p-6 relative">
-                      {/* Dấu ! nếu có tin nhắn mới */}
-                      {unreadSessions.includes(session.id) && (
-                        <span className="absolute top-2 right-3 text-red-600 text-2xl font-bold z-10">!</span>
-                      )}
-                      <div className="flex items-center mb-4">
-                        <div className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden">
-                          {session.memberPictureUrl ? (
-                            <img
-                              src={getFullAvatarUrl(session.memberPictureUrl)}
-                              alt="Avatar"
-                              className="h-16 w-16 rounded-full object-cover"
-                            />
-                          ) : (
-                            <AvatarFromName 
-                              firstName={session.memberFirstName}
-                              lastName={session.memberLastName}
-                              size={64}
-                            />
-                          )}
+                ? sessions.map((session) => {
+                    const hasUnread = unreadSessions.includes(session.id);
+                    console.log(`Session ${session.id}: hasUnread = ${hasUnread}, unreadSessions =`, unreadSessions);
+                    return (
+                      <div key={session.id} className="bg-white rounded-lg shadow-sm p-6 relative">
+                        {/* Dấu ! nếu có tin nhắn mới */}
+                        {hasUnread && (
+                          <span className="absolute top-2 right-3 bg-red-500 text-white text-lg font-bold rounded-full w-6 h-6 flex items-center justify-center z-10 animate-pulse">!</span>
+                        )}
+                        {/* Debug info - chỉ hiển thị trong development */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="absolute top-2 left-2 text-xs text-gray-500 bg-yellow-100 px-1 rounded">
+                            {hasUnread ? 'UNREAD' : 'READ'}
+                          </div>
+                        )}
+                        <div className="flex items-center mb-4">
+                          <div className="h-16 w-16 rounded-full flex items-center justify-center overflow-hidden">
+                            {session.memberPictureUrl ? (
+                              <img
+                                src={getFullAvatarUrl(session.memberPictureUrl)}
+                                alt="Avatar"
+                                className="h-16 w-16 rounded-full object-cover"
+                              />
+                            ) : (
+                              <AvatarFromName 
+                                firstName={session.memberFirstName}
+                                lastName={session.memberLastName}
+                                size={64}
+                              />
+                            )}
+                          </div>
+                          <div className="ml-4 flex flex-col">
+                            <span className="text-lg font-bold text-gray-900">
+                              {session.memberFirstName
+                                ? `${session.memberFirstName} ${session.memberLastName}`
+                                : session.memberUsername}
+                            </span>
+                            <span className="text-sm text-gray-500">{session.memberEmail}</span>
+                          </div>
                         </div>
-                        <div className="ml-4 flex flex-col">
-                          <span className="text-lg font-bold text-gray-900">
-                            {session.memberFirstName
-                              ? `${session.memberFirstName} ${session.memberLastName}`
-                              : session.memberUsername}
-                          </span>
-                          <span className="text-sm text-gray-500">{session.memberEmail}</span>
+                        <div className="border-t border-gray-100 pt-4">
+                          <button
+                            onClick={() => handleStartSession(session)}
+                            disabled={isCreatingSession}
+                            className={`w-full py-2 px-4 rounded-lg font-medium text-white ${
+                              isCreatingSession 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                          >
+                            {isCreatingSession ? 'Đang tải...' : 'Xem tin nhắn'}
+                          </button>
                         </div>
                       </div>
-                      <div className="border-t border-gray-100 pt-4">
-                        <button
-                          onClick={() => handleStartSession(session)}
-                          disabled={isCreatingSession}
-                          className={`w-full py-2 px-4 rounded-lg font-medium text-white ${
-                            isCreatingSession 
-                              ? 'bg-gray-400 cursor-not-allowed' 
-                              : 'bg-green-600 hover:bg-green-700'
-                          }`}
-                        >
-                          {isCreatingSession ? 'Đang tải...' : 'Xem tin nhắn'}
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 : sessions.map((coach) => {
                     const extraInfo = getCoachInfo(coach);
                     return (

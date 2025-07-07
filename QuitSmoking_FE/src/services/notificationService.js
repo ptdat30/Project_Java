@@ -11,6 +11,9 @@ class NotificationService {
   showNewMessageNotification(senderName, sessionId) {
     const now = Date.now();
     
+    // Luôn thêm session vào danh sách unread, bất kể đang ở trang nào
+    this.addUnreadSession(sessionId);
+    
     // Kiểm tra xem có đang ở trang chat không
     const isOnChatPage = window.location.pathname === '/coach-consultation';
     if (isOnChatPage) {
@@ -25,7 +28,6 @@ class NotificationService {
         sessionId,
         timestamp: now
       });
-      this.addUnreadSession(sessionId);
       return;
     }
 
@@ -127,6 +129,9 @@ class NotificationService {
     if (!unread.includes(sessionId)) {
       unread.push(sessionId);
       localStorage.setItem('unreadSessions', JSON.stringify(unread));
+      
+      // Dispatch event để thông báo component cập nhật
+      window.dispatchEvent(new CustomEvent('unreadSessionsUpdate'));
     }
   }
 
@@ -135,6 +140,9 @@ class NotificationService {
     let unread = JSON.parse(localStorage.getItem('unreadSessions') || '[]');
     unread = unread.filter(id => id !== sessionId);
     localStorage.setItem('unreadSessions', JSON.stringify(unread));
+    
+    // Dispatch event để thông báo component cập nhật
+    window.dispatchEvent(new CustomEvent('unreadSessionsUpdate'));
   }
 
   // Lấy danh sách unread

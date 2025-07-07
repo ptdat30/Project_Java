@@ -70,6 +70,7 @@ public class ChatMessage {
             }
         }
         
+        // Content is already decrypted by ChatMessageService before calling toResponse()
         dto.setContent(this.getContent());
         dto.setMessageType(this.getMessageType() != null ? this.getMessageType().name() : null);
         dto.setFileUrl(this.getFileUrl());
