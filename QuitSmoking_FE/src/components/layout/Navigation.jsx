@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import AvatarFromName from '../common/AvatarFromName';
@@ -6,6 +6,7 @@ import AvatarFromName from '../common/AvatarFromName';
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   // Lấy thông tin user, isAuthenticated, và logout từ AuthContext
@@ -37,6 +38,20 @@ const Navigation = () => {
       console.log("Navigation useEffect: user.role:", user.role);
     }
   }, [isAuthenticated, user, authLoading, authError]);
+
+  // Đóng user menu khi click ra ngoài
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
 
   // Navigation items dành cho người dùng đã đăng nhập
   const authNavigationItems = [
@@ -218,7 +233,7 @@ if (isAuthenticated) {
           <div className="hidden md:flex items-center space-x-4">
             {/* Phần này hiển thị avatar và dropdown menu cho người dùng đã đăng nhập */}
             {isAuthenticated && (
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 hover:bg-green-50 p-2 transition duration-300"
