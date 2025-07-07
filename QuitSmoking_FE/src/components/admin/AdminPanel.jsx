@@ -686,8 +686,8 @@ const AdminPanel = () => {
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="overflow-x-auto w-full">
+        <table className="min-w-[900px] w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
@@ -872,8 +872,8 @@ const AdminPanel = () => {
             <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Phản hồi từ người dùng</h3>
             </div>
-            <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+            <div className="overflow-x-auto w-full">
+                <table className="min-w-[900px] w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -958,8 +958,8 @@ const ConversationsTab = () => (
     <div className="px-6 py-4 border-b border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900">Quản lý các cuộc trò chuyện</h3>
     </div>
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
+    <div className="overflow-x-auto w-full">
+      <table className="min-w-[900px] w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thành viên</th>
@@ -1104,7 +1104,8 @@ const EncryptionTab = () => (
 );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 max-w-full overflow-x-hidden">
+      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -1125,13 +1126,14 @@ const EncryptionTab = () => (
 
         {!loading && (
           <div className="space-y-6">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
+            {/* Tabs */}
+            <div className="border-b border-gray-200 overflow-x-auto w-full">
+              <nav className="-mb-px flex flex-nowrap space-x-4 sm:space-x-8 hide-scrollbar">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    className={`py-2 px-2 sm:px-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                       activeTab === tab.id
                         ? "border-blue-500 text-blue-600"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -1155,10 +1157,10 @@ const EncryptionTab = () => (
       </div>
 
       {showDetailId && userDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 px-2">
+          <div className="bg-white rounded-lg shadow-lg p-2 sm:p-4 md:p-6 w-full max-w-lg md:max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
               onClick={() => {
                 setShowDetailId(null);
                 setUserDetail(null);
@@ -1166,9 +1168,9 @@ const EncryptionTab = () => (
             >
               ×
             </button>
-            <h2 className="text-xl font-bold mb-6 text-gray-800">Thông tin chi tiết người dùng</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800">Thông tin chi tiết người dùng</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Thông tin cơ bản */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin cơ bản</h3>
                 
@@ -1248,7 +1250,8 @@ const EncryptionTab = () => (
               </div>
             </div>
             
-            <div className="mt-6 space-y-4">
+            {/* Thông tin thành viên */}
+            <div className="mt-4 sm:mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Thông tin thành viên</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1344,14 +1347,15 @@ const EncryptionTab = () => (
               </div>
             </div>
             
-            <div className="mt-6 space-y-4">
+            {/* Avatar */}
+            <div className="mt-4 sm:mt-6 space-y-4">
               <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Ảnh đại diện</h3>
               <div className="flex justify-center">
                 {userDetail.pictureUrl ? (
                   <img 
                     src={userDetail.pictureUrl} 
                     alt="Avatar" 
-                    className="w-24 h-24 rounded-full border-4 border-gray-200"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-gray-200 object-cover"
                     onError={(e) => {
                       e.target.style.display = 'none';
                     }}
@@ -1360,7 +1364,7 @@ const EncryptionTab = () => (
                   <AvatarFromName 
                     firstName={userDetail.firstName} 
                     lastName={userDetail.lastName} 
-                    size={96}
+                    size={80}
                     className="border-4 border-gray-200"
                   />
                 )}
@@ -1530,3 +1534,14 @@ const EncryptionTab = () => (
 };
 
 export default AdminPanel;
+
+/* CSS ẩn thanh cuộn ngang cho tabs */
+<style jsx global>{`
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`}</style>
