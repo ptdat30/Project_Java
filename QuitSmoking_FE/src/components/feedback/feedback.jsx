@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const Feedback = () => {
   const [rating, setRating] = useState(null);
@@ -8,6 +8,9 @@ const Feedback = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [error, setError] = useState({});
+  const ratingRef = useRef(null);
+  const feedbackRef = useRef(null);
 
   // Tải feedback hiện tại khi component mount
   useEffect(() => {
@@ -65,7 +68,7 @@ const Feedback = () => {
       case 1:
         return 'Rất tệ';
       case 2:
-        return 'Chưa hài lòng';
+        return 'Không hài lòng';
       case 3:
         return 'Tạm ổn';
       case 4:
@@ -77,13 +80,31 @@ const Feedback = () => {
     }
   };
 
+  const validateForm = () => {
+    const newError = {};
+    if (rating === null) {
+      newError.rating = 'Vui lòng chọn mức độ hài lòng!';
+    }
+    if (!feedback.trim()) {
+      newError.feedback = 'Vui lòng nhập ý kiến đóng góp!';
+    }
+    setError(newError);
+    if (Object.keys(newError).length > 0) {
+      setTimeout(() => {
+        if (newError.rating && ratingRef.current) {
+          ratingRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (newError.feedback && feedbackRef.current) {
+          feedbackRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          feedbackRef.current.focus && feedbackRef.current.focus();
+        }
+      }, 100);
+    }
+    return Object.keys(newError).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (rating === null) {
-      alert('Vui lòng chọn mức độ hài lòng của bạn!');
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     const jwtToken = localStorage.getItem('jwt_token');
@@ -215,10 +236,14 @@ const Feedback = () => {
           <h2 className="text-green-600 text-2xl font-medium text-center mb-8">
             TỔNG QUAN VỀ MỨC ĐỘ HÀI LÒNG CỦA BẠN
           </h2>
-          <div className="flex justify-center space-x-8 mb-4 items-end">
-            {/* Giữ nguyên vòng lặp từ 1 đến 5 */}
+          {/* Hiển thị lỗi rating */}
+          {error.rating && <div className="text-red-600 text-sm mb-2 text-center">{error.rating}</div>}
+          <div className="flex justify-center space-x-2 sm:space-x-8 mb-2 sm:mb-4 items-end" ref={ratingRef}>
             {[1, 2, 3, 4, 5].map((index) => (
-              <div key={index} className={`flex flex-col items-center ${starMarginTops[index]}`}> {/* Dùng index trực tiếp */}
+              <div
+                key={index}
+                className="flex flex-col items-center justify-end min-h-[48px] sm:min-h-[60px] w-16 sm:w-32"
+              >
                 <button
                   className="focus:outline-none transition-transform transform hover:scale-110 cursor-pointer"
                   onMouseEnter={() => handleMouseEnter(index)}
@@ -227,7 +252,7 @@ const Feedback = () => {
                   type="button"
                 >
                   <i
-                    className={`fas fa-star ${starSizes[index]} ${ // Dùng index trực tiếp
+                    className={`fas fa-star ${starSizes[index]} ${
                       hoverRating === index
                         ? 'text-yellow-300'
                         : rating === index
@@ -236,23 +261,29 @@ const Feedback = () => {
                     }`}
                   ></i>
                 </button>
-                <span className={`text-base mt-2 ${index === rating ? 'text-green-600 font-medium' : 'text-green-500'}`}>
+                <span
+                  className={`text-[11px] sm:text-base mt-1 sm:mt-2 w-full text-center block whitespace-nowrap ${index === rating ? 'text-green-600 font-medium' : 'text-green-500'}`}
+                  style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', minHeight: 32 }}
+                >
                   {getRatingLabel(index)}
                 </span>
               </div>
             ))}
           </div>
         </div>
-        <div className="bg-[#fdf6ed] rounded-lg p-12 mb-8 w-full">
-          <p className="text-green-600 mb-4 text-xl">
+        <div className="bg-[#fdf6ed] rounded-lg p-4 sm:p-12 mb-4 sm:mb-8 w-full">
+          <p className="text-green-600 mb-2 sm:mb-4 text-base sm:text-xl">
             Nếu bạn có đóng góp ý kiến cứ đóng góp cho chúng tôi nhé, chúng tôi rất mong chờ và tiếp thu ý kiến đóng góp của bạn <span className="text-red-500">❤️</span>
           </p>
+          {/* Hiển thị lỗi feedback */}
+          {error.feedback && <div className="text-red-600 text-sm mb-2">{error.feedback}</div>}
           <form onSubmit={handleSubmit}>
             <textarea
-              className="w-full border border-gray-300 rounded-lg p-6 min-h-[160px] focus:outline-none focus:ring-2 focus:ring-green-500 mb-8 text-lg bg-white"
+              className="w-full border border-gray-300 rounded-lg p-3 sm:p-6 min-h-[100px] sm:min-h-[160px] focus:outline-none focus:ring-2 focus:ring-green-500 mb-4 sm:mb-8 text-base sm:text-lg bg-white"
               placeholder="Ý kiến của bạn......."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
+              ref={feedbackRef}
             ></textarea>
             <div className="flex justify-center">
               <button

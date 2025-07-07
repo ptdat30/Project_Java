@@ -94,6 +94,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/community/comments").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.POST, "/api/community/posts/like/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                // Cho phép truy cập endpoint comments
+                .requestMatchers(HttpMethod.GET, "/api/community/comments/post/**").permitAll()
                 // Cho phép truy cập endpoint share dashboard
                 .requestMatchers("/api/dashboard/share", "/api/dashboard/shared-coaches").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers("/api/dashboard/shared-members").hasAnyRole("COACH", "ADMIN", "MEMBER")
@@ -104,7 +106,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/feedback/admin/**").hasAnyRole("ADMIN")
                 // Cho phép tất cả user đã đăng nhập truy cập endpoint feedback
                 .requestMatchers("/api/feedback/**").authenticated()
-
+                
                 // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực                
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()

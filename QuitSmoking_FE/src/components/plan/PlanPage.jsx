@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import apiService from "../../services/apiService";
@@ -25,6 +25,14 @@ const PlanPage = () => {
       return () => clearTimeout(timer);
     }
   }, [submitSuccess, navigate]);
+  const [errors, setErrors] = useState({});
+
+  // Thêm ref cho từng trường
+  const customDateRef = useRef(null);
+  const cigarettesPerDayRef = useRef(null);
+  const pricePerPackRef = useRef(null);
+  const reasonsRef = useRef(null);
+  const triggersRef = useRef(null);
 
   // Define the full list of reasons to quit with their titles and images
   // Dữ liệu này phải được định nghĩa ở đây để có thể truy cập trong handleStartPlan
@@ -106,8 +114,50 @@ const PlanPage = () => {
     }
   };
 
+  // Validate trước khi gửi
+  const validateForm = () => {
+    const newErrors = {};
+    if (startDate === "custom" && !customDate) {
+      newErrors.customDate = "Vui lòng chọn ngày bắt đầu.";
+    }
+    if (!cigarettesPerDay) {
+      newErrors.cigarettesPerDay = "Vui lòng nhập số điếu thuốc mỗi ngày.";
+    }
+    if (!pricePerPack) {
+      newErrors.pricePerPack = "Vui lòng nhập giá một bao thuốc.";
+    }
+    if (selectedReasons.length === 0) {
+      newErrors.selectedReasons = "Vui lòng chọn ít nhất một lý do bỏ thuốc.";
+    }
+    if (selectedTriggers.length === 0) {
+      newErrors.selectedTriggers = "Vui lòng chọn ít nhất một tình huống/cảm xúc gây thèm thuốc.";
+    }
+    setErrors(newErrors);
+    // Scroll đến trường lỗi đầu tiên nếu có
+    if (Object.keys(newErrors).length > 0) {
+      setTimeout(() => {
+        if (newErrors.customDate && customDateRef.current) {
+          customDateRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+          customDateRef.current.focus && customDateRef.current.focus();
+        } else if (newErrors.cigarettesPerDay && cigarettesPerDayRef.current) {
+          cigarettesPerDayRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+          cigarettesPerDayRef.current.focus && cigarettesPerDayRef.current.focus();
+        } else if (newErrors.pricePerPack && pricePerPackRef.current) {
+          pricePerPackRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+          pricePerPackRef.current.focus && pricePerPackRef.current.focus();
+        } else if (newErrors.selectedReasons && reasonsRef.current) {
+          reasonsRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else if (newErrors.selectedTriggers && triggersRef.current) {
+          triggersRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+    }
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Main handler to start the quit plan and send data to backend
   const handleStartPlan = async () => {
+    if (!validateForm()) return;
     let actualStartDate;
     if (startDate === "today") {
       actualStartDate = new Date().toISOString().split("T")[0];
@@ -203,24 +253,26 @@ const PlanPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-100 py-6 px-2 sm:py-8 sm:px-4">
       <div className="max-w-6xl mx-auto">
         {/* First Section - Choose Start Date */}
-        <div className="mb-8 bg-white rounded-lg overflow-hidden shadow">
-          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
-            <h2 className="text-xl font-bold">CHỌN NGÀY BẮT ĐẦU KẾ HOẠCH</h2>
+        <div className="mb-6 sm:mb-8 bg-white rounded-lg overflow-hidden shadow">
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-2 sm:py-3 px-2 sm:px-4 text-center">
+            <h2 className="text-lg sm:text-xl font-bold">CHỌN NGÀY BẮT ĐẦU KẾ HOẠCH</h2>
           </div>
-          <div className="p-8 bg-gray-50">
-            <p className="mb-6 text-gray-800 text-lg">
+          <div className="p-4 sm:p-8 bg-gray-50">
+            {/* Hiển thị lỗi customDate */}
+            {errors.customDate && <div className="text-red-600 text-sm mb-2">{errors.customDate}</div>}
+            <p className="mb-4 sm:mb-6 text-gray-800 text-base sm:text-lg">
               Hãy chọn ngày vào khoảng mấy tuần tiếp theo để bạn có thời gian
               chuẩn bị trước khi bước vào tuần kế hoạch, hoặc nếu bạn đã sẵn
               sàng bạn có thể chọn các ngày dưới đây:
             </p>
-            <div className="mt-4">
-              <p className="font-medium mb-3 text-gray-800">
+            <div className="mt-2 sm:mt-4">
+              <p className="font-medium mb-2 sm:mb-3 text-gray-800">
                 Khi nào bạn thực hiện kế hoạch?
               </p>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex items-center">
                   <input
                     type="radio"
@@ -276,6 +328,7 @@ const PlanPage = () => {
                       className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button"
                       value={customDate}
                       onChange={(e) => setCustomDate(e.target.value)}
+                      ref={customDateRef}
                     />
                   </div>
                 )}
@@ -284,55 +337,60 @@ const PlanPage = () => {
           </div>
         </div>
         {/* Second Section - Smoking Cost */}
-        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
-            <h2 className="text-xl font-bold">
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-6 sm:mb-8">
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-2 sm:py-3 px-2 sm:px-4 text-center">
+            <h2 className="text-lg sm:text-xl font-bold">
               BẠN CHI TRẢ BAO NHIÊU CHO VIỆC HÚT THUỐC?
             </h2>
           </div>
-          <div className="p-8 bg-gray-50">
-            <p className="mb-6 text-gray-800 text-lg">
+          <div className="p-4 sm:p-8 bg-gray-50">
+            {/* Hiển thị lỗi cigarettesPerDay, pricePerPack */}
+            {errors.cigarettesPerDay && <div className="text-red-600 text-sm mb-2">{errors.cigarettesPerDay}</div>}
+            {errors.pricePerPack && <div className="text-red-600 text-sm mb-2">{errors.pricePerPack}</div>}
+            <p className="mb-4 sm:mb-6 text-gray-800 text-base sm:text-lg">
               Nhập số lượng bạn hút trong một gói và số lượng gói bạn hút sẽ cho
               bạn biết được số tiền bạn tiết kiệm được khi bắt đầu thực hiện kế
               hoạch cai thuốc.
             </p>
-            <div className="bg-white p-8 rounded-lg border border-gray-200">
-              <div className="flex items-center mb-6">
-                <div className="w-32 flex-shrink-0">
+            <div className="bg-white p-4 sm:p-8 rounded-lg border border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center mb-4 sm:mb-6 gap-4 sm:gap-0">
+                <div className="w-full sm:w-32 flex-shrink-0">
                   <img
                     src="https://readdy.ai/api/search-image?query=A%20simple%20calculator%20icon%20with%20basic%20buttons%20and%20display%20screen%2C%20minimalist%20design%2C%20clean%20lines%2C%20soft%20gray%20background%2C%20professional%20look%2C%20suitable%20for%20a%20quit%20smoking%20app%20interface&width=100&height=100&seq=1&orientation=squarish"
                     alt="Calculator"
-                    className="w-full h-auto"
+                    className="w-full h-auto max-w-full"
                   />
                 </div>
-                <div className="flex-grow ml-4">
-                  <div className="flex items-center mb-6">
-                    <span className="text-gray-800 mr-3 text-lg">
+                <div className="flex-grow ml-0 sm:ml-4 w-full">
+                  <div className="flex flex-col sm:flex-row items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
+                    <span className="text-gray-800 mr-0 sm:mr-3 text-base sm:text-lg">
                       Tôi hút khoảng
                     </span>
                     <input
                       type="text"
-                      className="border border-gray-300 rounded-md px-4 py-2.5 w-24 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button text-lg"
+                      className="border border-gray-300 rounded-md px-3 sm:px-4 py-2 sm:py-2.5 w-full sm:w-24 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button text-base sm:text-lg"
                       value={cigarettesPerDay}
                       onChange={handleCigarettesChange}
                       placeholder="0"
+                      ref={cigarettesPerDayRef}
                     />
-                    <span className="text-gray-800 ml-2">
+                    <span className="text-gray-800 ml-0 sm:ml-2 text-base sm:text-lg">
                       điếu thuốc một ngày.
                     </span>
                   </div>
-                  <div className="flex items-center">
-                    <span className="text-gray-800 mr-3 text-lg">
+                  <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-0">
+                    <span className="text-gray-800 mr-0 sm:mr-3 text-base sm:text-lg">
                       Tôi dành khoảng
                     </span>
                     <input
                       type="text"
-                      className="border border-gray-300 rounded-md px-4 py-2.5 w-36 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button text-lg"
+                      className="border border-gray-300 rounded-md px-3 sm:px-4 py-2 sm:py-2.5 w-full sm:w-36 focus:outline-none focus:ring-2 focus:ring-blue-500 !rounded-button text-base sm:text-lg"
                       value={pricePerPack}
                       onChange={handlePriceChange}
                       placeholder="0.00"
+                      ref={pricePerPackRef}
                     />
-                    <span className="text-gray-800 ml-2">
+                    <span className="text-gray-800 ml-0 sm:ml-2 text-base sm:text-lg">
                       cho một bao thuốc.
                     </span>
                   </div>
@@ -342,21 +400,23 @@ const PlanPage = () => {
           </div>
         </div>
         {/* Third Section - Reasons to Quit */}
-        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
-            <h2 className="text-xl font-bold">TẠI SAO BẠN LẠI BỎ THUỐC?</h2>
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-6 sm:mb-8">
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-2 sm:py-3 px-2 sm:px-4 text-center">
+            <h2 className="text-lg sm:text-xl font-bold">TẠI SAO BẠN LẠI BỎ THUỐC?</h2>
           </div>
-          <div className="p-8 bg-gray-50">
-            <p className="mb-6 text-gray-800 text-lg">
+          <div className="p-4 sm:p-8 bg-gray-50">
+            {/* Hiển thị lỗi selectedReasons */}
+            {errors.selectedReasons && <div className="text-red-600 text-sm mb-2">{errors.selectedReasons}</div>}
+            <p className="mb-4 sm:mb-6 text-gray-800 text-base sm:text-lg">
               Biết được mục đích cai nghiện sẽ giúp bạn giữ vững động lực để
               tiếp tục cai thuốc trong những tình huống khó khăn hay thèm
               khát,...
             </p>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-4">
+            <div className="mb-2 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-4">
                 Lý do tôi muốn bỏ thuốc:
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-4" ref={reasonsRef}>
                 {[
                   {
                     title: "Cải thiện sức khoẻ",
@@ -441,21 +501,23 @@ const PlanPage = () => {
         </div>
 
         {/* Fourth Section - Craving Triggers */}
-        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
-            <h2 className="text-xl font-bold">
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-6 sm:mb-8">
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-2 sm:py-3 px-2 sm:px-4 text-center">
+            <h2 className="text-lg sm:text-xl font-bold">
               KHI NÀO BẠN LÊN CƠN THÈM KHÁT
             </h2>
           </div>
-          <div className="p-8 bg-gray-50">
-            <p className="mb-6 text-gray-800 text-lg">
+          <div className="p-4 sm:p-8 bg-gray-50">
+            {/* Hiển thị lỗi selectedTriggers */}
+            {errors.selectedTriggers && <div className="text-red-600 text-sm mb-2">{errors.selectedTriggers}</div>}
+            <p className="mb-4 sm:mb-6 text-gray-800 text-base sm:text-lg">
               Sau khi bạn cai thuốc, một số địa điểm, tình huống và cảm xúc
               nhất định có thể khiến bạn khó duy trì việc cai thuốc. Sử dụng
               danh sách này để tìm ra lý do khiến bạn muốn hút thuốc. Chúng
               tôi sẽ cung cấp cho bạn các chiến lược giúp bạn kiểm soát được
               việc hút thuốc.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8" ref={triggersRef}>
               <div>
                 <h3 className="text-xl font-semibold mb-4">TÌNH HUỐNG</h3>
                 <div className="space-y-4">
@@ -519,26 +581,26 @@ const PlanPage = () => {
         </div>
 
         {/* Start Plan Button */}
-        <div className="bg-white rounded-lg overflow-hidden shadow mb-8">
-          <div style={{ backgroundColor: lightGreen }} className="text-white py-3 px-4 text-center">
-            <h2 className="text-xl font-bold">BẮT ĐẦU KẾ HOẠCH</h2>
+        <div className="bg-white rounded-lg overflow-hidden shadow mb-6 sm:mb-8">
+          <div style={{ backgroundColor: lightGreen }} className="text-white py-2 sm:py-3 px-2 sm:px-4 text-center">
+            <h2 className="text-lg sm:text-xl font-bold">BẮT ĐẦU KẾ HOẠCH</h2>
           </div>
-          <div className="p-8 bg-gray-50 flex flex-col items-center justify-center min-h-[200px]">
-            <p className="text-gray-800 text-xl font-semibold mb-6 text-center">
+          <div className="p-4 sm:p-8 bg-gray-50 flex flex-col items-center justify-center min-h-[120px] sm:min-h-[200px]">
+            <p className="text-gray-800 text-base sm:text-xl font-semibold mb-4 sm:mb-6 text-center">
               Bạn đã sẵn sàng để bắt đầu hành trình bỏ thuốc của mình?
             </p>
-            <p className="text-gray-700 text-lg mb-8 text-center max-w-lg">
+            <p className="text-gray-700 text-sm sm:text-lg mb-4 sm:mb-8 text-center max-w-lg">
               Nhấn vào nút bên dưới để khởi động kế hoạch và thay đổi cuộc sống của bạn ngay hôm nay!
             </p>
-            <div className="flex items-center space-x-4">
-                <span className="text-green-600 text-5xl transform -rotate-12">➜</span>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+                <span className="text-green-600 text-3xl sm:text-5xl transform -rotate-12">➜</span>
                 <button
                 onClick={handleStartPlan}
-                className="bg-green-600 text-white font-bold py-4 px-10 rounded-lg text-2xl shadow-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-opacity-75"
+                className="bg-green-600 text-white font-bold py-2 sm:py-4 px-6 sm:px-10 rounded-lg text-lg sm:text-2xl shadow-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-opacity-75"
                 >
                 Bắt đầu nào
                 </button>
-                <span className="text-green-600 text-5xl transform -rotate-165">➜</span>
+                <span className="text-green-600 text-3xl sm:text-5xl transform -rotate-165">➜</span>
             </div>
           </div>
         </div>
