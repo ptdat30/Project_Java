@@ -3,10 +3,13 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 import java.util.UUID;
 @Entity
-@Table(name = "user_achievements")
+@Table(name = "user_achievements", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "achievement_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,9 +20,11 @@ public class UserAchievement {
     private String id;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User user;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "achievement_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Achievement achievement;
     @Column(name = "earned_date")
     private LocalDateTime earnedDate;

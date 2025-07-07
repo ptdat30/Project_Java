@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import AvatarFromName from '../common/AvatarFromName';
@@ -6,6 +6,7 @@ import AvatarFromName from '../common/AvatarFromName';
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   // Lấy thông tin user, isAuthenticated, và logout từ AuthContext
@@ -38,10 +39,26 @@ const Navigation = () => {
     }
   }, [isAuthenticated, user, authLoading, authError]);
 
+  // Đóng user menu khi click ra ngoài
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
+
   // Navigation items dành cho người dùng đã đăng nhập
   const authNavigationItems = [
     { name: "Trang chủ", href: "/", icon: "🏠" },
-    { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
+    user?.role === "COACH"
+      ? { name: "Tiến độ thành viên", href: "/dashboard-members", icon: "📈" }
+      : { name: "Kế hoạch", href: "/ghinhantinhtrang", icon: "📋" },
     { name: "Cộng đồng", href: "/community", icon: "👥" },
     // Nếu là COACH thì đổi tên và icon
     user?.role === "COACH"
@@ -216,7 +233,7 @@ if (isAuthenticated) {
           <div className="hidden md:flex items-center space-x-4">
             {/* Phần này hiển thị avatar và dropdown menu cho người dùng đã đăng nhập */}
             {isAuthenticated && (
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 hover:bg-green-50 p-2 transition duration-300"
@@ -272,14 +289,6 @@ if (isAuthenticated) {
                       >
                         <span className="mr-3">👤</span>
                         Hồ sơ cá nhân
-                      </Link>
-                      <Link
-                        to="/daily-progress"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition duration-300"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <span className="mr-3">📈</span>
-                        Tiến trình hàng ngày
                       </Link>
                       <Link
                         to="/settings"
@@ -393,14 +402,6 @@ if (isAuthenticated) {
                   >
                     <span className="mr-3">👤</span>
                     Hồ sơ cá nhân
-                  </Link>
-                  <Link
-                    to="/daily-progress"
-                    className="flex items-center px-3 py-3 text-base font-medium text-gray-600 hover:text-green-700 hover:bg-white rounded-lg transition duration-300"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="mr-3">📈</span>
-                    Tiến trình hàng ngày
                   </Link>
                   <Link
                     to="/settings"

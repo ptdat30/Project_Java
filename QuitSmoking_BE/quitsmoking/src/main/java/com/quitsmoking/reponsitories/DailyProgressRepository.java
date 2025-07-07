@@ -24,7 +24,7 @@ public interface DailyProgressRepository extends JpaRepository<DailyProgress, St
     Double getTotalMoneySaved(@Param("user") User user);
     
     @Query("SELECT COUNT(dp) FROM DailyProgress dp WHERE dp.user = :user AND dp.cigarettesSmoked = 0")
-    Long getSmokeFreeeDays(@Param("user") User user);
+    Long getSmokeFreeDays(@Param("user") User user);
     
     @Query("SELECT dp FROM DailyProgress dp WHERE dp.user = :user AND dp.date >= :startDate ORDER BY dp.date DESC")
     List<DailyProgress> findRecentProgress(@Param("user") User user, @Param("startDate") LocalDate startDate);

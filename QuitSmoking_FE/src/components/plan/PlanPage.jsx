@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import apiService from "../../services/apiService";
+import { motion } from 'framer-motion';
 
 const PlanPage = () => {
   const navigate = useNavigate(); // Khởi tạo useNavigate
@@ -14,6 +15,16 @@ const PlanPage = () => {
   const [selectedReasons, setSelectedReasons] = useState([]); // Array of selected reason indices
   const [selectedTriggers, setSelectedTriggers] = useState([]); // Array of selected trigger IDs (e.g., "situation-0", "emotion-1")
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    if (submitSuccess) {
+      const timer = setTimeout(() => {
+        navigate('/dashboard'); // hoặc '/ghinhantinhtrang' nếu bạn muốn
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [submitSuccess, navigate]);
   const [errors, setErrors] = useState({});
 
   // Thêm ref cho từng trường
@@ -202,8 +213,7 @@ const PlanPage = () => {
 
     try {
       await apiService.createQuitPlan(planData);
-      alert("Kế hoạch của bạn đã bắt đầu và được lưu thành công!");
-      navigate('/dashboard');
+      setSubmitSuccess(true);
     } catch (error) {
       console.error("Lỗi khi lưu kế hoạch:", error.response ? error.response.data : error.message);
 
@@ -218,6 +228,29 @@ const PlanPage = () => {
   };
 
   const lightGreen = "#49b08b";
+
+  if (submitSuccess) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-white"
+      >
+        <div className="text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+            className="text-green-600 text-6xl mb-4"
+          >
+            ✓
+          </motion.div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Lưu kế hoạch thành công!</h2>
+          <p className="text-gray-600">Bạn sẽ được chuyển sang bước lập lịch tiếp theo.</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 px-2 sm:py-8 sm:px-4">

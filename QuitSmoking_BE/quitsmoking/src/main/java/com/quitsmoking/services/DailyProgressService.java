@@ -32,7 +32,7 @@ public class DailyProgressService {
         return dailyProgressRepository.findByUserAndDateBetweenOrderByDate(user, startDate, endDate);
     }
     public Long getSmokeFreeeDays(User user) {
-        return dailyProgressRepository.getSmokeFreeeDays(user);
+        return dailyProgressRepository.getSmokeFreeDays(user);
     }
     public Double getTotalMoneySaved(User user) {
         Double total = dailyProgressRepository.getTotalMoneySaved(user);
@@ -91,7 +91,11 @@ public class DailyProgressService {
         int streak = 0;
         
         for (DailyProgress progress : recentProgress) {
-            if (progress.getCigarettesSmoked() == 0) {
+            // Kiểm tra cả cigarettesSmoked và smokedToday
+            boolean isSmokeFree = progress.getCigarettesSmoked() == 0 || 
+                                 (progress.getSmokedToday() != null && !progress.getSmokedToday());
+            
+            if (isSmokeFree) {
                 streak++;
             } else {
                 break;
@@ -133,6 +137,19 @@ public class DailyProgressService {
         progress.setSmokedToday(req.getSmokedToday());
         progress.setCigarettesToday(req.getCigarettesToday());
         progress.setMoneySpentToday(req.getMoneySpentToday());
+
+        // Đồng bộ cigarettesSmoked với smokedToday và cigarettesToday
+        if (req.getSmokedToday() != null && req.getSmokedToday()) {
+            // Nếu có hút thuốc hôm nay
+            if (req.getCigarettesToday() != null) {
+                progress.setCigarettesSmoked(req.getCigarettesToday());
+            } else {
+                progress.setCigarettesSmoked(1); // Mặc định 1 điếu nếu không có số cụ thể
+            }
+        } else {
+            // Nếu không hút thuốc hôm nay
+            progress.setCigarettesSmoked(0);
+        }
 
         // Có thể thêm logic tính moneySaved, healthImprovements nếu cần
         return saveProgress(progress);

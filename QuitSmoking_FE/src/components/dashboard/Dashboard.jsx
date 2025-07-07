@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import apiService from "../../services/apiService";
+import Modal from "../common/MembershipUpgradeModal";
 
 const daysOfWeek = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [missingType, setMissingType] = useState(null); // 'plan' | 'smoking' | 'both' | null
 
   // Modal & input state cho cập nhật tiến trình
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +30,9 @@ const Dashboard = () => {
 
   // --- State cho weeklyProgress ---
   const [weeklyProgress, setWeeklyProgress] = useState([]);
+  const [selectedWeek, setSelectedWeek] = useState('current');
+  const [weekData, setWeekData] = useState([]);
+  const [showWeekDetailModal, setShowWeekDetailModal] = useState(false);
 
   // Định nghĩa các giai đoạn
   const phases = [
@@ -236,66 +241,49 @@ const Dashboard = () => {
     }
   };
 
-  // Lấy tiến trình tuần khi vào dashboard
+  // Khi vào dashboard, lấy dữ liệu tổng hợp từ backend
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    fetchWeeklyProgress();
-    // eslint-disable-next-line
-  }, [isAuthenticated]);
-
-  // Khi weeklyProgress thay đổi, tính lại stats
-  useEffect(() => {
-    if (!isAuthenticated) return;
     const fetchStats = async () => {
+      setLoading(true);
       try {
-        const plans = await apiService.getQuitPlans();
-        if (plans && plans.length > 0) {
-          const plan = plans[0];
-          // Tính số ngày không hút thuốc
-          const quitDate = new Date(plan.targetQuitDate);
-          const today = new Date();
-          const daysWithoutSmoking = Math.max(0, Math.floor((today - quitDate) / (1000 * 60 * 60 * 24)));
-          // Tính tiền tiết kiệm (giả sử mỗi ngày không hút 1 gói)
-          const moneySaved = daysWithoutSmoking * (plan.pricePerPack || 0);
-          // Tính số điếu không hút (giả sử 1 gói = 20 điếu)
-          const cigarettesNotSmoked = daysWithoutSmoking * 20;
-          // Lấy trạng thái hôm nay từ weeklyProgress (nếu có)
-          const todayIdx = (new Date().getDay() + 6) % 7; // 0: T2, ..., 6: CN
-          const todayStatus = weeklyProgress[todayIdx] || {
-            mood: 7,
-            cravings: 0,
-            exercise: false,
-            water: 0,
-            sleep: 7,
-            note: "",
-            smokedToday: false,
-            cigarettesToday: "",
-            moneySpentToday: ""
-          };
-          setStats({
-            daysWithoutSmoking,
-            moneySaved,
-            cigarettesNotSmoked,
-            todayStatus,
-            healthImprovements: [],
-            recentAchievements: [],
-            quitDate: plan.targetQuitDate,
-            currentPhaseInfo: null,
-            phaseSavedMoney: moneySaved,
-          });
-        } else {
-          setStats(null);
-        }
+        // Lấy số liệu tổng hợp từ backend
+        const res = await apiService.getMemberDashboard(user.id);
+        setStats({
+          daysWithoutSmoking: res.summary.smokeFreeDays,
+          moneySaved: res.summary.moneySaved,
+          cigarettesNotSmoked: res.summary.avoidedCigarettes,
+          todayStatus: {
+            mood: res.summary.todayMood,
+            cravings: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.cravings,
+            exercise: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.exercise,
+            water: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.water,
+            sleep: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.sleep,
+            note: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.note,
+            smokedToday: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.smokedToday,
+            cigarettesToday: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.cigarettesToday,
+            moneySpentToday: res.weeklyProgress.dailyData && res.weeklyProgress.dailyData.length > 0 && res.weeklyProgress.dailyData[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]?.moneySpentToday,
+          },
+          weeklyProgress: res.weeklyProgress.dailyData,
+          statistics: res.statistics,
+          quitDate: res.member && res.member.quitDate,
+        });
+        setWeeklyProgress(res.weeklyProgress.dailyData || []);
+        setMissingType(null);
       } catch (e) {
         setStats(null);
+        setWeeklyProgress([]);
+        setMissingType('plan');
+      } finally {
+        setLoading(false);
       }
     };
     fetchStats();
     // eslint-disable-next-line
-  }, [weeklyProgress, isAuthenticated]);
+  }, [isAuthenticated]);
 
   // Lưu tiến trình ngày
   const handleSaveProgress = async () => {
@@ -328,8 +316,166 @@ const Dashboard = () => {
     startDate.setHours(0, 0, 0, 0);
     const taskDate = new Date(startDate);
     taskDate.setDate(startDate.getDate() + phaseStartOffset + taskIndex);
-    return taskDate.toLocaleDateString('vi-VN');
+    return safeFormatDate(taskDate);
   };
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [coaches, setCoaches] = useState([]);
+  const [sharedCoaches, setSharedCoaches] = useState([]);
+  const [selectedCoachId, setSelectedCoachId] = useState("");
+  const [shareMsg, setShareMsg] = useState("");
+
+  // Lấy danh sách coach
+  useEffect(() => {
+    if (user?.role === "MEMBER") {
+      console.log("Fetching coaches for user:", user.id, "role:", user.role);
+      apiService.getCoaches()
+        .then(data => {
+          console.log("Coaches data received:", data);
+          setCoaches(data);
+        })
+        .catch(error => {
+          console.error("Error fetching coaches:", error);
+          setCoaches([]);
+        });
+      apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches).catch(() => setSharedCoaches([]));
+    }
+  }, [user]);
+
+  // Chia sẻ tiến độ cho coach
+  const handleShare = async () => {
+    if (!selectedCoachId) return;
+    try {
+      await apiService.post("/api/dashboard/share", { coachId: selectedCoachId });
+      setShareMsg("Đã chia sẻ thành công!");
+      setShowShareModal(false);
+      setSelectedCoachId("");
+      // Refresh danh sách coach đã chia sẻ
+      apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches);
+    } catch (e) {
+      setShareMsg("Lỗi khi chia sẻ: " + (e?.response?.data || e.message));
+    }
+  };
+
+  // Hủy chia sẻ
+  const handleUnshare = async (coachId) => {
+    try {
+      await apiService.delete("/api/dashboard/share", { data: { coachId } });
+      setShareMsg("Đã hủy chia sẻ!");
+      apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches);
+    } catch (e) {
+      setShareMsg("Lỗi khi hủy chia sẻ: " + (e?.response?.data || e.message));
+    }
+  };
+
+  // Helper to safely format dates
+  const safeFormatDate = (dateInput) => {
+    const d = new Date(dateInput);
+    return !isNaN(d.getTime()) ? d.toLocaleDateString('vi-VN') : 'Chưa xác định';
+  };
+
+  // Hàm tính toán thống kê tuần
+  const calculateWeekStats = (data) => {
+    if (!data || data.length === 0) return null;
+    
+    const validDays = data.filter(day => day !== null);
+    const daysWithData = validDays.length;
+    
+    if (daysWithData === 0) return null;
+    
+    const avgMood = validDays.reduce((sum, day) => sum + (day.mood || 0), 0) / daysWithData;
+    const avgCravings = validDays.reduce((sum, day) => sum + (day.cravings || 0), 0) / daysWithData;
+    const exerciseDays = validDays.filter(day => day.exercise === true).length;
+    
+    return {
+      daysWithData,
+      avgMood: avgMood.toFixed(1),
+      avgCravings: avgCravings.toFixed(1),
+      exerciseDays
+    };
+  };
+
+  // Hàm lấy dữ liệu tuần được chọn từ backend
+  const getWeekData = async (weekType) => {
+    try {
+      let weekOffset = 0;
+      switch (weekType) {
+        case 'current':
+          weekOffset = 0;
+          break;
+        case 'last':
+          weekOffset = 1;
+          break;
+        case '2weeks':
+          weekOffset = 2;
+          break;
+        default:
+          weekOffset = 0;
+      }
+      
+      const data = await apiService.getWeeklyProgressByOffset(weekOffset);
+      return data;
+    } catch (error) {
+      console.error('Error fetching week data:', error);
+      return [];
+    }
+  };
+
+  // Effect để cập nhật dữ liệu khi chọn tuần
+  useEffect(() => {
+    const fetchWeekData = async () => {
+      const data = await getWeekData(selectedWeek);
+      setWeekData(data);
+    };
+    
+    if (selectedWeek) {
+      fetchWeekData();
+    }
+  }, [selectedWeek]);
+
+  // Hàm lấy tên ngày trong tuần
+  const getDayName = (index) => {
+    return daysOfWeek[index];
+  };
+
+  // Hàm format ngày
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  if (missingType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center max-w-md">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Thiếu dữ liệu cần thiết</h2>
+          {missingType === 'both' && (
+            <>
+              <p className="text-gray-700 mb-4">Bạn cần nhập <b>tình trạng hút thuốc</b> và <b>kế hoạch bỏ thuốc</b> để sử dụng dashboard.</p>
+              <div className="flex gap-4 justify-center">
+                <button onClick={() => navigate('/ghinhantinhtrang')} className="bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition">Nhập tình trạng</button>
+                <button onClick={() => navigate('/plan')} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition">Nhập kế hoạch</button>
+              </div>
+            </>
+          )}
+          {missingType === 'smoking' && (
+            <>
+              <p className="text-gray-700 mb-4">Bạn cần nhập <b>tình trạng hút thuốc</b> để sử dụng dashboard.</p>
+              <button onClick={() => navigate('/ghinhantinhtrang')} className="bg-green-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-green-700 transition">Nhập tình trạng</button>
+            </>
+          )}
+          {missingType === 'plan' && (
+            <>
+              <p className="text-gray-700 mb-4">Bạn cần nhập <b>kế hoạch bỏ thuốc</b> để sử dụng dashboard.</p>
+              <button onClick={() => navigate('/plan')} className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition">Nhập kế hoạch</button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -352,6 +498,9 @@ const Dashboard = () => {
     );
   }
 
+  // Trong phần render, thay thế vùng chọn tuần
+  const weekStats = calculateWeekStats(weekData);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8">
       <div className="container mx-auto px-6">
@@ -363,6 +512,33 @@ const Dashboard = () => {
           <p className="text-xl text-gray-600">
             Hy vọng bạn sẽ tin tưởng chúng tôi và thực hiện theo quy trình này!!! 🎉
           </p>
+          {user?.role === "MEMBER" && (
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition w-max"
+                onClick={() => setShowShareModal(true)}
+              >
+                📤 Chia sẻ tiến độ cho coach
+              </button>
+              {sharedCoaches.length > 0 && (
+                <div className="mt-2">
+                  <div className="font-semibold text-gray-700 mb-1">Đã chia sẻ với:</div>
+                  <ul className="space-y-1">
+                    {sharedCoaches.map(coach => (
+                      <li key={coach.id} className="flex items-center gap-2">
+                        <span className="font-medium text-blue-700">{coach.firstName} {coach.lastName} ({coach.email})</span>
+                        <button
+                          className="text-xs text-red-600 hover:underline"
+                          onClick={() => handleUnshare(coach.id)}
+                        >Hủy chia sẻ</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {shareMsg && <div className="text-green-600 text-sm mt-1">{shareMsg}</div>}
+            </div>
+          )}
         </div>
 
         {/* Main Stats Cards */}
@@ -450,7 +626,7 @@ const Dashboard = () => {
                       {phase.name} {isCurrentPhase && <span className="text-blue-600 text-sm">(Hiện tại)</span>}
                     </h3>
                     <p className="text-gray-700 text-sm mb-1">
-                      Thời gian: <span className="font-semibold">{phaseStartDate.toLocaleDateString('vi-VN')}</span> đến <span className="font-semibold">{phaseEndDate.toLocaleDateString('vi-VN')}</span>
+                      Thời gian: <span className="font-semibold">{safeFormatDate(phaseStartDate)}</span> đến <span className="font-semibold">{safeFormatDate(phaseEndDate)}</span>
                     </p>
                     <p className="text-gray-700 text-sm mb-1">
                       Mục tiêu: <span className="font-semibold">{phase.objective}</span>
@@ -498,26 +674,72 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content (Health Progress & Weekly Progress Table) */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Health Progress */}
+            {/* Vùng chọn tuần và hiển thị lịch sử tiến trình */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">🏥 Cải thiện sức khỏe</h2>
-              <div className="space-y-4">
-                {stats.healthImprovements.map((improvement, index) => (
-                  <div key={index} className={`p-4 rounded-lg border-l-4 ${
-                    improvement.achieved ? 'bg-green-50 border-green-500' : 'bg-gray-50 border-gray-300'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">{improvement.milestone}</h3>
-                        <p className="text-gray-600">{improvement.description}</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">📊 Thống kê tiến trình theo tuần</h2>
+              {weekData && weekData.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <label className="font-medium text-gray-700">Xem thống kê tuần:</label>
+                    <select 
+                      value={selectedWeek}
+                      onChange={(e) => setSelectedWeek(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="current">Tuần hiện tại</option>
+                      <option value="last">Tuần trước</option>
+                      <option value="2weeks">2 tuần trước</option>
+                    </select>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-blue-800 font-medium">
+                      {selectedWeek === 'current' ? 'Tuần hiện tại' : 
+                       selectedWeek === 'last' ? 'Tuần trước' : '2 tuần trước'} (T2 - CN)
+                    </p>
+                    <p className="text-blue-600 text-sm mt-1">Tổng quan thống kê của tuần này</p>
+                  </div>
+                  {weekStats ? (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <p className="font-medium text-green-800">Ngày có tiến trình: {weekStats.daysWithData}/7</p>
                       </div>
-                      <div className="text-2xl">
-                        {improvement.achieved ? '✅' : '⏳'}
+                      <div className="bg-orange-50 p-3 rounded-lg">
+                        <p className="font-medium text-orange-800">Tâm trạng trung bình: {weekStats.avgMood}/10</p>
+                      </div>
+                      <div className="bg-purple-50 p-3 rounded-lg">
+                        <p className="font-medium text-purple-800">Cơn thèm trung bình: {weekStats.avgCravings}/5</p>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="font-medium text-blue-800">Tập thể dục: {weekStats.exerciseDays}/7 ngày</p>
                       </div>
                     </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      Không có dữ liệu cho tuần này
+                    </div>
+                  )}
+                  
+                  {/* Nút xem chi tiết */}
+                  <div className="text-center pt-4">
+                    <button
+                      onClick={() => setShowWeekDetailModal(true)}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-300 font-medium"
+                    >
+                      Xem chi tiết tuần này
+                    </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">Chưa có dữ liệu tiến trình tuần nào.</p>
+                  <button 
+                    onClick={() => setShowModal(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                  >
+                    Bắt đầu ghi nhận tiến trình
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Weekly Progress Table */}
@@ -540,7 +762,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {weeklyProgress.map((day, idx) => (
+                    {(weeklyProgress || []).map((day, idx) => (
                       <tr key={idx} className={getTodayIndex() === idx ? "bg-green-50 font-bold" : ""}>
                         <td className="py-2 px-2 border-b">{daysOfWeek[idx]}</td>
                         {day ? (
@@ -820,6 +1042,159 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      {/* Modal chọn coach */}
+      {showShareModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl"
+              onClick={() => setShowShareModal(false)}
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center text-blue-700">Chọn coach để chia sẻ tiến độ</h2>
+            {coaches.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-600 mb-2">Không có coach nào trong hệ thống</p>
+                <p className="text-sm text-gray-500">Vui lòng liên hệ admin để thêm coach</p>
+              </div>
+            ) : (
+              <>
+                <select
+                  className="w-full border rounded-lg p-3 mb-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedCoachId}
+                  onChange={e => setSelectedCoachId(e.target.value)}
+                >
+                  <option value="">-- Chọn coach --</option>
+                  {coaches.map(coach => (
+                    <option key={coach.id} value={coach.id}>
+                      {coach.firstName} {coach.lastName} ({coach.email})
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-4 justify-end">
+                  <button
+                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                    onClick={() => setShowShareModal(false)}
+                  >Hủy</button>
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleShare}
+                    disabled={!selectedCoachId}
+                  >Chia sẻ</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Modal chi tiết tuần */}
+      {showWeekDetailModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl relative overflow-y-auto" style={{maxHeight: '95vh'}}>
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
+              onClick={() => setShowWeekDetailModal(false)}
+              aria-label="Đóng"
+            >
+              ×
+            </button>
+            
+            <h3 className="text-xl font-bold mb-6 text-center text-blue-700">
+              Chi tiết tiến trình - {selectedWeek === 'current' ? 'Tuần hiện tại' : 
+              selectedWeek === 'last' ? 'Tuần trước' : '2 tuần trước'}
+            </h3>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200 rounded-lg text-center text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="py-3 px-4 border-b font-medium">Ngày</th>
+                    <th className="py-3 px-4 border-b font-medium">Tâm trạng</th>
+                    <th className="py-3 px-4 border-b font-medium">Cơn thèm</th>
+                    <th className="py-3 px-4 border-b font-medium">Tập thể dục</th>
+                    <th className="py-3 px-4 border-b font-medium">Nước (ly)</th>
+                    <th className="py-3 px-4 border-b font-medium">Ngủ</th>
+                    <th className="py-3 px-4 border-b font-medium">Hút thuốc?</th>
+                    <th className="py-3 px-4 border-b font-medium">Số điếu</th>
+                    <th className="py-3 px-4 border-b font-medium">Tiền tiêu</th>
+                    <th className="py-3 px-4 border-b font-medium">Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(weekData || []).map((day, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="py-3 px-4 border-b">
+                        <div className="font-medium">{getDayName(idx)}</div>
+                        <div className="text-xs text-gray-500">{formatDate(day?.date)}</div>
+                      </td>
+                      {day ? (
+                        <>
+                          <td className="py-3 px-4 border-b">
+                            <span className="text-blue-600 font-medium">{day.mood || 0}/10</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="text-red-600 font-medium">{day.cravings || 0}/5</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="text-2xl">{day.exercise ? "✅" : "❌"}</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.water || 0}/8</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.sleep || 0}/10</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              day.smokedToday === true ? 'bg-red-100 text-red-800' : 
+                              day.smokedToday === false ? 'bg-green-100 text-green-800' : 
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {day.smokedToday === true ? "Có" : day.smokedToday === false ? "Không" : "-"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.cigarettesToday || "-"}</span>
+                          </td>
+                          <td className="py-3 px-4 border-b">
+                            <span className="font-medium">{day.moneySpentToday ? formatCurrency(day.moneySpentToday) : "-"}</span>
+                          </td>
+                          <td className="py-3 px-4 border-b text-left">
+                            <span className="text-gray-700 text-sm">{day.note || "-"}</span>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                          <td className="py-3 px-4 border-b text-gray-400">-</td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setShowWeekDetailModal(false)}
+                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition duration-300"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

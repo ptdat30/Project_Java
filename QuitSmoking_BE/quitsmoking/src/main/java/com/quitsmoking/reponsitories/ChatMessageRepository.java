@@ -34,4 +34,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
     
     @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.consultation.id = :consultationId")
     long countByConsultationId(@Param("consultationId") String consultationId);
+    
+    void deleteByConsultationId(@Param("consultationId") String consultationId);
 }

@@ -31,7 +31,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import org.springframework.validation.BindingResult; // Thêm import này
@@ -42,7 +41,6 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 // import java.util.Optional;
 import java.util.stream.Collectors; // Thêm import này

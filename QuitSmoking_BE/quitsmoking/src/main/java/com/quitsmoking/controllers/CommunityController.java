@@ -3,7 +3,6 @@ import com.quitsmoking.model.CommunityPost;
 import com.quitsmoking.model.User;
 import com.quitsmoking.services.CommunityService;
 import com.quitsmoking.services.UserService;
-import com.quitsmoking.services.UserStatusService;
 import com.quitsmoking.dto.CommunityPostDto; // Import CommunityPostDto
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,8 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Optional;
+
 import java.util.Collections; // Import Collections
 import org.slf4j.Logger; // Import Logger
 import org.slf4j.LoggerFactory; // Import LoggerFactory
@@ -29,8 +27,7 @@ public class CommunityController {
     private CommunityService communityService;
     @Autowired
     private UserService userService;
-    @Autowired
-    private UserStatusService userStatusService;
+
 
     @PostMapping("/posts")
     public ResponseEntity<?> createPost(

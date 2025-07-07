@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { askGemini } from '../../services/AIChatboxService';
+import ReactMarkdown from 'react-markdown';
 
 const ChatBox = ({ isOpen, onClose }) => {
   const [message, setMessage] = useState('');
@@ -155,7 +156,15 @@ const ChatBox = ({ isOpen, onClose }) => {
                           ? 'bg-white text-gray-800 border border-gray-100'
                           : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                   }`}>
-                    <p className="text-xs sm:text-sm leading-relaxed break-words max-w-[60vw] sm:max-w-[300px]">{msg.text}</p>
+                    {msg.sender === 'ai' ? (
+                      <div className="text-xs sm:text-sm leading-relaxed break-words max-w-[60vw] sm:max-w-[300px]">
+                        <ReactMarkdown>
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-xs sm:text-sm leading-relaxed break-words max-w-[60vw] sm:max-w-[300px]">{msg.text}</p>
+                    )}
                   </div>
                 </div>
               </div>

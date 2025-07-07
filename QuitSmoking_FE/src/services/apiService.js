@@ -138,12 +138,37 @@ const apiService = {
 
   // Achievements
   getAllAchievements: async () => {
-    const response = await apiClient.get(config.endpoints.achievements);
+    const response = await apiClient.get(`${config.endpoints.achievements}/all`);
     return response.data;
   },
 
   getUserAchievements: async () => {
     const response = await apiClient.get(config.endpoints.userAchievements);
+    return response.data;
+  },
+
+  shareAchievement: async (achievementId) => {
+    const response = await apiClient.post(`${config.endpoints.shareAchievement}/${achievementId}`);
+    return response.data;
+  },
+
+  getSharedAchievements: async () => {
+    const response = await apiClient.get(config.endpoints.sharedAchievements);
+    return response.data;
+  },
+
+  checkAchievements: async () => {
+    const response = await apiClient.post(config.endpoints.checkAchievements);
+    return response.data;
+  },
+
+  getAchievementStats: async () => {
+    const response = await apiClient.get(config.endpoints.achievementStats);
+    return response.data;
+  },
+
+  unlockAchievement: async (achievementId) => {
+    const response = await apiClient.post(`${config.endpoints.achievements}/${achievementId}/unlock`);
     return response.data;
   },
 
@@ -197,6 +222,12 @@ const apiService = {
     const response = await apiClient.post(
       `${config.endpoints.communityPosts}/${postId}/like`
     );
+    return response.data;
+  },
+
+  // Lấy dashboard member từ backend
+  getMemberDashboard: async (memberId) => {
+    const response = await apiClient.get(`/api/dashboard/member/${memberId}`);
     return response.data;
   },
 
@@ -335,9 +366,20 @@ const apiService = {
     return response.data;
   },
 
+  // Lấy tiến trình tuần theo offset (0 = tuần hiện tại, 1 = tuần trước, 2 = 2 tuần trước)
+  getWeeklyProgressByOffset: async (weekOffset) => {
+    const response = await apiClient.get(`${config.endpoints.dailyProgress}/week/${weekOffset}`);
+    return response.data;
+  },
+
   // Lưu tiến trình hôm nay (tạo mới hoặc cập nhật)
   saveDailyProgress: async (progressData) => {
     const response = await apiClient.post("/api/daily-progress", progressData);
+    return response.data;
+  },
+
+  getMySharedAchievements: async () => {
+    const response = await apiClient.get('/api/achievements/my/shared');
     return response.data;
   },
 };

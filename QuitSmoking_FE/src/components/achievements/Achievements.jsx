@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import apiService from "../../services/apiService";
+import AchievementNotification from "./AchievementNotification";
+import achievementNotificationService from "../../services/achievementNotificationService";
+
 const Achievements = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [achievements, setAchievements] = useState([]);
   const [userAchievements, setUserAchievements] = useState([]);
   const [filter, setFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [newAchievement, setNewAchievement] = useState(null);
   const [userStats, setUserStats] = useState({
-    daysSmokeFreeDays: 25,
-    moneySaved: 750000,
-    cigarettesAvoided: 500,
+    daysSmokeFreeDays: 0,
+    moneySaved: 0,
+    cigarettesAvoided: 0,
     totalAchievements: 0,
   });
+
   const achievementCategories = {
     ALL: "Tất cả",
     DAYS_SMOKE_FREE: "Ngày không hút",
@@ -16,172 +28,83 @@ const Achievements = () => {
     CIGARETTES_AVOIDED: "Tránh thuốc lá",
     MILESTONES: "Mốc quan trọng",
   };
+
   useEffect(() => {
-    // Mock data - all achievements
-    const allAchievements = [
-      // Days Smoke Free
-      {
-        id: "1",
-        name: "First Day Champion",
-        description: "Hoàn thành ngày đầu tiên không hút thuốc",
-        icon: "🥉",
-        criteriaType: "DAYS_SMOKE_FREE",
-        criteriaValue: 1,
-        badgeColor: "BRONZE",
-        difficulty: "EASY",
-      },
-      {
-        id: "2",
-        name: "One Week Hero",
-        description: "Không hút thuốc trong 1 tuần",
-        icon: "🥈",
-        criteriaType: "DAYS_SMOKE_FREE",
-        criteriaValue: 7,
-        badgeColor: "SILVER",
-        difficulty: "MEDIUM",
-      },
-      {
-        id: "3",
-        name: "One Month Master",
-        description: "Không hút thuốc trong 1 tháng",
-        icon: "🥇",
-        criteriaType: "DAYS_SMOKE_FREE",
-        criteriaValue: 30,
-        badgeColor: "GOLD",
-        difficulty: "HARD",
-      },
-      {
-        id: "4",
-        name: "Three Month Legend",
-        description: "Không hút thuốc trong 3 tháng",
-        icon: "💎",
-        criteriaType: "DAYS_SMOKE_FREE",
-        criteriaValue: 90,
-        badgeColor: "DIAMOND",
-        difficulty: "EXPERT",
-      },
-      {
-        id: "5",
-        name: "One Year God",
-        description: "Không hút thuốc trong 1 năm",
-        icon: "👑",
-        criteriaType: "DAYS_SMOKE_FREE",
-        criteriaValue: 365,
-        badgeColor: "LEGENDARY",
-        difficulty: "LEGENDARY",
-      },
-      // Money Saved
-      {
-        id: "6",
-        name: "Money Saver 100K",
-        description: "Tiết kiệm được 100,000 VND",
-        icon: "💰",
-        criteriaType: "MONEY_SAVED",
-        criteriaValue: 100000,
-        badgeColor: "BRONZE",
-        difficulty: "EASY",
-      },
-      {
-        id: "7",
-        name: "Money Saver 500K",
-        description: "Tiết kiệm được 500,000 VND",
-        icon: "💎",
-        criteriaType: "MONEY_SAVED",
-        criteriaValue: 500000,
-        badgeColor: "SILVER",
-        difficulty: "MEDIUM",
-      },
-      {
-        id: "8",
-        name: "Money Saver 1M",
-        description: "Tiết kiệm được 1,000,000 VND",
-        icon: "🏆",
-        criteriaType: "MONEY_SAVED",
-        criteriaValue: 1000000,
-        badgeColor: "GOLD",
-        difficulty: "HARD",
-      },
-      // Cigarettes Avoided
-      {
-        id: "9",
-        name: "Cigarette Avoider 100",
-        description: "Tránh được 100 điếu thuốc",
-        icon: "🚭",
-        criteriaType: "CIGARETTES_AVOIDED",
-        criteriaValue: 100,
-        badgeColor: "BRONZE",
-        difficulty: "EASY",
-      },
-      {
-        id: "10",
-        name: "Cigarette Avoider 500",
-        description: "Tránh được 500 điếu thuốc",
-        icon: "🛡️",
-        criteriaType: "CIGARETTES_AVOIDED",
-        criteriaValue: 500,
-        badgeColor: "SILVER",
-        difficulty: "MEDIUM",
-      },
-      {
-        id: "11",
-        name: "Cigarette Avoider 1000",
-        description: "Tránh được 1000 điếu thuốc",
-        icon: "⭐",
-        criteriaType: "CIGARETTES_AVOIDED",
-        criteriaValue: 1000,
-        badgeColor: "GOLD",
-        difficulty: "HARD",
-      },
-      // Milestones
-      {
-        id: "12",
-        name: "First Post Sharer",
-        description: "Chia sẻ bài viết đầu tiên trong cộng đồng",
-        icon: "📝",
-        criteriaType: "MILESTONES",
-        criteriaValue: 1,
-        badgeColor: "BRONZE",
-        difficulty: "EASY",
-      },
-      {
-        id: "13",
-        name: "Community Helper",
-        description: "Giúp đỡ 10 thành viên trong cộng đồng",
-        icon: "🤝",
-        criteriaType: "MILESTONES",
-        criteriaValue: 10,
-        badgeColor: "SILVER",
-        difficulty: "MEDIUM",
-      },
-      {
-        id: "14",
-        name: "Motivation Master",
-        description: "Nhận 100 lượt thích từ cộng đồng",
-        icon: "❤️",
-        criteriaType: "MILESTONES",
-        criteriaValue: 100,
-        badgeColor: "GOLD",
-        difficulty: "HARD",
-      },
-    ];
-    setAchievements(allAchievements);
-    // Mock user achievements (earned achievements)
-    const earned = [
-      { achievementId: "1", earnedDate: "2024-01-01", isShared: true },
-      { achievementId: "2", earnedDate: "2024-01-07", isShared: true },
-      { achievementId: "6", earnedDate: "2024-01-10", isShared: false },
-      { achievementId: "9", earnedDate: "2024-01-15", isShared: true },
-      { achievementId: "7", earnedDate: "2024-01-20", isShared: false },
-      { achievementId: "10", earnedDate: "2024-01-25", isShared: true },
-      { achievementId: "12", earnedDate: "2024-01-05", isShared: true },
-    ];
-    setUserAchievements(earned);
-    setUserStats((prev) => ({ ...prev, totalAchievements: earned.length }));
+    // Kiểm tra quyền truy cập
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    // Kiểm tra nếu user là Guest
+    if (user && user.role === 'GUEST') {
+      setLoading(false);
+      return;
+    }
+    
+    loadAchievements();
+  }, [isAuthenticated, user, navigate]);
+
+  useEffect(() => {
+    // Set up listener for new achievements
+    const handleNewAchievement = (achievement) => {
+      setNewAchievement(achievement);
+    };
+
+    achievementNotificationService.addListener(handleNewAchievement);
+
+    // Cleanup listener on unmount
+    return () => {
+      achievementNotificationService.removeListener(handleNewAchievement);
+    };
   }, []);
+
+  const loadAchievements = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load all achievements
+      const allAchievements = await apiService.getAllAchievements();
+      setAchievements(allAchievements);
+      console.log('DEBUG: Loaded all achievements:', allAchievements.length);
+
+      // Load user achievements
+      const userAchievementsData = await apiService.getUserAchievements();
+      setUserAchievements(userAchievementsData);
+      console.log('DEBUG: Loaded user achievements:', userAchievementsData.length);
+
+      // Load user stats
+      const stats = await apiService.getAchievementStats();
+      console.log('DEBUG: Loaded user stats:', stats);
+      setUserStats({
+        daysSmokeFreeDays: stats.daysSmokeFreeDays || 0,
+        moneySaved: stats.moneySaved || 0,
+        cigarettesAvoided: stats.cigarettesAvoided || 0,
+        totalAchievements: userAchievementsData.length
+      });
+
+      // Check for new achievements from server (nếu chỉ để backend tự động cập nhật)
+      await apiService.checkAchievements();
+
+    } catch (err) {
+      console.error("Error loading achievements:", err);
+      setError("Không thể tải dữ liệu huy hiệu. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isAchievementEarned = (achievementId) => {
     return userAchievements.some((ua) => ua.achievementId === achievementId);
   };
+
   const isAchievementUnlockable = (achievement) => {
+    // Nếu đã earn rồi thì không thể unlock
+    if (isAchievementEarned(achievement.id)) {
+      return false;
+    }
+    
     switch (achievement.criteriaType) {
       case "DAYS_SMOKE_FREE":
         return userStats.daysSmokeFreeDays >= achievement.criteriaValue;
@@ -193,6 +116,7 @@ const Achievements = () => {
         return false;
     }
   };
+
   const getProgressPercentage = (achievement) => {
     let current = 0;
     switch (achievement.criteriaType) {
@@ -210,12 +134,33 @@ const Achievements = () => {
     }
     return Math.min((current / achievement.criteriaValue) * 100, 100);
   };
-  const filteredAchievements =
+
+  // Sort achievements by priority: earned first, then high progress, then others
+  const getSortedAchievements = (achievementsList) => {
+    return achievementsList.sort((a, b) => {
+      const aEarned = isAchievementEarned(a.id);
+      const bEarned = isAchievementEarned(b.id);
+      
+      // Earned achievements first
+      if (aEarned && !bEarned) return -1;
+      if (!aEarned && bEarned) return 1;
+      
+      // If both earned or both not earned, sort by progress
+      const aProgress = getProgressPercentage(a);
+      const bProgress = getProgressPercentage(b);
+      
+      return bProgress - aProgress;
+    });
+  };
+
+  const filteredAchievements = getSortedAchievements(
     filter === "ALL"
       ? achievements
       : achievements.filter(
           (achievement) => achievement.criteriaType === filter
-        );
+        )
+  );
+
   const getBadgeColorClass = (color, earned) => {
     if (!earned) return "bg-gray-100 text-gray-400 border-gray-200";
 
@@ -228,6 +173,7 @@ const Achievements = () => {
     };
     return colors[color] || "bg-gray-100 text-gray-800 border-gray-300";
   };
+
   const getDifficultyColor = (difficulty) => {
     const colors = {
       EASY: "text-green-600",
@@ -238,12 +184,14 @@ const Achievements = () => {
     };
     return colors[difficulty] || "text-gray-600";
   };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(amount);
   };
+
   const formatCriteria = (achievement) => {
     switch (achievement.criteriaType) {
       case "DAYS_SMOKE_FREE":
@@ -256,18 +204,196 @@ const Achievements = () => {
         return achievement.criteriaValue;
     }
   };
-  const handleShareAchievement = (achievementId) => {
-    // Simulate sharing to community
-    alert("Đã chia sẻ thành tích với cộng đồng!");
+
+  const handleShareAchievement = async (achievementId) => {
+    try {
+      await apiService.shareAchievement(achievementId);
+      
+      // Update local state
+      setUserAchievements(prev => 
+        prev.map(ua => 
+          ua.achievementId === achievementId
+            ? { ...ua, isShared: true }
+            : ua
+        )
+      );
+
+      // Show success message
+      alert("Đã chia sẻ thành tích với cộng đồng!");
+    } catch (err) {
+      console.error("Error sharing achievement:", err);
+      alert("Không thể chia sẻ thành tích. Vui lòng thử lại sau.");
+    }
   };
+
+  const handleUnlockAchievement = async (achievementId) => {
+    try {
+      console.log('DEBUG: Attempting to unlock achievement:', achievementId);
+      console.log('DEBUG: Current userStats:', userStats);
+      console.log('DEBUG: User achievements:', userAchievements);
+      
+      // Gọi API unlock và nhận về object thành tựu vừa unlock
+      const unlocked = await apiService.unlockAchievement(achievementId);
+      console.log('DEBUG: Unlocked achievement:', unlocked);
+      
+      // Reload achievements để cập nhật danh sách
+      await loadAchievements();
+      // Hiển thị modal thông báo với thành tựu vừa unlock
+      setNewAchievement(unlocked);
+      // Không cần alert nữa vì đã có modal
+    } catch (err) {
+      console.error("Error unlocking achievement:", err);
+      let errorMessage = "Không thể mở khóa huy hiệu. Vui lòng thử lại sau.";
+      if (err.response?.data) {
+        const errorData = err.response.data;
+        if (typeof errorData === 'string') {
+          if (errorData.includes("already earned")) {
+            errorMessage = "Bạn đã đạt được huy hiệu này rồi!";
+          } else if (errorData.includes("does not meet the criteria")) {
+            errorMessage = "Bạn chưa đủ điều kiện để mở khóa huy hiệu này.";
+          } else if (errorData.includes("not found")) {
+            errorMessage = "Không tìm thấy huy hiệu này.";
+          } else {
+            errorMessage = errorData;
+          }
+        }
+      }
+      alert(errorMessage);
+    }
+  };
+
+  const handleRefreshStats = async () => {
+    try {
+      console.log('DEBUG: Refreshing all achievement data...');
+      
+      // Reload toàn bộ dữ liệu
+      await loadAchievements();
+      
+      console.log('DEBUG: Refresh completed');
+    } catch (err) {
+      console.error("Error refreshing stats:", err);
+      alert('Có lỗi khi làm mới dữ liệu. Vui lòng thử lại.');
+    }
+  };
+
+  // Kiểm tra nếu user là Guest
+  if (user && user.role === 'GUEST') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="text-6xl mb-6">🏆</div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Tính năng dành cho thành viên
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              Huy hiệu thành tích là tính năng đặc biệt dành cho thành viên. 
+              Hãy nâng cấp gói thành viên để trải nghiệm đầy đủ tính năng này!
+            </p>
+            
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                🎯 Lợi ích khi nâng cấp:
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">🏆</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Huy hiệu thành tích</div>
+                    <div className="text-sm text-gray-600">Theo dõi và chia sẻ thành tựu</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">📊</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Thống kê chi tiết</div>
+                    <div className="text-sm text-gray-600">Phân tích tiến trình cai thuốc</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">👥</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Cộng đồng hỗ trợ</div>
+                    <div className="text-sm text-gray-600">Kết nối với người cùng mục tiêu</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">🎁</div>
+                  <div>
+                    <div className="font-medium text-gray-900">Phần thưởng đặc biệt</div>
+                    <div className="text-sm text-gray-600">Nhận quà khi đạt mốc quan trọng</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <button
+                onClick={() => navigate('/membership')}
+                className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition duration-300 shadow-lg"
+              >
+                🚀 Nâng cấp ngay
+              </button>
+              <div>
+                <button
+                  onClick={() => navigate('/')}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  ← Quay về trang chủ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải huy hiệu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={loadAchievements}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Thử lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            🏆 Huy hiệu thành tích
-          </h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">
+              🏆 Huy hiệu thành tích
+            </h1>
+            <button
+              onClick={handleRefreshStats}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+            >
+              🔄 Làm mới
+            </button>
+          </div>
           <p className="text-gray-600 mb-6">
             Thể hiện thành tựu trong hành trình cai thuốc của bạn
           </p>
@@ -300,6 +426,7 @@ const Achievements = () => {
             </div>
           </div>
         </div>
+
         {/* Filter Tabs */}
         <div className="bg-white rounded-lg shadow-sm mb-8">
           <div className="flex flex-wrap">
@@ -318,12 +445,27 @@ const Achievements = () => {
             ))}
           </div>
         </div>
+
         {/* Achievements Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAchievements.map((achievement) => {
             const earned = isAchievementEarned(achievement.id);
             const unlockable = isAchievementUnlockable(achievement);
             const progress = getProgressPercentage(achievement);
+            const userAchievement = userAchievements.find(
+              ua => ua.achievementId === achievement.id
+            );
+
+            // Debug log cho achievement đang xem
+            console.log(`DEBUG: Achievement ${achievement.name}:`, {
+              id: achievement.id,
+              earned,
+              unlockable,
+              progress,
+              criteriaType: achievement.criteriaType,
+              criteriaValue: achievement.criteriaValue,
+              userStats
+            });
 
             return (
               <div
@@ -343,7 +485,7 @@ const Achievements = () => {
                       earned ? "grayscale-0" : "grayscale filter opacity-50"
                     }`}
                   >
-                    {achievement.icon}
+                    {achievement.iconUrl || "🏆"}
                   </div>
                   <h3
                     className={`text-lg font-bold ${
@@ -361,6 +503,7 @@ const Achievements = () => {
                     {achievement.badgeColor}
                   </span>
                 </div>
+
                 {/* Description */}
                 <p
                   className={`text-sm text-center mb-4 ${
@@ -369,6 +512,7 @@ const Achievements = () => {
                 >
                   {achievement.description}
                 </p>
+
                 {/* Criteria */}
                 <div className="text-center mb-4">
                   <span className="text-sm text-gray-600">Yêu cầu: </span>
@@ -376,6 +520,7 @@ const Achievements = () => {
                     {formatCriteria(achievement)}
                   </span>
                 </div>
+
                 {/* Progress Bar (if not earned) */}
                 {!earned && achievement.criteriaType !== "MILESTONES" && (
                   <div className="mb-4">
@@ -393,35 +538,57 @@ const Achievements = () => {
                     </div>
                   </div>
                 )}
+
                 {/* Difficulty */}
                 <div className="text-center mb-4">
                   <span className="text-xs text-gray-500">Độ khó: </span>
                   <span
                     className={`text-xs font-medium ${getDifficultyColor(
-                      achievement.difficulty
+                      achievement.difficulty || "MEDIUM"
                     )}`}
                   >
-                    {achievement.difficulty}
+                    {achievement.difficulty || "MEDIUM"}
                   </span>
                 </div>
+
                 {/* Action Buttons */}
-                <div className="text-center">
+                <div className="text-center space-y-2">
                   {earned ? (
-                    <div className="space-y-2">
+                    <>
                       <div className="text-green-600 font-medium text-sm">
                         ✅ Đã đạt được
+                        {userAchievement?.earnedDate && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {new Date(userAchievement.earnedDate).toLocaleDateString('vi-VN')}
+                          </div>
+                        )}
+                      </div>
+                      {userAchievement && !userAchievement.isShared && (
+                        <button
+                          onClick={() => handleShareAchievement(achievement.id)}
+                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        >
+                          📤 Chia sẻ thành tích
+                        </button>
+                      )}
+                      {userAchievement?.isShared && (
+                        <div className="text-blue-600 font-medium text-sm">
+                          📤 Đã chia sẻ
+                        </div>
+                      )}
+                    </>
+                  ) : unlockable ? (
+                    <>
+                      <div className="text-green-600 font-medium text-sm">
+                        🎯 Sẵn sàng mở khóa!
                       </div>
                       <button
-                        onClick={() => handleShareAchievement(achievement.id)}
-                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        onClick={() => handleUnlockAchievement(achievement.id)}
+                        className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
                       >
-                        📤 Chia sẻ thành tích
+                        🔓 Mở khóa huy hiệu
                       </button>
-                    </div>
-                  ) : unlockable ? (
-                    <div className="text-green-600 font-medium text-sm">
-                      🎯 Sẵn sàng mở khóa!
-                    </div>
+                    </>
                   ) : (
                     <div className="text-gray-500 text-sm">
                       🔒 Chưa đạt được
@@ -432,33 +599,28 @@ const Achievements = () => {
             );
           })}
         </div>
-        {/* Motivational Section */}
-        <div className="mt-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white text-center">
-          <h2 className="text-2xl font-bold mb-4">🎯 Tiếp tục hành trình!</h2>
-          <p className="text-lg mb-6">
-            Mỗi huy hiệu là một dấu mốc quan trọng trong hành trình cai thuốc
-            của bạn
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-3xl mb-2">🔥</div>
-              <div className="font-semibold">Kiên trì</div>
-              <div className="text-sm opacity-90">Mỗi ngày đều quan trọng</div>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">💪</div>
-              <div className="font-semibold">Quyết tâm</div>
-              <div className="text-sm opacity-90">Vượt qua mọi thử thách</div>
-            </div>
-            <div>
-              <div className="text-3xl mb-2">🏆</div>
-              <div className="font-semibold">Thành công</div>
-              <div className="text-sm opacity-90">Mục tiêu trong tầm tay</div>
-            </div>
+
+        {/* Empty State */}
+        {filteredAchievements.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🏆</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Chưa có huy hiệu nào
+            </h3>
+            <p className="text-gray-600">
+              Hãy tiếp tục hành trình cai thuốc để nhận được huy hiệu đầu tiên!
+            </p>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Achievement Notification */}
+      <AchievementNotification 
+        achievement={newAchievement} 
+        onClose={() => setNewAchievement(null)} 
+      />
     </div>
   );
 };
+
 export default Achievements;

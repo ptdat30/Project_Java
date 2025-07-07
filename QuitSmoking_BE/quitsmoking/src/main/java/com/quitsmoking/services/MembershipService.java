@@ -9,7 +9,6 @@ import com.quitsmoking.reponsitories.MembershipPlanRepository;
 import com.quitsmoking.reponsitories.MembershipTransactionRepository;
 import com.quitsmoking.dto.request.MembershipUpgradeRequest;
 import com.quitsmoking.dto.response.AuthResponse;
-import com.quitsmoking.dto.response.MembershipPlanResponse;
 import com.quitsmoking.dto.response.PaymentResponse;
 import com.quitsmoking.dto.response.UpgradeMembershipResponse;
 import com.quitsmoking.exceptions.ResourceNotFoundException;

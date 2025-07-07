@@ -82,7 +82,22 @@ public class FeedbackService {
         String feedbackContent = savedFeedback.getFeedbackContent(); // Đảm bảo tên phương thức getter này khớp với entity Feedback của bạn
         java.time.Instant submissionTime = savedFeedback.getSubmissionTime(); // Đảm bảo kiểu dữ liệu khớp
         String userId = (savedFeedback.getUser() != null) ? savedFeedback.getUser().getId() : null;
-        String message = "Phản hồi của bạn đã được ghi nhận. Xin cảm ơn!"; // Thông báo mong muốn
+        
+        // Lấy thông tin user name và email
+        String userName = "N/A";
+        String userEmail = "N/A";
+        if (savedFeedback.getUser() != null) {
+            User user = savedFeedback.getUser();
+            String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+            String lastName = user.getLastName() != null ? user.getLastName() : "";
+            userName = (firstName + " " + lastName).trim();
+            if (userName.isEmpty()) {
+                userName = user.getUsername(); // Fallback to username if no name
+            }
+            userEmail = user.getEmail() != null ? user.getEmail() : "N/A";
+        }
+        
+        String message = existingFeedback.isPresent() ? "Phản hồi của bạn đã được cập nhật. Xin cảm ơn!" : "Phản hồi của bạn đã được ghi nhận. Xin cảm ơn!"; // Thông báo mong muốn
 
         // Tạo đối tượng FeedbackResponse bằng constructor
         return new FeedbackResponse(
@@ -91,7 +106,64 @@ public class FeedbackService {
                 feedbackContent,
                 submissionTime,
                 userId,
+                userName,
+                userEmail,
                 message
         );
+    }
+
+    /**
+     * Lấy feedback hiện tại của người dùng đã đăng nhập.
+     * @return FeedbackResponse chứa thông tin feedback của người dùng
+     * @throws RuntimeException nếu người dùng chưa có feedback
+     */
+    public FeedbackResponse getMyFeedback() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = null;
+
+        if (authentication != null && authentication.isAuthenticated() && !("anonymousUser").equals(authentication.getPrincipal())) {
+            String username = authentication.getName();
+            currentUser = userDAO.findByUsername(username)
+                                 .orElseThrow(() -> {
+                                     logger.error("Authenticated user not found in database: {}", username);
+                                     return new RuntimeException("Authenticated user not found.");
+                                 });
+        } else {
+            logger.warn("Attempting to get feedback by an unauthenticated or anonymous user.");
+            throw new RuntimeException("User must be authenticated to get feedback.");
+        }
+
+        Optional<Feedback> existingFeedback = feedbackRepository.findByUser(currentUser);
+        
+        if (existingFeedback.isPresent()) {
+            Feedback feedback = existingFeedback.get();
+            
+            // Lấy thông tin user name và email
+            String userName = "N/A";
+            String userEmail = "N/A";
+            if (feedback.getUser() != null) {
+                User user = feedback.getUser();
+                String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+                String lastName = user.getLastName() != null ? user.getLastName() : "";
+                userName = (firstName + " " + lastName).trim();
+                if (userName.isEmpty()) {
+                    userName = user.getUsername(); // Fallback to username if no name
+                }
+                userEmail = user.getEmail() != null ? user.getEmail() : "N/A";
+            }
+            
+            return new FeedbackResponse(
+                feedback.getId(),
+                feedback.getRating(),
+                feedback.getFeedbackContent(),
+                feedback.getSubmissionTime(),
+                feedback.getUser().getId(),
+                userName,
+                userEmail,
+                "Feedback hiện tại của bạn"
+            );
+        } else {
+            throw new RuntimeException("User has no feedback yet.");
+        }
     }
 }

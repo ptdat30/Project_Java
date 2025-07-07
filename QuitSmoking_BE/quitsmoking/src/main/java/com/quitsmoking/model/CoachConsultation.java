@@ -89,6 +89,14 @@ public class CoachConsultation {
             dto.setMemberEmail(this.getMember().getEmail());
             dto.setMemberPictureUrl(this.getMember().getPictureUrl());
         }
+        // Thêm thông tin coach chi tiết
+        if (this.getCoach() != null) {
+            dto.setCoachFirstName(this.getCoach().getFirstName());
+            dto.setCoachLastName(this.getCoach().getLastName());
+            dto.setCoachUsername(this.getCoach().getUsername());
+            dto.setCoachEmail(this.getCoach().getEmail());
+            dto.setCoachPictureUrl(this.getCoach().getPictureUrl());
+        }
         return dto;
     }
 }

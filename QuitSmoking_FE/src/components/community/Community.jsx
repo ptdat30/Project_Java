@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from 'framer-motion';
 import AvatarFromName from '../common/AvatarFromName';
+import useMembershipError from "../../hooks/useMembershipError";
+import MembershipUpgradeModal from "../common/MembershipUpgradeModal";
 import CommentSection from '../community/CommentSection';
 
 const Community = () => {
@@ -23,6 +25,9 @@ const Community = () => {
   const [errorPostTypes, setErrorPostTypes] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState('ALL');
   const [accessDeniedForGuest, setAccessDeniedForGuest] = useState(false);
+  
+  // Sử dụng hook xử lý lỗi membership
+  const { showUpgradeModal, errorMessage, handleApiError, closeUpgradeModal } = useMembershipError();
   const [expandedPostId, setExpandedPostId] = useState(null);
 
   useEffect(() => {
@@ -279,12 +284,12 @@ const Community = () => {
                     className="grid grid-cols-1 lg:grid-cols-4 gap-8"
                 >
                   {/* Main Content */}
-                  <div className="lg:col-span-3 space-y-8">
+                  <div className="lg:col-span-3 space-y-8 w-full">
                     {/* Create Post */}
                     {isAuthenticated && user && user.role !== 'GUEST' && (
                         <motion.div
                             whileHover={{ y: -2 }}
-                            className="bg-white rounded-xl shadow-lg p-6 border border-green-100"
+                            className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-green-100"
                         >
                           <h3 className="text-lg font-bold text-green-800 mb-4">
                             ✍️ Chia sẻ với cộng đồng
@@ -295,28 +300,28 @@ const Community = () => {
                               value={newTitle}
                               onChange={(e) => setNewTitle(e.target.value)}
                               placeholder="Tiêu đề của bạn"
-                              className="w-full p-4 border rounded-lg border-green-200 mb-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              className="w-full p-3 sm:p-4 border rounded-lg border-green-200 mb-2 focus:ring-2 focus:ring-green-500 focus:border-transparent text-base sm:text-lg"
                           />
                           <motion.textarea
                               whileFocus={{ scale: 1.01 }}
                               value={newPost}
                               onChange={(e) => setNewPost(e.target.value)}
                               placeholder="Hôm nay bạn cảm thấy thế nào? Chia sẻ tiến trình, câu chuyện hay mẹo hay của bạn..."
-                              className="w-full p-4 border border-green-200 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              className="w-full p-3 sm:p-4 border border-green-200 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-base sm:text-lg"
                               rows="4"
                           />
-                          <div className="flex justify-between items-center mt-4">
+                          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mt-4 gap-2 sm:gap-0">
                             {loadingPostTypes && <p className="text-gray-500">Đang tải loại bài viết...</p>}
                             {errorPostTypes && <p className="text-red-500">Lỗi tải loại bài viết.</p>}
                             {!loadingPostTypes && !errorPostTypes && postTypes.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-2 mb-2 sm:mb-0">
                                   {postTypes.map(type => (
                                       <motion.button
                                           key={type}
                                           whileHover={{ scale: 1.05 }}
                                           whileTap={{ scale: 0.95 }}
                                           onClick={() => setSelectedPostType(type)}
-                                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                          className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                                               selectedPostType === type
                                                   ? 'bg-green-600 text-white shadow-sm'
                                                   : 'bg-green-50 text-green-700 hover:bg-green-100'
@@ -333,7 +338,7 @@ const Community = () => {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={handleSubmitPost}
                                 disabled={!newPost.trim() || !selectedPostType || !newTitle.trim()}
-                                className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                                className="bg-green-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium hover:bg-green-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md w-full sm:w-auto"
                             >
                               Đăng bài
                             </motion.button>
@@ -358,7 +363,7 @@ const Community = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => navigate('/membership')}
-                                className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition duration-300 shadow-md"
+                                className="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition duration-300 shadow-md w-full sm:w-auto"
                             >
                               Nâng Cấp Ngay
                             </motion.button>
@@ -380,7 +385,7 @@ const Community = () => {
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
                                   onClick={() => setSelectedFilter(filter)}
-                                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                                  className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                                       selectedFilter === filter
                                           ? filter === 'ALL' ? 'bg-green-600 text-white' :
                                               filter === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-500 text-white' :
@@ -440,10 +445,10 @@ const Community = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     whileHover={{ y: -3 }}
-                                    className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition duration-300 border border-green-100"
+                                    className="bg-white rounded-xl shadow-md p-4 sm:p-6 hover:shadow-lg transition duration-300 border border-green-100 w-full"
                                 >
                                   {/* Post Header */}
-                                  <div className="flex items-start space-x-4 mb-4">
+                                  <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
                                     {post.pictureUrl ? (
                                         <motion.img
                                             whileHover={{ scale: 1.05 }}
@@ -463,18 +468,18 @@ const Community = () => {
                                           />
                                         </motion.div>
                                     )}
-                                    <div className="flex-1">
-                                      <div className="flex items-center space-x-2">
-                                        <h4 className="font-bold text-gray-800">{post.username}</h4>
-                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                    <div className="flex-1 w-full">
+                                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                                        <h4 className="font-bold text-gray-800 text-base sm:text-lg">{post.username}</h4>
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full mt-1 sm:mt-0">
                   Active Member
                 </span>
                                       </div>
-                                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 mt-1">
                                         <span>🗓️ {post.createdAt}</span>
                                       </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right mt-2 sm:mt-0">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                   post.postType === 'ACHIEVEMENT_SHARE' ? 'bg-yellow-100 text-yellow-700' :
                       post.postType === 'MOTIVATION' ? 'bg-blue-100 text-blue-700' :
@@ -489,14 +494,14 @@ const Community = () => {
 
                                   {/* Post Content */}
                                   <div className="mb-4">
-                                    <h5 className="font-bold text-lg text-green-800">{post.title}</h5>
-                                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                    <h5 className="font-bold text-base sm:text-lg text-green-800">{post.title}</h5>
+                                    <p className="text-gray-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">
                                       {post.content}
                                     </p>
                                   </div>
 
                                   {/* Post Actions */}
-                                  <div className="flex items-center space-x-6 pt-4 border-t border-gray-100">
+                                  <div className="flex flex-wrap items-center space-x-4 space-y-2 sm:space-y-0 pt-4 border-t border-gray-100">
                                     <motion.button
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
@@ -517,8 +522,8 @@ const Community = () => {
                                       <span className="text-lg">💬</span>
                                       <span className="text-sm">Bình luận</span>
                                       <span className="text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-      {post.commentsCount}
-    </span>
+                                        {post.commentsCount}
+                                      </span>
                                     </motion.button>
 
                                     <motion.button
@@ -720,9 +725,16 @@ const Community = () => {
                 </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Membership Upgrade Modal */}
+          <MembershipUpgradeModal 
+            isOpen={showUpgradeModal}
+            onClose={closeUpgradeModal}
+            message={errorMessage}
+          />
         </div>
       </motion.div>
-  );
+    );
 };
 
 export default Community;

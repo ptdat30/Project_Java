@@ -1,13 +1,12 @@
 package com.quitsmoking.config;
 
-import com.quitsmoking.services.AuthService;
+import com.quitsmoking.services.CustomUserDetailsService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,7 +32,7 @@ import java.util.List;
 public class SecurityConfig {
 
     @Autowired
-    private AuthService authService; // Autowire AuthService
+    private CustomUserDetailsService customUserDetailsService; // Use separate UserDetailsService
 
     @Autowired
     private JwtUtil jwtUtil; // Autowire JwtUtil
@@ -44,14 +43,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(authService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
@@ -59,11 +50,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // Manually create JwtRequestFilter instance here
-        JwtRequestFilter jwtRequestFilter = new JwtRequestFilter(authService, jwtUtil);
+        JwtRequestFilter jwtRequestFilter = new JwtRequestFilter(customUserDetailsService, jwtUtil);
 
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(org.springframework.security.config.Customizer.withDefaults())
+            .userDetailsService(customUserDetailsService) // Use separate UserDetailsService to avoid infinite loop
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Cho phép WebSocket endpoints
@@ -85,16 +77,16 @@ public class SecurityConfig {
                 // Endpoint upgrade yêu cầu các vai trò này
                 .requestMatchers(HttpMethod.POST, "/api/membership/upgrade").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Endpoint ghi nhận tình trạng hút thuốc
-                .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/smoking-status/user/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/smoking-status/user/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint lập kế hoạch cai thuốc
                 .requestMatchers(HttpMethod.POST, "/api/quit-plans").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/quit-plans").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép MEMBER, ADMIN, COACH truy cập tiến trình tuần
-                .requestMatchers(HttpMethod.POST, "/api/daily-progress").hasAnyRole("MEMBER", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/daily-progress/**").hasAnyRole("MEMBER", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/daily-progress").hasAnyRole("GUEST", "MEMBER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/daily-progress/**").hasAnyRole("GUEST", "MEMBER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint community
                 .requestMatchers(HttpMethod.POST, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
@@ -102,7 +94,19 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/community/comments").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.POST, "/api/community/posts/like/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                    .requestMatchers(HttpMethod.GET, "/api/community/comments/post/**").permitAll()
+                // Cho phép truy cập endpoint comments
+                .requestMatchers(HttpMethod.GET, "/api/community/comments/post/**").permitAll()
+                // Cho phép truy cập endpoint share dashboard
+                .requestMatchers("/api/dashboard/share", "/api/dashboard/shared-coaches").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers("/api/dashboard/shared-members").hasAnyRole("COACH", "ADMIN", "MEMBER")
+                .requestMatchers("/api/dashboard/member/**").hasAnyRole("COACH", "ADMIN", "MEMBER","GUEST")
+                // Cho phép truy cập endpoint achievements
+                .requestMatchers("/api/achievements/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                // Cho phép admin truy cập endpoint feedback admin
+                .requestMatchers("/api/feedback/admin/**").hasAnyRole("ADMIN")
+                // Cho phép tất cả user đã đăng nhập truy cập endpoint feedback
+                .requestMatchers("/api/feedback/**").authenticated()
+                
                 // Bất kỳ yêu cầu nào khác đến /api/** đều yêu cầu được xác thực                
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
@@ -144,7 +148,7 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L);
 
         source.registerCorsConfiguration("/**", configuration);
-        System.out.println("CorsConfigurationSource bean is being initialized!");
+        System.out.println("CORS configuration initialized with allowed origins: " + configuration.getAllowedOrigins());
         return source;
     }
 }

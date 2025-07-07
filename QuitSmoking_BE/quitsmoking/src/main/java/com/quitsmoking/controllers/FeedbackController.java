@@ -27,6 +27,22 @@ public class FeedbackController {
     }
 
     /**
+     * Endpoint để lấy feedback hiện tại của người dùng đã đăng nhập.
+     * @return ResponseEntity với FeedbackResponse nếu có, hoặc 404 nếu chưa có feedback.
+     */
+    @GetMapping("/my-feedback")
+    public ResponseEntity<FeedbackResponse> getMyFeedback() {
+        logger.debug("Received GET request to /api/feedback/my-feedback");
+        try {
+            FeedbackResponse response = feedbackService.getMyFeedback();
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.warn("User has no feedback yet: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
      * Endpoint để người dùng gửi phản hồi/đánh giá.
      * @param feedbackRequest DTO chứa rating và nội dung phản hồi.
      * @return ResponseEntity với FeedbackResponse và HttpStatus.CREATED nếu thành công.
@@ -37,22 +53,4 @@ public class FeedbackController {
         FeedbackResponse response = feedbackService.submitFeedback(feedbackRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-
-    // Bạn có thể thêm các endpoint khác ở đây, ví dụ để lấy danh sách feedback (chỉ cho Admin)
-    /*
-    @GetMapping
-    public ResponseEntity<List<FeedbackResponse>> getAllFeedbacks() {
-        // Đây là ví dụ, bạn cần tạo phương thức trong FeedbackService để lấy và chuyển đổi Feedback sang FeedbackResponse
-        // List<Feedback> feedbacks = feedbackRepository.findAll();
-        // List<FeedbackResponse> responses = feedbacks.stream()
-        //                                            .map(feedback -> FeedbackResponse.builder()
-        //                                                .id(feedback.getId())
-        //                                                .rating(feedback.getRating())
-        //                                                .feedbackContent(feedback.getFeedbackContent())
-        //                                                .submissionTime(feedback.getSubmissionTime())
-        //                                                .build())
-        //                                            .collect(Collectors.toList());
-        // return ResponseEntity.ok(responses);
-    }
-    */
 }

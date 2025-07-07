@@ -22,6 +22,11 @@ import AiChatWidget from "./components/AiChatBox/AiChatWidget";
 import PostDetail from "./components/community/PostDetail"; // Add this import
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import apiService from "./services/apiService";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import notificationService from "./services/notificationService";
+import globalMessageListener from "./services/globalMessageListener";
+import DashboardMembers from "./components/dashboard/DashboardMembers";
 
 // --- Components để bảo vệ Routes ---
 
@@ -73,6 +78,28 @@ const AppContent = () => {
   const hideNavigation = ["/login", "/register", "/recover-password"].includes(
       location.pathname
   );
+
+  // Reset notification cooldown khi chuyển trang
+  useEffect(() => {
+    // Reset cooldown khi chuyển từ trang chat sang trang khác
+    if (location.pathname !== '/coach-consultation') {
+      notificationService.resetCooldown();
+    }
+  }, [location.pathname]);
+
+  // Khởi tạo GlobalMessageListener cho coach
+  useEffect(() => {
+    if (user && user.id) {
+      const isCoach = user.role === 'COACH';
+      console.log('App: Initializing GlobalMessageListener for user:', user.id, 'isCoach:', isCoach);
+      globalMessageListener.connect(user.id, isCoach);
+      
+      // Cleanup khi component unmount
+      return () => {
+        globalMessageListener.disconnect();
+      };
+    }
+  }, [user]);
 
   // --- Trạng thái kiểm tra backend ---
   const [hasRecordedStatus, setHasRecordedStatus] = useState(false);
@@ -195,122 +222,135 @@ const AppContent = () => {
                 </GuestOnlyRoute>
               }
           />
-
           <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/community"
-              element={
-                <ProtectedRoute>
-                  <Community />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/posts/:postId"
-              element={
-                <ProtectedRoute>
-                  <PostDetail />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/coach-consultation"
-              element={
-                <ProtectedRoute>
-                  <CoachConsultation />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/achievements"
-              element={
-                <ProtectedRoute>
-                  <Achievements />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/plan"
-              element={renderPlanRoute()}
-          />
-          <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/membership"
-              element={
-                <ProtectedRoute>
-                  <MembershipPage />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/daily-progress"
-              element={
-                <ProtectedRoute>
-                  <DailyProgressPage />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/quit-status"
-              element={
-                <ProtectedRoute>
-                  <GhiNhanTinhTrang />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/ghinhantinhtrang"
-              element={
-                <ProtectedRoute>
-                  {hasRecordedStatus ? (
-                      <Navigate to="/plan" replace />
-                  ) : (
-                      <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
-                  )}
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
-                  <AdminPanel />
-                </ProtectedRoute>
-              }
-          />
-          <Route
-              path="/feedback"
-              element={
-                <ProtectedRoute allowedRoles={["MEMBER"]}>
-                  <Feedback />
-                </ProtectedRoute>
-              }
-          />
-        </Routes>
-        <AiChatWidget />
-      </div>
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/community"
+          element={
+            <ProtectedRoute>
+              <Community />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach-consultation"
+          element={
+            <ProtectedRoute>
+              <CoachConsultation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/achievements"
+          element={
+            <ProtectedRoute>
+              <Achievements />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/plan"
+          element={renderPlanRoute()}
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/membership"
+          element={
+            <ProtectedRoute>
+              <MembershipPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/daily-progress"
+          element={
+            <ProtectedRoute>
+              <DailyProgressPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quit-status"
+          element={
+            <ProtectedRoute>
+              <GhiNhanTinhTrang />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ghinhantinhtrang"
+          element={
+            <ProtectedRoute>
+              {hasRecordedStatus ? (
+                <Navigate to="/plan" replace />
+              ) : (
+                <GhiNhanTinhTrang onComplete={handleStatusRecorded} />
+              )}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/feedback"
+          element={
+            <ProtectedRoute allowedRoles={["MEMBER"]}>
+              <Feedback />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard-members"
+          element={
+            <ProtectedRoute allowedRoles={["COACH"]}>
+              <DashboardMembers />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <AiChatWidget />
+      
+      {/* Toast Container for global notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </div>
   );
 };
 
