@@ -88,10 +88,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/daily-progress/week").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/daily-progress/week/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint community
-                .requestMatchers(HttpMethod.POST, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
-                .requestMatchers(HttpMethod.GET, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                // Cho phép guest truy cập endpoint posts nhưng không được tạo bài viết và comment
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.GET, "/api/community/posts").hasAnyRole("GUEST", "MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.GET, "/api/community/comments").hasAnyRole("MEMBER", "ADMIN", "COACH")
+                .requestMatchers(HttpMethod.POST, "/api/community/posts").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.POST, "/api/community/posts/like/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").hasAnyRole("MEMBER", "ADMIN", "COACH")
                 // Cho phép truy cập endpoint comments

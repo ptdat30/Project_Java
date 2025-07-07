@@ -130,8 +130,9 @@ public class AdminController {
         }
         try {
             User user = adminService.updateUserRole(userId, newRole);
+            UserAdminResponse userDto = new UserAdminResponse(user);
             result.put("success", true);
-            result.put("user", user);
+            result.put("user", userDto);
         } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());
