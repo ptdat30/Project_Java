@@ -328,16 +328,11 @@ const Dashboard = () => {
   // Lấy danh sách coach
   useEffect(() => {
     if (user?.role === "MEMBER") {
-      console.log("Fetching coaches for user:", user.id, "role:", user.role);
       apiService.getCoaches()
         .then(data => {
-          console.log("Coaches data received:", data);
           setCoaches(data);
         })
-        .catch(error => {
-          console.error("Error fetching coaches:", error);
-          setCoaches([]);
-        });
+        .catch(() => setCoaches([]));
       apiService.get(`/api/dashboard/shared-coaches`).then(setSharedCoaches).catch(() => setSharedCoaches([]));
     }
   }, [user]);
@@ -416,7 +411,6 @@ const Dashboard = () => {
       const data = await apiService.getWeeklyProgressByOffset(weekOffset);
       return data;
     } catch (error) {
-      console.error('Error fetching week data:', error);
       return [];
     }
   };

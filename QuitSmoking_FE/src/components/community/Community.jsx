@@ -98,7 +98,6 @@ const Community = () => {
         }
 
         const jsonData = JSON.parse(text);
-        console.log(jsonData);
 
         const mappedJson = jsonData.content.map(post => ({
           id: post.id,
@@ -124,7 +123,6 @@ const Community = () => {
       } catch (error) {
         if (isMounted) {
           setErrorPosts('Không thể tải bài viết: ' + error.message);
-          console.error('Error fetching posts:', error);
         }
       } finally {
         if (isMounted) {
@@ -194,7 +192,6 @@ const Community = () => {
       const responseData = await response.json();
 
       if (response.ok) {
-        console.log(responseData.message);
         const createdPost = {
           id: responseData.id,
           commentsCount: 0,

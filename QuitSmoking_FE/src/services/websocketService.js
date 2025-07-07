@@ -16,8 +16,6 @@ class WebSocketService {
         // Disconnect existing connection if any
         this.disconnect();
         
-        console.log('WebSocketService: Attempting to connect with userId:', userId, 'sessionId:', sessionId);
-        
         const socket = new SockJS('http://localhost:8080/ws');
         this.stompClient = new Client({
             webSocketFactory: () => socket,
@@ -28,18 +26,13 @@ class WebSocketService {
         });
 
         this.stompClient.onConnect = (frame) => {
-            console.log('WebSocketService: Connected to WebSocket: ' + frame);
             this.connected = true;
             this.reconnectAttempts = 0;
-            
-            console.log('WebSocketService: Setting up subscriptions for session:', sessionId);
             
             // Subscribe to session topic
             const sessionSubscription = this.stompClient.subscribe(`/topic/session.${sessionId}`, (message) => {
                 try {
-                    console.log('WebSocketService: Received message on topic /topic/session.' + sessionId);
                     const receivedMessage = JSON.parse(message.body);
-                    console.log('WebSocketService: Parsed message:', receivedMessage);
                     
                     // Gọi callback function để xử lý tin nhắn
                     onMessageReceived(receivedMessage);
@@ -55,16 +48,13 @@ class WebSocketService {
             });
             
             this.subscriptions.set(sessionId, sessionSubscription);
-            console.log('WebSocketService: Subscribed to topic /topic/session.' + sessionId);
             
             // Subscribe to user status updates (for admin panel)
             const statusSubscription = this.stompClient.subscribe('/topic/user-status', (message) => {
                 try {
-                    const statusUpdate = JSON.parse(message.body);
-                    console.log('WebSocketService: Received user status update:', statusUpdate);
                     // Dispatch a custom event for user status updates
                     window.dispatchEvent(new CustomEvent('userStatusUpdate', { 
-                        detail: statusUpdate 
+                        detail: JSON.parse(message.body) 
                     }));
                 } catch (error) {
                     console.error('Error parsing user status message:', error);
@@ -96,7 +86,6 @@ class WebSocketService {
             // Chỉ reconnect nếu không phải do disconnect thủ công và chưa vượt quá số lần thử
             if (this.reconnectAttempts < this.maxReconnectAttempts && this.stompClient) {
                 this.reconnectAttempts++;
-                console.log(`WebSocketService: Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
                 setTimeout(() => {
                     // Kiểm tra lại trước khi reconnect để tránh reconnect không cần thiết
                     if (this.stompClient && !this.connected) {
@@ -108,7 +97,6 @@ class WebSocketService {
             }
         };
 
-        console.log('WebSocketService: Activating WebSocket connection...');
         this.stompClient.activate();
     }
 
@@ -133,7 +121,6 @@ class WebSocketService {
     sendMessage(sessionId, senderId, content, messageType, senderName, senderUsername) {
         if (this.connected && this.stompClient) {
             try {
-                console.log('WebSocketService: Sending message to /app/chat.sendMessage');
                 const messageBody = {
                     sessionId: sessionId,
                     senderId: senderId,
@@ -142,7 +129,6 @@ class WebSocketService {
                     senderName: senderName,
                     senderUsername: senderUsername
                 };
-                console.log('WebSocketService: Message body:', messageBody);
                 this.stompClient.publish({
                     destination: '/app/chat.sendMessage',
                     body: JSON.stringify(messageBody)
@@ -158,7 +144,6 @@ class WebSocketService {
     joinSession(sessionId, senderId, senderName, senderUsername) {
         if (this.connected && this.stompClient) {
             try {
-                console.log('WebSocketService: Joining session:', sessionId);
                 this.stompClient.publish({
                     destination: '/app/chat.addUser',
                     body: JSON.stringify({
@@ -168,7 +153,6 @@ class WebSocketService {
                         senderUsername: senderUsername
                     })
                 });
-                console.log('WebSocketService: Join session request sent');
             } catch (error) {
                 console.error('Error joining WebSocket session:', error);
             }
@@ -185,9 +169,7 @@ class WebSocketService {
         if (this.connected && this.stompClient) {
             const subscription = this.stompClient.subscribe('/topic/user-status', (message) => {
                 try {
-                    const statusUpdate = JSON.parse(message.body);
-                    console.log('WebSocketService: Manual user status update:', statusUpdate);
-                    onStatusUpdate(statusUpdate);
+                    onStatusUpdate(JSON.parse(message.body));
                 } catch (error) {
                     console.error('Error parsing user status message:', error);
                 }
@@ -204,7 +186,6 @@ class WebSocketService {
     startHeartbeat(userId) {
         // Send heartbeat immediately when connected
         if (this.connected && this.stompClient) {
-            console.log('WebSocketService: Sending initial heartbeat for user:', userId);
             this.stompClient.publish({
                 destination: '/app/user.heartbeat',
                 body: JSON.stringify({

@@ -17,47 +17,28 @@ const USER_KEY = "user_data"; // Đổi tên cho rõ ràng
 const setToken = (token) => {
   if (token) {
     localStorage.setItem(TOKEN_KEY, token);
-    console.log("authService: Đã lưu 'token' vào localStorage.");
   } else {
     localStorage.removeItem(TOKEN_KEY); // Xóa nếu token là null/undefined
-    console.log(
-      "authService: Không có token để lưu hoặc token rỗng. Đã xóa token."
-    );
   }
 };
 
 // Hàm tiện ích để lấy token từ localStorage
 const getToken = () => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  console.log(
-    "authService: Đang lấy 'token' từ localStorage:",
-    token ? "Có" : "Không"
-  );
-  // Token thường là chuỗi, không cần parse JSON trừ khi bạn chắc chắn nó là JSON string.
-  // Giữ đơn giản trả về chuỗi thô.
-  return token;
+  return localStorage.getItem(TOKEN_KEY);
 };
 
 // Hàm tiện ích để lưu thông tin người dùng vào localStorage
 const setCurrentUser = (user) => {
   if (user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
-    console.log("authService: Đã lưu 'user' vào localStorage:", user);
   } else {
     localStorage.removeItem(USER_KEY);
-    console.log(
-      "authService: Không có user để lưu hoặc user rỗng. Đã xóa user."
-    );
   }
 };
 
 // Hàm tiện ích để lấy thông tin người dùng từ localStorage
 const getCurrentUser = () => {
   const userStr = localStorage.getItem(USER_KEY);
-  console.log(
-    "authService: Đang cố gắng lấy 'user' từ localStorage. Giá trị thô:",
-    userStr
-  );
   if (userStr) {
     try {
       const parsedUser = JSON.parse(userStr);
@@ -72,36 +53,23 @@ const getCurrentUser = () => {
         pictureUrl: parsedUser.pictureUrl || "",
         membership: parsedUser.membership || null,
       };
-      console.log(
-        "authService: 'user' đã parse từ localStorage (có defaults):",
-        userWithDefaults
-      );
       return userWithDefaults;
     } catch (e) {
-      console.error(
-        "authService: Lỗi khi parse 'user' từ localStorage:",
-        e,
-        "Giá trị lỗi:",
-        userStr
-      );
       localStorage.removeItem(USER_KEY); // Xóa user lỗi
       return null;
     }
   }
-  console.log("authService: Không tìm thấy 'user' trong localStorage.");
   return null;
 };
 
 // Hàm tiện ích để xóa token khỏi localStorage
 const removeToken = () => {
   localStorage.removeItem(TOKEN_KEY);
-  console.log("authService: Đã xóa token khỏi localStorage.");
 };
 
 // Hàm tiện ích để xóa user khỏi localStorage
 const removeCurrentUser = () => {
   localStorage.removeItem(USER_KEY);
-  console.log("authService: Đã xóa user khỏi localStorage.");
 };
 
 // Request interceptor để thêm JWT token
@@ -127,50 +95,34 @@ apiClient.interceptors.response.use(
     if (error.response) {
       // Kiểm tra nếu là lỗi 401 (Unauthorized) - token hết hạn hoặc không hợp lệ
       if (error.response.status === 401) {
-        console.warn(
-          "authService (Interceptor): Nhận phản hồi 401 Unauthorized. Token có thể đã hết hạn."
-        );
-        
-        // Log message từ backend để debug
-        const errorMessage = error.response.data?.message || '';
-        console.log("authService: Error message from backend:", errorMessage);
-        
         // Chỉ logout nếu message thực sự chứa từ khóa token expired/invalid
-        const isTokenExpiredError = errorMessage.toLowerCase().includes('token expired') || 
-                                   errorMessage.toLowerCase().includes('expired') ||
-                                   errorMessage.toLowerCase().includes('hết hạn') ||
-                                   errorMessage.toLowerCase().includes('invalid token') ||
-                                   errorMessage.toLowerCase().includes('không hợp lệ') ||
-                                   errorMessage.toLowerCase().includes('unauthorized') ||
-                                   errorMessage.toLowerCase().includes('authentication failed');
+        const isTokenExpiredError = error.response.data?.message?.toLowerCase().includes('token expired') || 
+                                   error.response.data?.message?.toLowerCase().includes('expired') ||
+                                   error.response.data?.message?.toLowerCase().includes('hết hạn') ||
+                                   error.response.data?.message?.toLowerCase().includes('invalid token') ||
+                                   error.response.data?.message?.toLowerCase().includes('không hợp lệ') ||
+                                   error.response.data?.message?.toLowerCase().includes('unauthorized') ||
+                                   error.response.data?.message?.toLowerCase().includes('authentication failed');
         
         // Kiểm tra nếu là lỗi membership-related (không logout)
-        const isMembershipError = errorMessage.toLowerCase().includes('membership') || 
-                                 errorMessage.toLowerCase().includes('upgrade') ||
-                                 errorMessage.toLowerCase().includes('nâng cấp') ||
-                                 errorMessage.toLowerCase().includes('thành viên') ||
-                                 errorMessage.toLowerCase().includes('access') ||
-                                 errorMessage.toLowerCase().includes('plan') ||
-                                 errorMessage.toLowerCase().includes('trial') ||
-                                 errorMessage.toLowerCase().includes('guest') ||
-                                 errorMessage.toLowerCase().includes('restricted');
+        const isMembershipError = error.response.data?.message?.toLowerCase().includes('membership') || 
+                                 error.response.data?.message?.toLowerCase().includes('upgrade') ||
+                                 error.response.data?.message?.toLowerCase().includes('nâng cấp') ||
+                                 error.response.data?.message?.toLowerCase().includes('thành viên') ||
+                                 error.response.data?.message?.toLowerCase().includes('access') ||
+                                 error.response.data?.message?.toLowerCase().includes('plan') ||
+                                 error.response.data?.message?.toLowerCase().includes('trial') ||
+                                 error.response.data?.message?.toLowerCase().includes('guest') ||
+                                 error.response.data?.message?.toLowerCase().includes('restricted');
         
         if (isTokenExpiredError && !isMembershipError) {
-          console.log("authService: Token hết hạn, thực hiện logout");
           authService.logout();
-        } else {
-          console.log("authService: Không phải lỗi token hết hạn hoặc là lỗi membership, không logout - để component xử lý");
         }
       }
       
       // Kiểm tra nếu là lỗi 403 (Forbidden) - không có quyền truy cập
       if (error.response.status === 403) {
-        console.warn(
-          "authService (Interceptor): Nhận phản hồi 403 Forbidden. Không có quyền truy cập."
-        );
-        
         // Không logout cho lỗi 403, để component xử lý hiển thị thông báo nâng cấp
-        console.log("authService: Lỗi quyền truy cập, không logout - để component xử lý");
       }
     }
     return Promise.reject(error);
@@ -192,7 +144,6 @@ const decodeJwt = (token) => {
     );
     return JSON.parse(jsonPayload);
   } catch (e) {
-    console.error("Lỗi khi giải mã JWT:", e);
     return null;
   }
 };
@@ -201,17 +152,9 @@ const authService = {
   // Đăng nhập (Local login)
   login: async (credentials) => {
     try {
-      console.log(
-        "authService: Đang gửi yêu cầu đăng nhập local với:",
-        credentials
-      );
       const response = await apiClient.post(
         config.endpoints.login,
         credentials
-      );
-      console.log(
-        "authService: Phản hồi thành công từ backend (login):",
-        response.data
       );
       if (response.data.token) {
         setToken(response.data.token); // Sử dụng hàm tiện ích
@@ -228,19 +171,9 @@ const authService = {
           membership: response.data.membership || null,
         };
         setCurrentUser(user); // Sử dụng hàm tiện ích
-        console.log(
-          "authService: Đã lưu token và user vào localStorage (local login) với ánh xạ chính xác:",
-          user
-        );
       }
       return response.data;
     } catch (error) {
-      console.error(
-        "authService: Lỗi khi đăng nhập local:",
-        error.response?.data || error.message,
-        "Status:",
-        error.response?.status
-      );
       throw error.response?.data || error.message;
     }
   },
@@ -248,14 +181,9 @@ const authService = {
   // Đăng ký
   register: async (userData) => {
     try {
-      console.log("authService: Đang gửi yêu cầu đăng ký với:", userData);
       const response = await apiClient.post(
         config.endpoints.register,
         userData
-      );
-      console.log(
-        "authService: Phản hồi từ backend (register):",
-        response.data
       );
       // Nếu đăng ký tự động đăng nhập và trả về token, lưu nó
       if (response.data.token) {
@@ -271,10 +199,6 @@ const authService = {
           membership: response.data.membership || null,
         };
         setCurrentUser(user);
-        console.log(
-          "authService: Đã lưu token và user vào localStorage (register):",
-          user
-        );
         return {
           ...user,
           token: response.data.token,
@@ -282,10 +206,6 @@ const authService = {
       }
       return response.data;
     } catch (error) {
-      console.error(
-        "authService: Lỗi khi đăng ký:",
-        error.response?.data || error.message
-      );
       throw error.response?.data || error.message;
     }
   },
@@ -293,21 +213,11 @@ const authService = {
   // Đăng nhập Google
   googleLogin: async (idTokenFromGoogle) => {
     try {
-      console.log(
-        "authService: Đang gửi ID Token Google đến backend:",
-        idTokenFromGoogle
-      );
-
       const decodedIdToken = decodeJwt(idTokenFromGoogle);
-      console.log("authService: Đã giải mã ID Token Google:", decodedIdToken);
 
       const response = await apiClient.post(config.endpoints.googleLogin, {
         idToken: idTokenFromGoogle,
       });
-      console.log(
-        "authService: Phản hồi thành công từ backend (googleLogin):",
-        response.data
-      );
 
       if (response.data.token) {
         setToken(response.data.token); // Sử dụng hàm tiện ích
@@ -330,28 +240,15 @@ const authService = {
           membership: response.data.membership || null,
         };
         setCurrentUser(user); // Sử dụng hàm tiện ích
-        console.log(
-          "authService: Đã lưu token và user vào localStorage (Google login) với ánh xạ hỗn hợp:",
-          user
-        );
       }
       return response.data;
     } catch (error) {
-      console.error(
-        "authService: Lỗi khi đăng nhập Google:",
-        error.response?.data || error.message,
-        "Status:",
-        error.response?.status
-      );
       throw error.response?.data || error.message;
     }
   },
 
   // Đăng xuất
   logout: () => {
-    console.log(
-      "authService: Đang thực hiện đăng xuất. Xóa token và user từ localStorage."
-    );
     removeToken(); // Sử dụng hàm tiện ích
     removeCurrentUser(); // Sử dụng hàm tiện ích
     // KHÔNG CÒN window.location.href ở đây.
