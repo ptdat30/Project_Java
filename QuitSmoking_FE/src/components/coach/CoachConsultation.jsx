@@ -7,6 +7,7 @@ import AvatarFromName from '../common/AvatarFromName';
 import useMembershipError from "../../hooks/useMembershipError";
 import MembershipUpgradeModal from "../common/MembershipUpgradeModal";
 import notificationService from "../../services/notificationService";
+import { useNavigate } from "react-router-dom";
 
 // Thông tin mẫu cho coach theo email
 const defaultCoachInfoByEmail = {
@@ -78,7 +79,7 @@ const CoachConsultation = () => {
   // Kiểm tra quyền truy cập cho guest
   const isGuest = user?.role === "GUEST";
   const hasAccess = !isGuest || isCoach;
-  
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
